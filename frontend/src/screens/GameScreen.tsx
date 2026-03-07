@@ -1,4 +1,5 @@
 import { useGameClient } from '../hooks/useGameClient';
+import { BoardCanvas } from '../components/BoardCanvas';
 
 interface Props {
   onExitToLobby: () => void;
@@ -31,7 +32,31 @@ export function GameScreen({ onExitToLobby }: Props) {
       )}
 
       {gameStatus.status === 'playing' && (
-        <p className="text-zinc-500 text-sm">Game view coming soon</p>
+        <div className="flex gap-8 items-start pt-4">
+          <div className="flex flex-col gap-2">
+            <BoardCanvas
+              board={gameStatus.your.board}
+              activePiece={gameStatus.your.current_piece}
+              label="You"
+            />
+            <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
+              <span>{gameStatus.your.score.toLocaleString()} pts</span>
+              <span>Lv {gameStatus.your.level}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <BoardCanvas
+              board={gameStatus.opponent.board}
+              label="Opponent"
+              dimmed={false}
+            />
+            <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
+              <span>{gameStatus.opponent.score.toLocaleString()} pts</span>
+              <span>Lv {gameStatus.opponent.level}</span>
+            </div>
+          </div>
+        </div>
       )}
 
       {gameStatus.status === 'result' && (
