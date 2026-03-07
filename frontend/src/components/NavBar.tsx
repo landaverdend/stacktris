@@ -4,11 +4,7 @@ export function NavBar() {
   const { state } = useGameClient();
   const { connection, gameStatus } = state;
 
-  const currentRoomId =
-    gameStatus.status === 'waiting_payment' ? gameStatus.roomId :
-    gameStatus.status === 'waiting_opponent' ? gameStatus.roomId :
-    gameStatus.status === 'playing'          ? gameStatus.room.id :
-    null;
+  const currentRoomId = 'roomId' in gameStatus ? gameStatus.roomId : null;
 
   return (
     <div className="fixed top-0 inset-x-0 h-10 bg-topbar border-b border-border-dim flex items-center justify-between px-4 z-50">
@@ -24,11 +20,10 @@ export function NavBar() {
         </button>
       ) : <span />}
 
-      <span className={`text-xs px-2 py-0.5 rounded font-mono ${
-        connection === 'connected'  ? 'text-green-400 bg-green-950' :
-        connection === 'connecting' ? 'text-yellow-400 bg-yellow-950' :
-                                      'text-red-400 bg-red-950'
-      }`}>
+      <span className={`text-xs px-2 py-0.5 rounded font-mono ${connection === 'connected' ? 'text-green-400 bg-green-950' :
+          connection === 'connecting' ? 'text-yellow-400 bg-yellow-950' :
+            'text-red-400 bg-red-950'
+        }`}>
         {connection === 'connected' ? '● live' : connection === 'connecting' ? '◌ connecting' : '○ offline'}
       </span>
     </div>

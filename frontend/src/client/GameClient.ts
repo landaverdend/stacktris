@@ -1,4 +1,4 @@
-import { ClientMessage, GameAction, GameRoom, ServerMessage } from '../types';
+import { ClientMessage, GameAction, OpponentSnapshot, PlayerSnapshot, ServerMessage } from '../types';
 
 // ── State types ───────────────────────────────────────────────────────────────
 
@@ -8,7 +8,7 @@ export type GameStatus =
   | { status: 'lobby' }
   | { status: 'waiting_payment'; roomId: string }
   | { status: 'waiting_opponent'; roomId: string }
-  | { status: 'playing'; room: GameRoom }
+  | { status: 'playing'; roomId: string; your: PlayerSnapshot; opponent: OpponentSnapshot }
   | { status: 'result'; winnerId: string; yourScore: number; opponentScore: number };
 
 export interface GameClientState {
@@ -113,9 +113,12 @@ export class GameClient {
         break;
       }
 
-      case 'game_state':
-        this.setStatus({ status: 'playing', room: msg.room });
+      case 'game_state': {
+        const s = this.state.gameStatus;
+        const roomId = 'roomId' in s ? s.roomId : '';
+        this.setStatus({ status: 'playing', roomId, your: msg.your, opponent: msg.opponent });
         break;
+      }
 
       case 'game_over':
         this.setStatus({

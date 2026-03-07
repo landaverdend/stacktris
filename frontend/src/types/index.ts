@@ -34,7 +34,36 @@ export interface GameRoom {
   winnerId?: string;
 }
 
-// WebSocket message types — field names match the backend's snake_case serialization
+// ── Snapshot types (match server protocol.rs) ─────────────────────────────────
+
+export interface PieceSnapshot {
+  kind: string;
+  row: number;
+  col: number;
+  rotation: number;
+}
+
+/** board[row][col]: 0 = empty, 1–7 = piece type (matches Piece enum). */
+export interface PlayerSnapshot {
+  board: number[][];
+  current_piece: PieceSnapshot | null;
+  next_pieces: string[];
+  hold_piece: string | null;
+  pending_garbage: number;
+  score: number;
+  lines: number;
+  level: number;
+}
+
+export interface OpponentSnapshot {
+  board: number[][];
+  pending_garbage: number;
+  score: number;
+  lines: number;
+  level: number;
+}
+
+// ── WebSocket message types ────────────────────────────────────────────────────
 export type ClientMessage =
   | { type: 'join_room'; room_id: string; bet_sats: number }
   | { type: 'create_room'; bet_sats: number }
@@ -54,6 +83,6 @@ export type ServerMessage =
   | { type: 'room_joined'; room_id: string }
   | { type: 'player_joined' }
   | { type: 'game_start'; countdown: number }
-  | { type: 'game_state'; room: GameRoom }
+  | { type: 'game_state'; your: PlayerSnapshot; opponent: OpponentSnapshot }
   | { type: 'game_over'; winner_id: string; your_score: number; opponent_score: number }
   | { type: 'error'; message: string };

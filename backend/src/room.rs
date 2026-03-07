@@ -4,7 +4,8 @@ use dashmap::DashMap;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
-use crate::protocol::{GameAction, ServerMsg};
+use crate::game::{Piece, PlayerGameState};
+use crate::protocol::{GameAction, OpponentSnapshot, PlayerSnapshot, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ impl RoomHandle {
 struct PlayerSlot {
     player_id: String,
     tx: mpsc::Sender<ServerMsg>,
+    state: PlayerGameState,
 }
 
 struct RoomActor {
@@ -109,19 +111,24 @@ impl RoomActor {
             return;
         }
 
+        // TODO: replace with a proper random-bag piece generator
+        let first_piece = Piece::T;
+        let next_piece = Piece::I;
+
         self.players.push(PlayerSlot {
             player_id: player_id.clone(),
             tx,
+            state: PlayerGameState::new(first_piece, next_piece),
         });
         tracing::info!(room = %self.id, player = %player_id, players = self.players.len(), "player joined");
 
         if self.players.len() == 2 {
             self.phase = RoomPhase::Ready;
-            // Tell the first player someone joined.
             self.send_to(0, ServerMsg::PlayerJoined).await;
-            // Tell both to get ready.
             self.phase = RoomPhase::Countdown;
             self.broadcast(ServerMsg::GameStart { countdown: 3 }).await;
+            tracing::info!("Game started....");
+            self.broadcast_state().await;
         }
     }
 
@@ -131,6 +138,22 @@ impl RoomActor {
 
         if self.players.is_empty() {
             self.phase = RoomPhase::Done;
+        }
+    }
+
+    /// Sends each player their own full snapshot and the opponent's reduced snapshot.
+    /// Player 0 sees: your=0, opponent=1. Player 1 sees: your=1, opponent=0.
+    async fn broadcast_state(&self) {
+        if self.players.len() != 2 {
+            return;
+        }
+        for (i, slot) in self.players.iter().enumerate() {
+            let other = &self.players[1 - i];
+            let msg = ServerMsg::GameState {
+                your: PlayerSnapshot::from(&slot.state),
+                opponent: OpponentSnapshot::from(&other.state),
+            };
+            let _ = slot.tx.try_send(msg);
         }
     }
 
