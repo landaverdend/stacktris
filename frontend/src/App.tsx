@@ -33,16 +33,16 @@ export default function App() {
       case 'room_created':
         setAppState(prev => ({
           screen: 'waiting_payment',
-          invoice: msg.invoice,
-          roomId: msg.roomId,
+          invoice: '',
+          roomId: msg.room_id,
           betSats: prev.screen === 'lobby' ? 0 : (prev as { betSats?: number }).betSats ?? 0,
         }));
         break;
       case 'room_joined':
         setAppState({
           screen: 'waiting_payment',
-          invoice: msg.invoice,
-          roomId: msg.roomId,
+          invoice: '',
+          roomId: msg.room_id,
           betSats: 0,
         });
         break;
@@ -60,7 +60,7 @@ export default function App() {
       case 'game_over':
         setAppState(prev => {
           if (prev.screen === 'playing') {
-            return { screen: 'result', winnerId: msg.winnerId, room: prev.room };
+            return { screen: 'result', winnerId: msg.winner_id, room: prev.room };
           }
           return prev;
         });
@@ -77,26 +77,43 @@ export default function App() {
   }
 
   function handleJoinRoom(roomId: string, betSats: number) {
-    send({ type: 'join_room', roomId, bet_sats: betSats });
+    send({ type: 'join_room', room_id: roomId, bet_sats: betSats });
   }
 
-  const connectionBadge = (
-    <div style={{
-      position: 'fixed', top: '1rem', right: '1rem',
-      background: status === 'connected' ? '#0a0' : status === 'connecting' ? '#a80' : '#a00',
-      color: '#fff',
-      padding: '0.25rem 0.5rem',
-      borderRadius: '4px',
-      fontSize: '0.7rem',
-      letterSpacing: '0.05em',
-    }}>
-      {status === 'connected' ? '● WS' : status === 'connecting' ? '◌ WS' : '○ WS'}
+  const currentRoomId =
+    appState.screen === 'waiting_payment' ? appState.roomId :
+    appState.screen === 'waiting_opponent' ? appState.roomId :
+    appState.screen === 'playing' ? appState.room.id :
+    null;
+
+  const topBar = (
+    <div style={topBarStyle}>
+      <span style={{ color: '#f7931a', fontWeight: 'bold', letterSpacing: '0.1em' }}>
+        ⚡ STACKTRIS
+      </span>
+
+      {currentRoomId && (
+        <span style={roomIdStyle} title="Click to copy" onClick={() => navigator.clipboard.writeText(currentRoomId)}>
+          room: <span style={{ color: '#f0f0f0' }}>{currentRoomId}</span>
+        </span>
+      )}
+
+      <div style={{
+        background: status === 'connected' ? '#0a0' : status === 'connecting' ? '#a80' : '#a00',
+        color: '#fff',
+        padding: '0.2rem 0.4rem',
+        borderRadius: '4px',
+        fontSize: '0.65rem',
+        letterSpacing: '0.05em',
+      }}>
+        {status === 'connected' ? '● WS' : status === 'connecting' ? '◌ WS' : '○ WS'}
+      </div>
     </div>
   );
 
   return (
     <>
-      {connectionBadge}
+      {topBar}
 
       {appState.screen === 'lobby' && (
         <GameLobby
@@ -122,7 +139,6 @@ export default function App() {
         <div style={centerStyle}>
           <p style={{ color: '#f7931a', fontSize: '1.2rem' }}>⚡ Payment confirmed!</p>
           <p style={{ color: '#888' }}>Waiting for opponent...</p>
-          <p style={{ color: '#444', fontSize: '0.8rem' }}>Room: {appState.roomId}</p>
           <button style={backBtn} onClick={() => setAppState({ screen: 'lobby' })}>
             Cancel
           </button>
@@ -166,6 +182,7 @@ const centerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   minHeight: '100vh',
+  paddingTop: '2.5rem',
   gap: '1rem',
 };
 
@@ -177,4 +194,31 @@ const backBtn: React.CSSProperties = {
   borderRadius: '4px',
   cursor: 'pointer',
   fontFamily: 'inherit',
+};
+
+const topBarStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: '2.5rem',
+  background: '#0d0d0d',
+  borderBottom: '1px solid #1e1e1e',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 1rem',
+  zIndex: 100,
+  fontSize: '0.8rem',
+};
+
+const roomIdStyle: React.CSSProperties = {
+  color: '#555',
+  fontFamily: 'monospace',
+  fontSize: '0.75rem',
+  cursor: 'pointer',
+  padding: '0.2rem 0.5rem',
+  border: '1px solid #222',
+  borderRadius: '4px',
+  letterSpacing: '0.03em',
 };

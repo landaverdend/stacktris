@@ -1,4 +1,5 @@
 mod protocol;
+mod room;
 mod session;
 
 use axum::{routing::get, Router};
@@ -6,11 +7,13 @@ use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use room::RoomRegistry;
 use session::SessionRegistry;
 
 #[derive(Clone)]
 pub struct AppState {
     pub sessions: Arc<SessionRegistry>,
+    pub rooms: Arc<RoomRegistry>,
 }
 
 #[tokio::main]
@@ -25,6 +28,7 @@ async fn main() {
 
     let state = AppState {
         sessions: Arc::new(SessionRegistry::new()),
+        rooms: Arc::new(RoomRegistry::new()),
     };
 
     let cors = CorsLayer::new()

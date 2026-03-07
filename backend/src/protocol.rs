@@ -30,16 +30,22 @@ pub enum GameAction {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMsg {
     /// Sent to the creator immediately after the room is created.
-    RoomCreated { room_id: String },
+    RoomCreated {
+        room_id: String,
+    },
 
     /// Sent to the joining player on successful join.
-    RoomJoined { room_id: String },
+    RoomJoined {
+        room_id: String,
+    },
 
     /// Sent to the *waiting* player when the second player joins.
     PlayerJoined,
 
     /// Sent to both players when the room transitions to Countdown.
-    GameStart { countdown: u32 },
+    GameStart {
+        countdown: u32,
+    },
 
     /// The main in-game update. Sent after every meaningful state change.
     GameState {
@@ -54,7 +60,9 @@ pub enum ServerMsg {
         opponent_score: u64,
     },
 
-    Error { message: String },
+    Error {
+        message: String,
+    },
 }
 
 /// Full state for the receiving player's own board.

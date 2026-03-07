@@ -34,24 +34,26 @@ export interface GameRoom {
   winnerId?: string;
 }
 
-// WebSocket message types
+// WebSocket message types — field names match the backend's snake_case serialization
 export type ClientMessage =
-  | { type: 'join_room'; roomId: string; bet_sats: number }
+  | { type: 'join_room'; room_id: string; bet_sats: number }
   | { type: 'create_room'; bet_sats: number }
   | { type: 'game_action'; action: GameAction };
-
 
 export type GameAction =
   | { type: 'move_left' }
   | { type: 'move_right' }
-  | { type: 'move_down' }
-  | { type: 'rotate' }
-  | { type: 'hard_drop' };
+  | { type: 'rotate_cw' }
+  | { type: 'rotate_ccw' }
+  | { type: 'soft_drop' }
+  | { type: 'hard_drop' }
+  | { type: 'hold' };
 
 export type ServerMessage =
-  | { type: 'room_created'; roomId: string; invoice: string }
-  | { type: 'room_joined'; roomId: string; invoice: string }
+  | { type: 'room_created'; room_id: string }
+  | { type: 'room_joined'; room_id: string }
+  | { type: 'player_joined' }
   | { type: 'game_start'; countdown: number }
   | { type: 'game_state'; room: GameRoom }
-  | { type: 'game_over'; winnerId: string; paymentPreimage?: string }
+  | { type: 'game_over'; winner_id: string; your_score: number; opponent_score: number }
   | { type: 'error'; message: string };

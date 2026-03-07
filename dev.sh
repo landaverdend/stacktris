@@ -9,10 +9,10 @@ BOLD='\033[1m'
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 cleanup() {
+  trap - EXIT INT TERM
   echo ""
   echo "Shutting down..."
-  kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
-  wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true
+  kill 0
 }
 trap cleanup EXIT INT TERM
 
@@ -36,9 +36,6 @@ echo -e "  ${CYAN}${BOLD}frontend${RESET} → http://localhost:5173"
 echo ""
 
 cd "$ROOT/backend" && cargo run -q 2>&1 | prefix_lines "$ORANGE" "backend" &
-BACKEND_PID=$!
-
 cd "$ROOT/frontend" && npm run dev 2>&1 | prefix_lines "$CYAN" "frontend" &
-FRONTEND_PID=$!
 
 wait
