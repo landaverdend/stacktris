@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GameLobby } from './components/GameLobby';
 import { SoloArena } from './components/BattleArena';
-import { LightningInvoice } from './components/LightningInvoice';
 import { useWebSocket } from './hooks/useWebSocket';
 import { GameRoom, ServerMessage } from './types';
 
@@ -26,7 +25,7 @@ export default function App() {
   useEffect(() => {
     if (!lastMessage) return;
     handleServerMessage(lastMessage);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage]);
 
   function handleServerMessage(msg: ServerMessage) {
@@ -73,11 +72,12 @@ export default function App() {
   }
 
   function handleCreateRoom(betSats: number) {
-    send({ type: 'create_room', betSats });
+    console.log('handleCreateRoom', betSats);
+    send({ type: 'create_room', bet_sats: betSats });
   }
 
   function handleJoinRoom(roomId: string, betSats: number) {
-    send({ type: 'join_room', roomId, betSats });
+    send({ type: 'join_room', roomId, bet_sats: betSats });
   }
 
   const connectionBadge = (
@@ -112,10 +112,6 @@ export default function App() {
 
       {appState.screen === 'waiting_payment' && (
         <div style={centerStyle}>
-          <LightningInvoice
-            invoice={appState.invoice}
-            amountSats={appState.betSats}
-          />
           <button style={backBtn} onClick={() => setAppState({ screen: 'lobby' })}>
             Cancel
           </button>

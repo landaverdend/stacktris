@@ -36,10 +36,10 @@ export interface GameRoom {
 
 // WebSocket message types
 export type ClientMessage =
-  | { type: 'join_room'; roomId: string; betSats: number }
-  | { type: 'create_room'; betSats: number }
-  | { type: 'game_action'; action: GameAction }
-  | { type: 'pay_invoice'; bolt11: string };
+  | { type: 'join_room'; roomId: string; bet_sats: number }
+  | { type: 'create_room'; bet_sats: number }
+  | { type: 'game_action'; action: GameAction };
+
 
 export type GameAction =
   | { type: 'move_left' }
