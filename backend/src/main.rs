@@ -1,19 +1,16 @@
-mod game;
-mod ws;
+mod protocol;
+mod session;
 
-use axum::{
-    Router,
-    routing::get,
-};
+use axum::{routing::get, Router};
 use std::sync::Arc;
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::game::GameRegistry;
+use session::SessionRegistry;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub games: Arc<GameRegistry>,
+    pub sessions: Arc<SessionRegistry>,
 }
 
 #[tokio::main]
@@ -27,7 +24,7 @@ async fn main() {
         .init();
 
     let state = AppState {
-        games: Arc::new(GameRegistry::new()),
+        sessions: Arc::new(SessionRegistry::new()),
     };
 
     let cors = CorsLayer::new()
@@ -37,12 +34,12 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
-        .route("/ws", get(ws::ws_handler))
+        .route("/ws", get(session::ws_handler))
         .layer(cors)
         .with_state(state);
 
     let addr = "0.0.0.0:3000";
-    tracing::info!("Stacktris listening on {}", addr);
+    tracing::info!("listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

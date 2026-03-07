@@ -45,25 +45,23 @@ the current cell.
 
 ## Backend Module Map
 
+Modules are added incrementally. ✅ = exists, 🔲 = next up, ○ = future.
+
 ```
 backend/src/
-├── main.rs             server setup, router, shared AppState
-├── protocol.rs         all WS message types (ClientMsg / ServerMsg)
-├── session/
-│   ├── mod.rs          PlayerSession — owns ws sender + mpsc receiver
-│   └── registry.rs     SessionRegistry — player_id → mpsc::Sender<ServerMsg>
+├── main.rs       ✅  server setup, router, AppState
+├── protocol.rs   ✅  all WS message types (ClientMsg / ServerMsg / snapshots)
+├── session.rs    ✅  SessionRegistry + per-connection tokio task
+├── room.rs       🔲  RoomRegistry + RoomHandle (mpsc to actor)
 ├── room/
-│   ├── mod.rs          RoomHandle — public API wrapping the actor channel
-│   ├── actor.rs        RoomActor — owns all mutable room state, runs game loop
-│   ├── lifecycle.rs    room phase state machine (Waiting → Ready → Countdown → Playing → Done)
-│   └── registry.rs     RoomRegistry — room_id → RoomHandle
-└── game/
-    ├── mod.rs
-    ├── board.rs        Board (20×10), collision, locking, line-clear
-    ├── piece.rs        TetrominoType, Piece, SRS rotation tables
-    ├── queue.rs        PieceQueue — shared seeded 7-bag randomizer
-    ├── gravity.rs      gravity intervals, soft-drop, lock delay
-    └── garbage.rs      garbage line generation + pending garbage queue
+│   ├── actor.rs  🔲  RoomActor — owns all mutable state, runs game loop
+│   └── phase.rs  🔲  RoomPhase state machine (Waiting→Ready→Countdown→Playing→Done)
+└── game/         ○
+    ├── board.rs       Board (20×10), collision, locking, line-clear
+    ├── piece.rs       TetrominoType, Piece, SRS rotation tables
+    ├── queue.rs       PieceQueue — shared seeded 7-bag randomizer
+    ├── gravity.rs     gravity intervals, soft-drop, lock delay
+    └── garbage.rs     garbage line generation + pending garbage queue
 ```
 
 ## Frontend Module Map
