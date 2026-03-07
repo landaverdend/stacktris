@@ -1,3 +1,4 @@
+mod game;
 mod protocol;
 mod room;
 mod session;
