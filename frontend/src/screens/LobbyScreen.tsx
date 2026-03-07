@@ -1,20 +1,28 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useGameClient } from '../hooks/useGameClient';
 
 interface Props {
-  onCreateRoom: (betSats: number) => void;
-  onJoinRoom: (roomId: string, betSats: number) => void;
+  onEnterGame: () => void;
   onPlaySolo: () => void;
 }
 
-export const GameLobby: React.FC<Props> = ({ onCreateRoom, onJoinRoom, onPlaySolo }) => {
+export function LobbyScreen({ onEnterGame, onPlaySolo }: Props) {
+  const { state, client } = useGameClient();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
   const [tab, setTab] = useState<'create' | 'join' | 'solo'>('create');
 
+  // Transition to game view when server moves us past lobby
+  useEffect(() => {
+    if (state.gameStatus.status !== 'lobby') {
+      onEnterGame();
+    }
+  }, [state.gameStatus.status, onEnterGame]);
+
   const tabs = [
     { id: 'create', label: 'Create' },
-    { id: 'join',   label: 'Join'   },
-    { id: 'solo',   label: 'Solo'   },
+    { id: 'join', label: 'Join' },
+    { id: 'solo', label: 'Solo' },
   ] as const;
 
   return (
@@ -35,11 +43,10 @@ export const GameLobby: React.FC<Props> = ({ onCreateRoom, onJoinRoom, onPlaySol
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-3 text-sm font-bold tracking-wider transition-colors ${
-                tab === t.id
+              className={`flex-1 py-3 text-sm font-bold tracking-wider transition-colors ${tab === t.id
                   ? 'text-bitcoin border-b-2 border-bitcoin bg-surface-2'
                   : 'text-zinc-600 hover:text-zinc-400'
-              }`}
+                }`}
             >
               {t.label}
             </button>
@@ -77,7 +84,7 @@ export const GameLobby: React.FC<Props> = ({ onCreateRoom, onJoinRoom, onPlaySol
               </Field>
               <button
                 className="w-full py-3 bg-bitcoin text-black font-bold rounded-lg hover:opacity-90 transition-opacity"
-                onClick={() => onCreateRoom(betSats)}
+                onClick={() => client.createRoom(betSats)}
               >
                 Create Room
               </button>
@@ -107,7 +114,7 @@ export const GameLobby: React.FC<Props> = ({ onCreateRoom, onJoinRoom, onPlaySol
               </Field>
               <button
                 className="w-full py-3 bg-bitcoin text-black font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-                onClick={() => joinRoomId && onJoinRoom(joinRoomId, betSats)}
+                onClick={() => joinRoomId && client.joinRoom(joinRoomId, betSats)}
                 disabled={!joinRoomId}
               >
                 Join Room
@@ -121,7 +128,7 @@ export const GameLobby: React.FC<Props> = ({ onCreateRoom, onJoinRoom, onPlaySol
       <p className="text-zinc-800 text-xs">⚡ powered by lightning</p>
     </div>
   );
-};
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
