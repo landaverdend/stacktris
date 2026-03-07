@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { NavBar } from './components/NavBar';
-import { SoloArena } from './components/BattleArena';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GameScreen } from './screens/GameScreen';
 
-type View = 'lobby' | 'solo' | 'game';
+type View = 'lobby' | 'game';
 
 export default function App() {
   const [view, setView] = useState<View>('lobby');
@@ -14,14 +13,7 @@ export default function App() {
       <NavBar />
 
       {view === 'lobby' && (
-        <LobbyScreen
-          onEnterGame={() => setView('game')}
-          onPlaySolo={() => setView('solo')}
-        />
-      )}
-
-      {view === 'solo' && (
-        <SoloArena onExit={() => setView('lobby')} />
+        <LobbyScreen onEnterGame={() => setView('game')} />
       )}
 
       {view === 'game' && (

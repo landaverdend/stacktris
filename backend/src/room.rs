@@ -127,7 +127,6 @@ impl RoomActor {
             self.send_to(0, ServerMsg::PlayerJoined).await;
             self.phase = RoomPhase::Countdown;
             self.broadcast(ServerMsg::GameStart { countdown: 3 }).await;
-            tracing::info!("Game started....");
             self.broadcast_state().await;
         }
     }

@@ -3,16 +3,14 @@ import { useGameClient } from '../hooks/useGameClient';
 
 interface Props {
   onEnterGame: () => void;
-  onPlaySolo: () => void;
 }
 
-export function LobbyScreen({ onEnterGame, onPlaySolo }: Props) {
+export function LobbyScreen({ onEnterGame }: Props) {
   const { state, client } = useGameClient();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
-  const [tab, setTab] = useState<'create' | 'join' | 'solo'>('create');
+  const [tab, setTab] = useState<'create' | 'join'>('create');
 
-  // Transition to game view when server moves us past lobby
   useEffect(() => {
     if (state.gameStatus.status !== 'lobby') {
       onEnterGame();
@@ -22,22 +20,18 @@ export function LobbyScreen({ onEnterGame, onPlaySolo }: Props) {
   const tabs = [
     { id: 'create', label: 'Create' },
     { id: 'join', label: 'Join' },
-    { id: 'solo', label: 'Solo' },
   ] as const;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-6 pt-10 px-4">
 
-      {/* Title */}
       <div className="text-center">
         <h1 className="text-5xl font-bold text-bitcoin tracking-widest mb-1">STACKTRIS</h1>
         <p className="text-zinc-600 text-sm tracking-widest">BATTLE TETRIS · LIGHTNING NETWORK</p>
       </div>
 
-      {/* Card */}
       <div className="w-full max-w-sm bg-surface border border-border rounded-xl overflow-hidden">
 
-        {/* Tab bar */}
         <div className="flex border-b border-border">
           {tabs.map(t => (
             <button
@@ -53,22 +47,7 @@ export function LobbyScreen({ onEnterGame, onPlaySolo }: Props) {
           ))}
         </div>
 
-        {/* Tab content */}
         <div className="p-6 flex flex-col gap-4">
-
-          {tab === 'solo' && (
-            <>
-              <p className="text-zinc-600 text-xs text-center tracking-wide">
-                Practice mode — no Lightning required
-              </p>
-              <button
-                className="w-full py-3 bg-bitcoin text-black font-bold rounded-lg hover:opacity-90 transition-opacity"
-                onClick={onPlaySolo}
-              >
-                Start Game
-              </button>
-            </>
-          )}
 
           {tab === 'create' && (
             <>
