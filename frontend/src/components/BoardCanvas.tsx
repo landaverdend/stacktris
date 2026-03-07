@@ -7,9 +7,12 @@ interface Props {
   activePiece?: PieceSnapshot | null;
   dimmed?: boolean;
   label?: string;
+
+  /** Scale the rendered canvas down via CSS (0–1). Pixel dimensions stay the same for sharpness. */
+  scale?: number;
 }
 
-export function BoardCanvas({ board, activePiece = null, dimmed = false, label }: Props) {
+export function BoardCanvas({ board, activePiece = null, dimmed = false, label, scale = 1 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -18,13 +21,17 @@ export function BoardCanvas({ board, activePiece = null, dimmed = false, label }
   }, [board, activePiece, dimmed]);
 
   return (
-    <div className="flex flex-col items-center gap-2 font-mono">
+    <div className="flex flex-col items-center gap-1 font-mono" style={{ width: CANVAS_WIDTH * scale }}>
       {label && <p className="text-zinc-500 text-xs tracking-widest uppercase">{label}</p>}
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="border-2 border-border-hi bg-pit block"
+        style={{
+          width: CANVAS_WIDTH * scale,
+          height: CANVAS_HEIGHT * scale,
+        }}
+        className="border border-border-hi bg-pit block"
       />
     </div>
   );

@@ -32,7 +32,8 @@ export function GameScreen({ onExitToLobby }: Props) {
       )}
 
       {gameStatus.status === 'playing' && (
-        <div className="flex gap-8 items-start pt-4">
+        <div className="relative flex items-start justify-center w-full pt-4">
+          {/* Your board — centered */}
           <div className="flex flex-col gap-2">
             <BoardCanvas
               board={gameStatus.your.board}
@@ -45,14 +46,15 @@ export function GameScreen({ onExitToLobby }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Opponent board — small, top-right */}
+          <div className="absolute top-0 right-6 flex flex-col gap-1">
             <BoardCanvas
               board={gameStatus.opponent.board}
               label="Opponent"
-              dimmed={false}
+              scale={0.4}
             />
-            <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
-              <span>{gameStatus.opponent.score.toLocaleString()} pts</span>
+            <div className="flex justify-between text-zinc-700 text-xs font-mono px-0.5">
+              <span>{gameStatus.opponent.score.toLocaleString()}</span>
               <span>Lv {gameStatus.opponent.level}</span>
             </div>
           </div>
