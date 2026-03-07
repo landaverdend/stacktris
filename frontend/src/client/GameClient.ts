@@ -120,6 +120,17 @@ export class GameClient {
         break;
       }
 
+      case 'piece_moved': {
+        const s = this.state.gameStatus;
+        if (s.status !== 'playing') break;
+        // Only the active piece positions changed — board is untouched.
+        this.setStatus({
+          ...s,
+          your: { ...s.your, current_piece: msg.your_piece },
+        });
+        break;
+      }
+
       case 'game_over':
         this.setStatus({
           status: 'result',

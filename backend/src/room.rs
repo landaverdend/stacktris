@@ -1,11 +1,13 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use dashmap::DashMap;
 use tokio::sync::mpsc;
+use tokio::time;
 use uuid::Uuid;
 
-use crate::game::{Piece, PlayerGameState};
-use crate::protocol::{GameAction, OpponentSnapshot, PlayerSnapshot, ServerMsg};
+use crate::game::{tick_ms, try_move_down, Piece, PlayerGameState};
+use crate::protocol::{GameAction, OpponentSnapshot, PieceSnapshot, PlayerSnapshot, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -88,11 +90,23 @@ impl RoomActor {
     pub async fn run(mut self) {
         tracing::info!(room = %self.id, bet_sats = self.bet_sats, "actor started");
 
-        while let Some(cmd) = self.rx.recv().await {
-            match cmd {
-                RoomCmd::PlayerJoin { player_id, tx } => self.on_join(player_id, tx).await,
-                RoomCmd::PlayerLeave { player_id } => self.on_leave(&player_id).await,
-                RoomCmd::PlayerInput { .. } => { /* wired up when game loop lands */ }
+        // Tick interval — only fires when Playing. We start it here but it's
+        // gated by the phase check inside on_tick, so early ticks are no-ops.
+        let mut interval = time::interval(Duration::from_millis(tick_ms(0)));
+        interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
+
+        loop {
+            tokio::select! {
+                Some(cmd) = self.rx.recv() => {
+                    match cmd {
+                        RoomCmd::PlayerJoin { player_id, tx } => self.on_join(player_id, tx).await,
+                        RoomCmd::PlayerLeave { player_id } => self.on_leave(&player_id).await,
+                        RoomCmd::PlayerInput { .. } => { /* wired up next */ }
+                    }
+                }
+                _ = interval.tick() => {
+                    self.on_tick().await;
+                }
             }
 
             if self.phase == RoomPhase::Done {
@@ -125,9 +139,33 @@ impl RoomActor {
         if self.players.len() == 2 {
             self.phase = RoomPhase::Ready;
             self.send_to(0, ServerMsg::PlayerJoined).await;
-            self.phase = RoomPhase::Countdown;
+            self.phase = RoomPhase::Playing;
             self.broadcast(ServerMsg::GameStart { countdown: 3 }).await;
             self.broadcast_state().await;
+        }
+    }
+
+    async fn on_tick(&mut self) {
+        if self.phase != RoomPhase::Playing {
+            return;
+        }
+
+        // Try to move each player's piece down one row.
+        for slot in self.players.iter_mut() {
+            if let Some(piece) = &slot.state.active_piece {
+                slot.state.active_piece = Some(
+                    try_move_down(&slot.state.board, piece).unwrap_or(*piece)
+                    // TODO: on None → lock piece, spawn next (line clear phase)
+                );
+            }
+        }
+
+        // Build and send PieceMoved to each player (your piece + opponent piece).
+        for slot in &self.players {
+            let msg = ServerMsg::PieceMoved {
+                your_piece: piece_snapshot(&slot.state),
+            };
+            let _ = slot.tx.try_send(msg);
         }
     }
 
@@ -167,6 +205,17 @@ impl RoomActor {
             let _ = slot.tx.try_send(msg);
         }
     }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+fn piece_snapshot(state: &PlayerGameState) -> Option<PieceSnapshot> {
+    state.active_piece.map(|p| PieceSnapshot {
+        kind: format!("{:?}", p.kind),
+        row: p.row as i32 - crate::game::VISIBLE_ROW_START as i32,
+        col: p.col as i32,
+        rotation: p.rotation,
+    })
 }
 
 // ── Registry ──────────────────────────────────────────────────────────────────

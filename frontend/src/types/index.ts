@@ -84,5 +84,6 @@ export type ServerMessage =
   | { type: 'player_joined' }
   | { type: 'game_start'; countdown: number }
   | { type: 'game_state'; your: PlayerSnapshot; opponent: OpponentSnapshot }
+  | { type: 'piece_moved'; your_piece: PieceSnapshot | null }
   | { type: 'game_over'; winner_id: string; your_score: number; opponent_score: number }
   | { type: 'error'; message: string };

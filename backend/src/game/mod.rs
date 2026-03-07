@@ -1,7 +1,9 @@
 pub mod board;
+pub mod logic;
 pub mod piece;
 
 pub use board::{empty_board, Board, COLS, ROWS, VISIBLE_ROW_START};
+pub use logic::{is_valid, tick_ms, try_move_down};
 pub use piece::{ActivePiece, Piece};
 
 #[derive(Debug, Clone)]

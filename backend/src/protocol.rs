@@ -55,6 +55,12 @@ pub enum ServerMsg {
         opponent: OpponentSnapshot,
     },
 
+    /// Sent every gravity tick when a piece moves down without locking.
+    /// Much cheaper than a full GameState broadcast.
+    PieceMoved {
+        your_piece: Option<PieceSnapshot>,
+    },
+
     /// Sent to both players when the game ends.
     GameOver {
         winner_id: String,
