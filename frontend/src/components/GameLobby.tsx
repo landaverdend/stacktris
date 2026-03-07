@@ -11,160 +11,123 @@ export const GameLobby: React.FC<Props> = ({ onCreateRoom, onJoinRoom, onPlaySol
   const [joinRoomId, setJoinRoomId] = useState('');
   const [tab, setTab] = useState<'create' | 'join' | 'solo'>('create');
 
+  const tabs = [
+    { id: 'create', label: 'Create' },
+    { id: 'join',   label: 'Join'   },
+    { id: 'solo',   label: 'Solo'   },
+  ] as const;
+
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>⚡ Stacktris</h1>
-      <p style={styles.subtitle}>Battle Tetris on Lightning</p>
+    <div className="flex flex-col items-center justify-center min-h-screen gap-6 pt-10 px-4">
 
-      <div style={styles.tabs}>
-        {(['create', 'join', 'solo'] as const).map(t => (
-          <button
-            key={t}
-            style={{ ...styles.tab, ...(tab === t ? styles.tabActive : {}) }}
-            onClick={() => setTab(t)}
-          >
-            {t === 'create' ? 'Create Room' : t === 'join' ? 'Join Room' : 'Play Solo'}
-          </button>
-        ))}
+      {/* Title */}
+      <div className="text-center">
+        <h1 className="text-5xl font-bold text-bitcoin tracking-widest mb-1">STACKTRIS</h1>
+        <p className="text-zinc-600 text-sm tracking-widest">BATTLE TETRIS · LIGHTNING NETWORK</p>
       </div>
 
-      <div style={styles.panel}>
-        {tab === 'solo' && (
-          <div style={styles.section}>
-            <p style={styles.hint}>Practice mode — no Lightning required</p>
-            <button style={styles.primaryBtn} onClick={onPlaySolo}>
-              Start Solo Game
-            </button>
-          </div>
-        )}
+      {/* Card */}
+      <div className="w-full max-w-sm bg-surface border border-border rounded-xl overflow-hidden">
 
-        {tab === 'create' && (
-          <div style={styles.section}>
-            <label style={styles.label}>Bet Amount (sats)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={betSats}
-              min={1}
-              onChange={e => setBetSats(Number(e.target.value))}
-            />
-            <button style={styles.primaryBtn} onClick={() => onCreateRoom(betSats)}>
-              Create Room
-            </button>
-          </div>
-        )}
-
-        {tab === 'join' && (
-          <div style={styles.section}>
-            <label style={styles.label}>Room ID</label>
-            <input
-              type="text"
-              style={styles.input}
-              value={joinRoomId}
-              placeholder="Enter room ID..."
-              onChange={e => setJoinRoomId(e.target.value)}
-            />
-            <label style={styles.label}>Bet Amount (sats)</label>
-            <input
-              type="number"
-              style={styles.input}
-              value={betSats}
-              min={1}
-              onChange={e => setBetSats(Number(e.target.value))}
-            />
+        {/* Tab bar */}
+        <div className="flex border-b border-border">
+          {tabs.map(t => (
             <button
-              style={styles.primaryBtn}
-              onClick={() => joinRoomId && onJoinRoom(joinRoomId, betSats)}
-              disabled={!joinRoomId}
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 py-3 text-sm font-bold tracking-wider transition-colors ${
+                tab === t.id
+                  ? 'text-bitcoin border-b-2 border-bitcoin bg-surface-2'
+                  : 'text-zinc-600 hover:text-zinc-400'
+              }`}
             >
-              Join Room
+              {t.label}
             </button>
-          </div>
-        )}
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="p-6 flex flex-col gap-4">
+
+          {tab === 'solo' && (
+            <>
+              <p className="text-zinc-600 text-xs text-center tracking-wide">
+                Practice mode — no Lightning required
+              </p>
+              <button
+                className="w-full py-3 bg-bitcoin text-black font-bold rounded-lg hover:opacity-90 transition-opacity"
+                onClick={onPlaySolo}
+              >
+                Start Game
+              </button>
+            </>
+          )}
+
+          {tab === 'create' && (
+            <>
+              <Field label="Bet Amount">
+                <input
+                  type="number"
+                  className="w-full bg-surface-2 border border-border-hi text-zinc-100 px-3 py-2.5 rounded-lg text-sm outline-none focus:border-bitcoin transition-colors"
+                  value={betSats}
+                  min={1}
+                  onChange={e => setBetSats(Number(e.target.value))}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs pointer-events-none">sats</span>
+              </Field>
+              <button
+                className="w-full py-3 bg-bitcoin text-black font-bold rounded-lg hover:opacity-90 transition-opacity"
+                onClick={() => onCreateRoom(betSats)}
+              >
+                Create Room
+              </button>
+            </>
+          )}
+
+          {tab === 'join' && (
+            <>
+              <Field label="Room ID">
+                <input
+                  type="text"
+                  className="w-full bg-surface-2 border border-border-hi text-zinc-100 px-3 py-2.5 rounded-lg text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
+                  value={joinRoomId}
+                  placeholder="xxxxxxxx-xxxx-xxxx-..."
+                  onChange={e => setJoinRoomId(e.target.value)}
+                />
+              </Field>
+              <Field label="Bet Amount">
+                <input
+                  type="number"
+                  className="w-full bg-surface-2 border border-border-hi text-zinc-100 px-3 py-2.5 rounded-lg text-sm outline-none focus:border-bitcoin transition-colors"
+                  value={betSats}
+                  min={1}
+                  onChange={e => setBetSats(Number(e.target.value))}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs pointer-events-none">sats</span>
+              </Field>
+              <button
+                className="w-full py-3 bg-bitcoin text-black font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={() => joinRoomId && onJoinRoom(joinRoomId, betSats)}
+                disabled={!joinRoomId}
+              >
+                Join Room
+              </button>
+            </>
+          )}
+
+        </div>
       </div>
+
+      <p className="text-zinc-800 text-xs">⚡ powered by lightning</p>
     </div>
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    gap: '1rem',
-    padding: '2rem',
-  },
-  title: {
-    fontSize: '3rem',
-    fontWeight: 'bold',
-    color: '#f7931a',
-    letterSpacing: '0.1em',
-  },
-  subtitle: {
-    color: '#888',
-    marginBottom: '1rem',
-  },
-  tabs: {
-    display: 'flex',
-    gap: '0.5rem',
-  },
-  tab: {
-    background: '#1a1a1a',
-    border: '1px solid #333',
-    color: '#888',
-    padding: '0.5rem 1rem',
-    cursor: 'pointer',
-    borderRadius: '4px',
-    fontFamily: 'inherit',
-  },
-  tabActive: {
-    background: '#f7931a',
-    color: '#000',
-    borderColor: '#f7931a',
-  },
-  panel: {
-    background: '#111',
-    border: '1px solid #222',
-    borderRadius: '8px',
-    padding: '2rem',
-    minWidth: '320px',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.75rem',
-  },
-  label: {
-    color: '#aaa',
-    fontSize: '0.85rem',
-    letterSpacing: '0.05em',
-  },
-  input: {
-    background: '#1a1a1a',
-    border: '1px solid #333',
-    color: '#f0f0f0',
-    padding: '0.5rem 0.75rem',
-    borderRadius: '4px',
-    fontFamily: 'inherit',
-    fontSize: '1rem',
-  },
-  primaryBtn: {
-    background: '#f7931a',
-    border: 'none',
-    color: '#000',
-    padding: '0.75rem',
-    borderRadius: '4px',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    marginTop: '0.5rem',
-  },
-  hint: {
-    color: '#666',
-    fontSize: '0.9rem',
-    textAlign: 'center',
-  },
-};
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-zinc-500 text-xs tracking-widest uppercase">{label}</label>
+      <div className="relative">{children}</div>
+    </div>
+  );
+}

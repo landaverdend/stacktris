@@ -103,11 +103,16 @@ impl RoomActor {
 
     async fn on_join(&mut self, player_id: String, tx: mpsc::Sender<ServerMsg>) {
         if self.players.len() >= 2 {
-            let _ = tx.try_send(ServerMsg::Error { message: "Room is full".into() });
+            let _ = tx.try_send(ServerMsg::Error {
+                message: "Room is full".into(),
+            });
             return;
         }
 
-        self.players.push(PlayerSlot { player_id: player_id.clone(), tx });
+        self.players.push(PlayerSlot {
+            player_id: player_id.clone(),
+            tx,
+        });
         tracing::info!(room = %self.id, player = %player_id, players = self.players.len(), "player joined");
 
         if self.players.len() == 2 {
@@ -165,7 +170,10 @@ impl RoomRegistry {
         let actor = RoomActor::new(id.clone(), bet_sats, cmd_rx);
         tokio::spawn(actor.run());
 
-        let handle = RoomHandle { id: id.clone(), tx: cmd_tx };
+        let handle = RoomHandle {
+            id: id.clone(),
+            tx: cmd_tx,
+        };
         self.rooms.insert(id, handle.clone());
         handle
     }

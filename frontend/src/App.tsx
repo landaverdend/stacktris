@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GameLobby } from './components/GameLobby';
 import { SoloArena } from './components/BattleArena';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -18,9 +18,7 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>({ screen: 'lobby' });
   const { status, lastMessage, connect, send } = useWebSocket(WS_URL);
 
-  useEffect(() => {
-    connect();
-  }, [connect]);
+  useEffect(() => { connect(); }, [connect]);
 
   useEffect(() => {
     if (!lastMessage) return;
@@ -39,12 +37,7 @@ export default function App() {
         }));
         break;
       case 'room_joined':
-        setAppState({
-          screen: 'waiting_payment',
-          invoice: '',
-          roomId: msg.room_id,
-          betSats: 0,
-        });
+        setAppState({ screen: 'waiting_payment', invoice: '', roomId: msg.room_id, betSats: 0 });
         break;
       case 'game_start':
         setAppState(prev => {
@@ -72,7 +65,6 @@ export default function App() {
   }
 
   function handleCreateRoom(betSats: number) {
-    console.log('handleCreateRoom', betSats);
     send({ type: 'create_room', bet_sats: betSats });
   }
 
@@ -83,38 +75,35 @@ export default function App() {
   const currentRoomId =
     appState.screen === 'waiting_payment' ? appState.roomId :
     appState.screen === 'waiting_opponent' ? appState.roomId :
-    appState.screen === 'playing' ? appState.room.id :
+    appState.screen === 'playing'          ? appState.room.id :
     null;
-
-  const topBar = (
-    <div style={topBarStyle}>
-      <span style={{ color: '#f7931a', fontWeight: 'bold', letterSpacing: '0.1em' }}>
-        ⚡ STACKTRIS
-      </span>
-
-      {currentRoomId && (
-        <span style={roomIdStyle} title="Click to copy" onClick={() => navigator.clipboard.writeText(currentRoomId)}>
-          room: <span style={{ color: '#f0f0f0' }}>{currentRoomId}</span>
-        </span>
-      )}
-
-      <div style={{
-        background: status === 'connected' ? '#0a0' : status === 'connecting' ? '#a80' : '#a00',
-        color: '#fff',
-        padding: '0.2rem 0.4rem',
-        borderRadius: '4px',
-        fontSize: '0.65rem',
-        letterSpacing: '0.05em',
-      }}>
-        {status === 'connected' ? '● WS' : status === 'connecting' ? '◌ WS' : '○ WS'}
-      </div>
-    </div>
-  );
 
   return (
     <>
-      {topBar}
+      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      <div className="fixed top-0 inset-x-0 h-10 bg-topbar border-b border-border-dim flex items-center justify-between px-4 z-50">
+        <span className="text-bitcoin font-bold tracking-widest text-sm">⚡ STACKTRIS</span>
 
+        {currentRoomId ? (
+          <button
+            className="text-zinc-600 hover:text-zinc-300 font-mono text-xs px-2 py-1 border border-border rounded transition-colors"
+            title="Click to copy room ID"
+            onClick={() => navigator.clipboard.writeText(currentRoomId)}
+          >
+            {currentRoomId}
+          </button>
+        ) : <span />}
+
+        <span className={`text-xs px-2 py-0.5 rounded font-mono ${
+          status === 'connected'  ? 'text-green-400 bg-green-950' :
+          status === 'connecting' ? 'text-yellow-400 bg-yellow-950' :
+                                    'text-red-400 bg-red-950'
+        }`}>
+          {status === 'connected' ? '● live' : status === 'connecting' ? '◌ connecting' : '○ offline'}
+        </span>
+      </div>
+
+      {/* ── Screens ─────────────────────────────────────────────────────────── */}
       {appState.screen === 'lobby' && (
         <GameLobby
           onCreateRoom={handleCreateRoom}
@@ -128,97 +117,72 @@ export default function App() {
       )}
 
       {appState.screen === 'waiting_payment' && (
-        <div style={centerStyle}>
-          <button style={backBtn} onClick={() => setAppState({ screen: 'lobby' })}>
-            Cancel
-          </button>
-        </div>
+        <Screen>
+          <p className="text-zinc-400 text-sm">Waiting for payment confirmation...</p>
+          <GhostBtn onClick={() => setAppState({ screen: 'lobby' })}>Cancel</GhostBtn>
+        </Screen>
       )}
 
       {appState.screen === 'waiting_opponent' && (
-        <div style={centerStyle}>
-          <p style={{ color: '#f7931a', fontSize: '1.2rem' }}>⚡ Payment confirmed!</p>
-          <p style={{ color: '#888' }}>Waiting for opponent...</p>
-          <button style={backBtn} onClick={() => setAppState({ screen: 'lobby' })}>
-            Cancel
-          </button>
-        </div>
+        <Screen>
+          <p className="text-bitcoin text-lg font-bold">⚡ Paid</p>
+          <p className="text-zinc-500 text-sm">Waiting for opponent to join...</p>
+          <GhostBtn onClick={() => setAppState({ screen: 'lobby' })}>Cancel</GhostBtn>
+        </Screen>
       )}
 
       {appState.screen === 'playing' && (
-        <div style={centerStyle}>
-          <p style={{ color: '#888', fontSize: '0.85rem' }}>
-            Battle in progress — full game view coming soon
-          </p>
-          <p style={{ color: '#444', fontSize: '0.75rem' }}>Room: {appState.room.id}</p>
-        </div>
+        <Screen>
+          <p className="text-zinc-500 text-sm">Game view coming soon</p>
+        </Screen>
       )}
 
       {appState.screen === 'result' && (
-        <div style={centerStyle}>
-          <h2 style={{ color: '#f7931a', fontSize: '2rem' }}>
-            {appState.winnerId === 'you' ? '🏆 You Win!' : '💀 You Lose'}
-          </h2>
-          <p style={{ color: '#888' }}>
-            {appState.winnerId === 'you'
-              ? `${appState.room.betAmountSats * 2} sats sent to your wallet!`
-              : 'Better luck next time.'}
+        <Screen>
+          <p className="text-4xl font-bold">
+            {appState.winnerId === 'you' ? '🏆' : '💀'}
           </p>
-          <button
-            style={{ ...backBtn, background: '#f7931a', color: '#000' }}
-            onClick={() => setAppState({ screen: 'lobby' })}
-          >
-            Play Again
-          </button>
-        </div>
+          <p className="text-bitcoin text-2xl font-bold">
+            {appState.winnerId === 'you' ? 'You Win' : 'You Lose'}
+          </p>
+          <p className="text-zinc-600 text-sm">
+            {appState.winnerId === 'you' ? 'Sats incoming.' : 'Better luck next time.'}
+          </p>
+          <OrangeBtn onClick={() => setAppState({ screen: 'lobby' })}>Play Again</OrangeBtn>
+        </Screen>
       )}
     </>
   );
 }
 
-const centerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  minHeight: '100vh',
-  paddingTop: '2.5rem',
-  gap: '1rem',
-};
+function Screen({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4 pt-10">
+      {children}
+    </div>
+  );
+}
 
-const backBtn: React.CSSProperties = {
-  background: '#1a1a1a',
-  border: '1px solid #333',
-  color: '#888',
-  padding: '0.5rem 1.5rem',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-};
+function GhostBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mt-2 px-5 py-2 text-sm text-zinc-500 border border-border-hi rounded hover:text-zinc-300 hover:border-zinc-500 transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
 
-const topBarStyle: React.CSSProperties = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  height: '2.5rem',
-  background: '#0d0d0d',
-  borderBottom: '1px solid #1e1e1e',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '0 1rem',
-  zIndex: 100,
-  fontSize: '0.8rem',
-};
+function OrangeBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mt-2 px-8 py-3 bg-bitcoin text-black font-bold rounded hover:opacity-90 transition-opacity"
+    >
+      {children}
+    </button>
+  );
+}
 
-const roomIdStyle: React.CSSProperties = {
-  color: '#555',
-  fontFamily: 'monospace',
-  fontSize: '0.75rem',
-  cursor: 'pointer',
-  padding: '0.2rem 0.5rem',
-  border: '1px solid #222',
-  borderRadius: '4px',
-  letterSpacing: '0.03em',
-};
+import React from 'react';

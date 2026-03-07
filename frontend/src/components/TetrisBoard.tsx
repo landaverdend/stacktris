@@ -16,7 +16,6 @@ export const TetrisBoard: React.FC<Props> = ({ board, currentPiece, ghost, dimme
 
   const cells: React.ReactNode[] = [];
 
-  // Board cells
   for (let row = 0; row < BOARD_HEIGHT; row++) {
     for (let col = 0; col < BOARD_WIDTH; col++) {
       const cell = board[row][col];
@@ -34,7 +33,6 @@ export const TetrisBoard: React.FC<Props> = ({ board, currentPiece, ghost, dimme
     }
   }
 
-  // Ghost piece
   if (ghost && currentPiece) {
     const shape = pieceShape(ghost);
     for (let row = 0; row < shape.length; row++) {
@@ -61,7 +59,6 @@ export const TetrisBoard: React.FC<Props> = ({ board, currentPiece, ghost, dimme
     }
   }
 
-  // Current piece
   if (currentPiece) {
     const shape = pieceShape(currentPiece);
     const color = colorForType(currentPiece.type);
@@ -90,12 +87,7 @@ export const TetrisBoard: React.FC<Props> = ({ board, currentPiece, ghost, dimme
     <svg
       width={width}
       height={height}
-      style={{
-        border: '2px solid #333',
-        background: '#0a0a0a',
-        opacity: dimmed ? 0.5 : 1,
-        display: 'block',
-      }}
+      className={`block border-2 border-border-hi bg-pit ${dimmed ? 'opacity-50' : 'opacity-100'}`}
     >
       {cells}
     </svg>
@@ -130,7 +122,7 @@ export const NextPiece: React.FC<NextPieceProps> = ({ piece }) => {
   );
 
   return (
-    <svg width={size} height={size} style={{ background: '#111', border: '1px solid #333' }}>
+    <svg width={size} height={size} className="bg-surface border border-border-hi">
       {cells}
     </svg>
   );
