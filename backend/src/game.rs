@@ -12,7 +12,7 @@ pub enum GamePhase {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PlayerState {
+pub struct GameState {
     pub id: String,
     pub board: Vec<Vec<Option<String>>>,
     pub score: u64,
@@ -21,7 +21,7 @@ pub struct PlayerState {
     pub is_game_over: bool,
 }
 
-impl PlayerState {
+impl GameState {
     pub fn new(id: String) -> Self {
         Self {
             id,
@@ -37,7 +37,7 @@ impl PlayerState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameRoom {
     pub id: String,
-    pub players: Vec<PlayerState>,
+    pub players: Vec<GameState>,
     pub phase: GamePhase,
     pub bet_amount_sats: u64,
     pub winner_id: Option<String>,
@@ -58,7 +58,7 @@ impl GameRoom {
         if self.players.len() >= 2 {
             return false;
         }
-        self.players.push(PlayerState::new(player_id));
+        self.players.push(GameState::new(player_id));
         true
     }
 
@@ -81,6 +81,8 @@ impl GameRegistry {
     pub fn create_room(&self, bet_amount_sats: u64) -> String {
         let room = GameRoom::new(bet_amount_sats);
         let id = room.id.clone();
+        tracing::info!("Created room: {}", id);
+
         self.rooms.insert(id.clone(), room);
         id
     }

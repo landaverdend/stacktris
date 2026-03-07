@@ -1,5 +1,4 @@
 mod game;
-mod lightning;
 mod ws;
 
 use axum::{
