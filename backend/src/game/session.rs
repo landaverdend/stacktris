@@ -11,11 +11,16 @@ pub const LOOKAHEAD: usize = 5;
 
 /// Lock delay in milliseconds at level 0.
 /// Independent of gravity — piece locks 500 ms after it touches the ground.
-pub const LOCK_DELAY_MS_BASE: u64 = 500;
+pub const LOCK_DELAY_MS_BASE: u64 = 300;
 /// Minimum lock delay regardless of level.
 pub const LOCK_DELAY_MS_MIN: u64 = 100;
 /// Maximum number of times a player can reset the lock timer per piece.
 pub const LOCK_RESET_MAX: u8 = 15;
+
+/// How many seconds between each gravity level step.
+pub const GRAVITY_STEP_SECS: u64 = 30;
+/// Maximum gravity level (gravity can't increase beyond this).
+pub const GRAVITY_LEVEL_MAX: u32 = 15;
 
 pub enum PlayerUpdate {
     PieceMoved {
@@ -48,6 +53,8 @@ enum TickEvent {
 pub struct GameSession {
     players: [PlayerGameState; 2],
     queue: PieceQueue,
+    start_time: Instant,
+    gravity_level: u32,
 }
 
 impl GameSession {
@@ -58,7 +65,25 @@ impl GameSession {
         let first = queue.get(0);
         let next = queue.get(1);
         let players = std::array::from_fn(|_| PlayerGameState::new(first, next, 1));
-        Self { players, queue }
+        Self { players, queue, start_time: Instant::now(), gravity_level: 0 }
+    }
+
+    /// Returns the current gravity tick interval in milliseconds, escalating every
+    /// `GRAVITY_STEP_SECS` seconds up to `GRAVITY_LEVEL_MAX`. Call after each tick
+    /// and recreate the interval if the value changed.
+    pub fn gravity_tick_ms(&mut self) -> u64 {
+        let elapsed = self.start_time.elapsed().as_secs();
+        let new_level = ((elapsed / GRAVITY_STEP_SECS) as u32).min(GRAVITY_LEVEL_MAX);
+        if new_level != self.gravity_level {
+            tracing::info!(
+                old_level = self.gravity_level,
+                new_level,
+                elapsed_secs = elapsed,
+                "gravity level increased"
+            );
+            self.gravity_level = new_level;
+        }
+        super::tick_ms(self.gravity_level)
     }
 
     /// Advance gravity for both players. Returns one Vec<PlayerUpdate> per player.
@@ -251,6 +276,7 @@ impl GameSession {
             .collect();
         let mut snapshot = PlayerSnapshot::from(&self.players[i]);
         snapshot.next_pieces = next_pieces;
+        snapshot.level = self.gravity_level;
         snapshot
     }
 
@@ -290,7 +316,7 @@ impl GameSession {
         PlayerUpdate::ScoreUpdate {
             score: p.score,
             lines: p.lines_cleared,
-            level: p.level,
+            level: self.gravity_level,
             combo: p.combo,
         }
     }

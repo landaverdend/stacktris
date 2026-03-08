@@ -112,7 +112,9 @@ impl RoomActor {
     pub async fn run(mut self) {
         tracing::info!(room = %self.id, bet_sats = self.bet_sats, "actor started");
 
-        let mut interval = time::interval(Duration::from_millis(tick_ms(0)));
+        let initial_ms = tick_ms(0);
+        let mut current_tick_ms = initial_ms;
+        let mut interval = time::interval(Duration::from_millis(initial_ms));
         interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
         loop {
@@ -126,6 +128,15 @@ impl RoomActor {
                 }
                 _ = interval.tick() => {
                     self.on_tick().await;
+                    // Check if gravity escalated and recreate the interval if so.
+                    if let Some(game) = self.game.as_mut() {
+                        let new_ms = game.gravity_tick_ms();
+                        if new_ms != current_tick_ms {
+                            current_tick_ms = new_ms;
+                            interval = time::interval(Duration::from_millis(new_ms));
+                            interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
+                        }
+                    }
                 }
             }
 
