@@ -16,12 +16,17 @@ pub type RoomId = Arc<str>;
 impl From<PlayerUpdate> for ServerMsg {
     fn from(u: PlayerUpdate) -> Self {
         match u {
-            PlayerUpdate::PieceMoved { piece } =>
-                ServerMsg::PieceMoved { your_piece: piece },
-            PlayerUpdate::FullState { your, opponent } =>
-                ServerMsg::GameState { your, opponent },
-            PlayerUpdate::HoldSwapped { hold_piece, your_piece, next_pieces } =>
-                ServerMsg::HoldUpdate { hold_piece, your_piece, next_pieces },
+            PlayerUpdate::PieceMoved { piece } => ServerMsg::PieceMoved { your_piece: piece },
+            PlayerUpdate::FullState { your, opponent } => ServerMsg::GameState { your, opponent },
+            PlayerUpdate::HoldSwapped {
+                hold_piece,
+                your_piece,
+                next_pieces,
+            } => ServerMsg::HoldUpdate {
+                hold_piece,
+                your_piece,
+                next_pieces,
+            },
         }
     }
 }
@@ -145,7 +150,9 @@ impl RoomActor {
     }
 
     async fn on_tick(&mut self) {
-        if self.phase != RoomPhase::Playing { return; }
+        if self.phase != RoomPhase::Playing {
+            return;
+        }
         let updates = match self.game.as_mut() {
             Some(g) => g.tick(),
             None => return,
@@ -160,8 +167,12 @@ impl RoomActor {
     }
 
     async fn on_input(&mut self, player_id: &str, action: GameAction) {
-        if self.phase != RoomPhase::Playing { return; }
-        let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else { return; };
+        if self.phase != RoomPhase::Playing {
+            return;
+        }
+        let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else {
+            return;
+        };
         let updates = match self.game.as_mut() {
             Some(g) => g.apply_input(player_i, action),
             None => return,

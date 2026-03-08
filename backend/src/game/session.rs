@@ -18,9 +18,18 @@ pub const LOCK_DELAY_MS_MIN: u64 = 100;
 pub const LOCK_RESET_MAX: u8 = 15;
 
 pub enum PlayerUpdate {
-    PieceMoved { piece: Option<PieceSnapshot> },
-    FullState { your: PlayerSnapshot, opponent: OpponentSnapshot },
-    HoldSwapped { hold_piece: String, your_piece: Option<PieceSnapshot>, next_pieces: Vec<String> },
+    PieceMoved {
+        piece: Option<PieceSnapshot>,
+    },
+    FullState {
+        your: PlayerSnapshot,
+        opponent: OpponentSnapshot,
+    },
+    HoldSwapped {
+        hold_piece: String,
+        your_piece: Option<PieceSnapshot>,
+        next_pieces: Vec<String>,
+    },
 }
 
 enum TickEvent {
@@ -54,8 +63,12 @@ impl GameSession {
             self.full_state_updates()
         } else {
             [
-                Some(PlayerUpdate::PieceMoved { piece: self.active_piece_snapshot(0) }),
-                Some(PlayerUpdate::PieceMoved { piece: self.active_piece_snapshot(1) }),
+                Some(PlayerUpdate::PieceMoved {
+                    piece: self.active_piece_snapshot(0),
+                }),
+                Some(PlayerUpdate::PieceMoved {
+                    piece: self.active_piece_snapshot(1),
+                }),
             ]
         }
     }
@@ -154,15 +167,19 @@ impl GameSession {
     }
 
     /// Applies a player input and returns per-player updates.
-    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> [Option<PlayerUpdate>; 2] {
+    pub fn apply_input(
+        &mut self,
+        player_i: usize,
+        action: GameAction,
+    ) -> [Option<PlayerUpdate>; 2] {
         let Some(piece) = self.players[player_i].active_piece else {
             return [None, None];
         };
 
         match action {
-            GameAction::MoveLeft  => self.apply_movement(player_i, piece, try_move_left),
+            GameAction::MoveLeft => self.apply_movement(player_i, piece, try_move_left),
             GameAction::MoveRight => self.apply_movement(player_i, piece, try_move_right),
-            GameAction::RotateCw  => self.apply_movement(player_i, piece, try_rotate_cw),
+            GameAction::RotateCw => self.apply_movement(player_i, piece, try_rotate_cw),
             GameAction::RotateCcw => self.apply_movement(player_i, piece, try_rotate_ccw),
             GameAction::SoftDrop => {
                 // Soft drop bypasses lock delay — if the piece can't move down it locks immediately.
@@ -244,12 +261,18 @@ impl GameSession {
     /// Returns full-state updates for both players.
     pub fn full_state_updates(&mut self) -> [Option<PlayerUpdate>; 2] {
         let snap0 = self.player_snapshot(0);
-        let opp1  = self.opponent_snapshot(1);
+        let opp1 = self.opponent_snapshot(1);
         let snap1 = self.player_snapshot(1);
-        let opp0  = self.opponent_snapshot(0);
+        let opp0 = self.opponent_snapshot(0);
         [
-            Some(PlayerUpdate::FullState { your: snap0, opponent: opp1 }),
-            Some(PlayerUpdate::FullState { your: snap1, opponent: opp0 }),
+            Some(PlayerUpdate::FullState {
+                your: snap0,
+                opponent: opp1,
+            }),
+            Some(PlayerUpdate::FullState {
+                your: snap1,
+                opponent: opp0,
+            }),
         ]
     }
 
@@ -264,9 +287,17 @@ impl GameSession {
     fn hold_update(&mut self, player_i: usize) -> [Option<PlayerUpdate>; 2] {
         let hold_piece = format!("{:?}", self.players[player_i].hold_piece.unwrap());
         let your_piece = self.active_piece_snapshot(player_i);
-        let next_pieces = self.lookahead(player_i, LOOKAHEAD).iter().map(|p| format!("{p:?}")).collect();
+        let next_pieces = self
+            .lookahead(player_i, LOOKAHEAD)
+            .iter()
+            .map(|p| format!("{p:?}"))
+            .collect();
         let mut updates: [Option<PlayerUpdate>; 2] = [None, None];
-        updates[player_i] = Some(PlayerUpdate::HoldSwapped { hold_piece, your_piece, next_pieces });
+        updates[player_i] = Some(PlayerUpdate::HoldSwapped {
+            hold_piece,
+            your_piece,
+            next_pieces,
+        });
         updates
     }
 
@@ -317,7 +348,10 @@ impl GameSession {
         }
         // Budget exhausted — signal caller to lock immediately.
         if self.players[i].lock_reset_count >= LOCK_RESET_MAX {
-            tracing::debug!(player = i, "lock reset budget exhausted, locking immediately");
+            tracing::debug!(
+                player = i,
+                "lock reset budget exhausted, locking immediately"
+            );
             return true;
         }
         let delay = lock_delay_ms_for_level(self.players[i].level);
