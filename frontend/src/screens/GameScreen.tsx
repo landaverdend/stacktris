@@ -3,6 +3,7 @@ import { useGameClient } from '../hooks/useGameClient';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
 import { HoldCanvas } from '../components/HoldCanvas';
+import { GarbageMeter } from '../components/GarbageMeter';
 
 // Delayed Auto Shift: how long (ms) to hold a key before auto-repeat begins.
 const DAS_MS = 150;
@@ -118,15 +119,18 @@ export function GameScreen({ onExitToLobby }: Props) {
               holdPiece={gameStatus.your.hold_piece}
               dimmed={gameStatus.your.hold_used}
             />
-            <div className="flex flex-col gap-2">
-              <BoardCanvas
-                board={gameStatus.your.board}
-                activePiece={gameStatus.your.current_piece}
-                label="You"
-              />
-              <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
-                <span>{gameStatus.your.score.toLocaleString()} pts</span>
-                <span>Lv {gameStatus.your.level}</span>
+            <div className="flex items-end gap-1">
+              <GarbageMeter pendingGarbage={gameStatus.your.pending_garbage} />
+              <div className="flex flex-col gap-2">
+                <BoardCanvas
+                  board={gameStatus.your.board}
+                  activePiece={gameStatus.your.current_piece}
+                  label="You"
+                />
+                <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
+                  <span>{gameStatus.your.score.toLocaleString()} pts</span>
+                  <span>Lv {gameStatus.your.level}</span>
+                </div>
               </div>
             </div>
             <QueueCanvas nextPieces={gameStatus.your.next_pieces} />

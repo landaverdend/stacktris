@@ -66,7 +66,12 @@ impl GameSession {
         let first = queue.get(0);
         let next = queue.get(1);
         let players = std::array::from_fn(|_| PlayerGameState::new(first, next, 1));
-        Self { players, queue, start_time: Instant::now(), gravity_level: 0 }
+        Self {
+            players,
+            queue,
+            start_time: Instant::now(),
+            gravity_level: 0,
+        }
     }
 
     /// Returns the current gravity tick interval in milliseconds, escalating every
@@ -401,7 +406,10 @@ impl GameSession {
         }
         let delay = lock_delay_ms_for_level(self.players[i].level);
         if self.players[i].lock.try_reset(delay, LOCK_RESET_MAX) {
-            tracing::debug!(player = i, "lock reset budget exhausted, locking immediately");
+            tracing::debug!(
+                player = i,
+                "lock reset budget exhausted, locking immediately"
+            );
             return true;
         }
         tracing::debug!(
