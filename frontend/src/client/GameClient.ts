@@ -147,6 +147,21 @@ export class GameClient {
         break;
       }
 
+      case 'score_update': {
+        const s = this.state.gameStatus;
+        if (s.status !== 'playing') break;
+        this.setStatus({
+          ...s,
+          your: {
+            ...s.your,
+            score: msg.score,
+            lines: msg.lines,
+            level: msg.level,
+          },
+        });
+        break;
+      }
+
       case 'game_over':
         this.setStatus({
           status: 'result',

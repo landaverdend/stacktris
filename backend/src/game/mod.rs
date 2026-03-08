@@ -2,6 +2,7 @@ pub mod board;
 pub mod input;
 pub mod logic;
 pub mod piece;
+pub mod scoring;
 pub mod session;
 pub mod snapshot;
 
@@ -41,6 +42,13 @@ pub struct PlayerGameState {
     /// How many times the player has reset the lock timer for the current piece.
     /// Capped at `LOCK_RESET_MAX`; once exhausted no further resets are granted.
     pub lock_reset_count: u8,
+
+    /// Number of consecutive piece locks that each cleared at least one line.
+    /// Reset to 0 on any lock that clears zero lines.
+    pub combo: u32,
+    /// True if the last line clear was a Tetris (4 lines).
+    /// Enables the back-to-back bonus on the next Tetris.
+    pub back_to_back: bool,
 }
 
 impl PlayerGameState {
@@ -65,6 +73,8 @@ impl PlayerGameState {
             hold_used: false,
             lock_deadline: None,
             lock_reset_count: 0,
+            combo: 0,
+            back_to_back: false,
         }
     }
 }

@@ -54,6 +54,14 @@ pub enum ServerMsg {
         next_pieces: Vec<String>,
     },
 
+    /// Sent when the player's score changes without a full board redraw (e.g. soft drop).
+    ScoreUpdate {
+        score: u64,
+        lines: u32,
+        level: u32,
+        combo: u32,
+    },
+
     /// Sent to both players when the game ends.
     GameOver {
         winner_id: String,

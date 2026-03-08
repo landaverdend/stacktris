@@ -1,9 +1,10 @@
 use std::time::{Duration, Instant};
 
 use super::{
-    clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left, try_move_right,
-    try_rotate_ccw, try_rotate_cw, ActivePiece, Board, GameAction, OpponentSnapshot, Piece,
-    PieceQueue, PieceSnapshot, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
+    clear_lines, is_valid, lock_piece, scoring, sonic_drop, try_move_down, try_move_left,
+    try_move_right, try_rotate_ccw, try_rotate_cw, ActivePiece, Board, GameAction,
+    OpponentSnapshot, Piece, PieceQueue, PieceSnapshot, PlayerGameState, PlayerSnapshot,
+    VISIBLE_ROW_START,
 };
 
 /// Number of upcoming pieces shown in the preview queue.
@@ -30,6 +31,14 @@ pub enum PlayerUpdate {
         your_piece: Option<PieceSnapshot>,
         next_pieces: Vec<String>,
     },
+    /// Sent when only the score/lines/level/combo changed without a full board redraw.
+    /// Currently emitted on soft drop moves.
+    ScoreUpdate {
+        score: u64,
+        lines: u32,
+        level: u32,
+        combo: u32,
+    },
 }
 
 enum TickEvent {
@@ -53,8 +62,8 @@ impl GameSession {
         Self { players, queue }
     }
 
-    /// Advance gravity for both players. Returns one PlayerUpdate per player.
-    pub fn tick(&mut self) -> [Option<PlayerUpdate>; 2] {
+    /// Advance gravity for both players. Returns one Vec<PlayerUpdate> per player.
+    pub fn tick(&mut self) -> [Vec<PlayerUpdate>; 2] {
         let e0 = self.tick_player(0);
         let e1 = self.tick_player(1);
         let locked = matches!(e0, TickEvent::PieceLocked { .. })
@@ -63,12 +72,12 @@ impl GameSession {
             self.full_state_updates()
         } else {
             [
-                Some(PlayerUpdate::PieceMoved {
+                vec![PlayerUpdate::PieceMoved {
                     piece: self.active_piece_snapshot(0),
-                }),
-                Some(PlayerUpdate::PieceMoved {
+                }],
+                vec![PlayerUpdate::PieceMoved {
                     piece: self.active_piece_snapshot(1),
-                }),
+                }],
             ]
         }
     }
@@ -122,11 +131,47 @@ impl GameSession {
         }
     }
 
-    /// Lock `piece` onto player `i`'s board, clear lines, and advance the queue.
+    /// Lock `piece` onto player `i`'s board, clear lines, update scoring, and advance the queue.
     fn lock_and_advance(&mut self, i: usize, piece: ActivePiece) -> u32 {
         lock_piece(&mut self.players[i].board, &piece);
         let lines_cleared = clear_lines(&mut self.players[i].board);
 
+        // ── Scoring ───────────────────────────────────────────────────────────
+        let pts = scoring::score_for_clear(
+            lines_cleared,
+            self.players[i].level,
+            self.players[i].back_to_back,
+            self.players[i].combo,
+        );
+        self.players[i].score += pts;
+        tracing::debug!(
+            player = i,
+            lines = lines_cleared,
+            pts,
+            combo = self.players[i].combo,
+            back_to_back = self.players[i].back_to_back,
+            "score updated"
+        );
+
+        // Update combo and back-to-back state.
+        if lines_cleared > 0 {
+            self.players[i].combo += 1;
+            self.players[i].back_to_back = lines_cleared == 4;
+        } else {
+            self.players[i].combo = 0;
+            self.players[i].back_to_back = false;
+        }
+
+        // Level progression.
+        self.players[i].lines_cleared += lines_cleared;
+        self.players[i].level = scoring::level_for_lines(self.players[i].lines_cleared);
+
+        // Garbage sent to opponent.
+        let garbage = scoring::garbage_for_clear(lines_cleared, self.players[i].back_to_back);
+        let j = 1 - i;
+        self.players[j].pending_garbage += garbage;
+
+        // ── Advance queue ─────────────────────────────────────────────────────
         self.players[i].queue_index += 1;
         let next_index = self.players[i].queue_index;
         let next_kind = self.players[i].next_piece;
@@ -134,7 +179,6 @@ impl GameSession {
 
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
-        self.players[i].lines_cleared += lines_cleared;
         self.players[i].hold_used = false;
         self.players[i].lock_deadline = None;
         self.players[i].lock_reset_count = 0;
@@ -167,13 +211,9 @@ impl GameSession {
     }
 
     /// Applies a player input and returns per-player updates.
-    pub fn apply_input(
-        &mut self,
-        player_i: usize,
-        action: GameAction,
-    ) -> [Option<PlayerUpdate>; 2] {
+    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> [Vec<PlayerUpdate>; 2] {
         let Some(piece) = self.players[player_i].active_piece else {
-            return [None, None];
+            return [vec![], vec![]];
         };
 
         match action {
@@ -190,7 +230,12 @@ impl GameSession {
                 match moved {
                     Some(moved) => {
                         self.players[player_i].active_piece = Some(moved);
-                        self.piece_moved_update(player_i)
+                        // +1 point per row dropped.
+                        let rows = (moved.row as i32 - piece.row as i32).max(0) as u64;
+                        self.players[player_i].score += rows;
+                        let mut updates = self.piece_moved_update(player_i);
+                        updates[player_i].push(self.score_update(player_i));
+                        updates
                     }
                     None => {
                         self.lock_and_advance(player_i, piece);
@@ -203,12 +248,15 @@ impl GameSession {
                     let board = &self.players[player_i].board;
                     sonic_drop(board, &piece)
                 };
+                // +2 points per row dropped. Score is then included in the FullState.
+                let rows = (landed.row as i32 - piece.row as i32).max(0) as u64;
+                self.players[player_i].score += rows * 2;
                 self.lock_and_advance(player_i, landed);
                 self.full_state_updates()
             }
             GameAction::Hold => {
                 if self.players[player_i].hold_used {
-                    return [None, None];
+                    return [vec![], vec![]];
                 }
                 let current_kind = piece.kind;
                 match self.players[player_i].hold_piece {
@@ -216,7 +264,7 @@ impl GameSession {
                         // Swap current piece with the held piece.
                         let new_active = match spawn(held_kind, &self.players[player_i].board) {
                             Some(a) => a,
-                            None => return [None, None],
+                            None => return [vec![], vec![]],
                         };
                         self.players[player_i].active_piece = Some(new_active);
                         self.players[player_i].hold_piece = Some(current_kind);
@@ -259,32 +307,42 @@ impl GameSession {
     }
 
     /// Returns full-state updates for both players.
-    pub fn full_state_updates(&mut self) -> [Option<PlayerUpdate>; 2] {
+    pub fn full_state_updates(&mut self) -> [Vec<PlayerUpdate>; 2] {
         let snap0 = self.player_snapshot(0);
         let opp1 = self.opponent_snapshot(1);
         let snap1 = self.player_snapshot(1);
         let opp0 = self.opponent_snapshot(0);
         [
-            Some(PlayerUpdate::FullState {
+            vec![PlayerUpdate::FullState {
                 your: snap0,
                 opponent: opp1,
-            }),
-            Some(PlayerUpdate::FullState {
+            }],
+            vec![PlayerUpdate::FullState {
                 your: snap1,
                 opponent: opp0,
-            }),
+            }],
         ]
     }
 
-    fn piece_moved_update(&self, player_i: usize) -> [Option<PlayerUpdate>; 2] {
-        let mut updates: [Option<PlayerUpdate>; 2] = [None, None];
-        updates[player_i] = Some(PlayerUpdate::PieceMoved {
+    fn piece_moved_update(&self, player_i: usize) -> [Vec<PlayerUpdate>; 2] {
+        let mut updates: [Vec<PlayerUpdate>; 2] = [vec![], vec![]];
+        updates[player_i].push(PlayerUpdate::PieceMoved {
             piece: self.active_piece_snapshot(player_i),
         });
         updates
     }
 
-    fn hold_update(&mut self, player_i: usize) -> [Option<PlayerUpdate>; 2] {
+    fn score_update(&self, player_i: usize) -> PlayerUpdate {
+        let p = &self.players[player_i];
+        PlayerUpdate::ScoreUpdate {
+            score: p.score,
+            lines: p.lines_cleared,
+            level: p.level,
+            combo: p.combo,
+        }
+    }
+
+    fn hold_update(&mut self, player_i: usize) -> [Vec<PlayerUpdate>; 2] {
         let hold_piece = format!("{:?}", self.players[player_i].hold_piece.unwrap());
         let your_piece = self.active_piece_snapshot(player_i);
         let next_pieces = self
@@ -292,8 +350,8 @@ impl GameSession {
             .iter()
             .map(|p| format!("{p:?}"))
             .collect();
-        let mut updates: [Option<PlayerUpdate>; 2] = [None, None];
-        updates[player_i] = Some(PlayerUpdate::HoldSwapped {
+        let mut updates: [Vec<PlayerUpdate>; 2] = [vec![], vec![]];
+        updates[player_i].push(PlayerUpdate::HoldSwapped {
             hold_piece,
             your_piece,
             next_pieces,
@@ -308,9 +366,9 @@ impl GameSession {
         player_i: usize,
         piece: ActivePiece,
         try_fn: impl Fn(&Board, &ActivePiece) -> Option<ActivePiece>,
-    ) -> [Option<PlayerUpdate>; 2] {
+    ) -> [Vec<PlayerUpdate>; 2] {
         let Some(moved) = try_fn(&self.players[player_i].board, &piece) else {
-            return [None, None];
+            return [vec![], vec![]];
         };
         self.players[player_i].active_piece = Some(moved);
         if self.try_lock_reset(player_i, &moved) {

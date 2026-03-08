@@ -27,6 +27,17 @@ impl From<PlayerUpdate> for ServerMsg {
                 your_piece,
                 next_pieces,
             },
+            PlayerUpdate::ScoreUpdate {
+                score,
+                lines,
+                level,
+                combo,
+            } => ServerMsg::ScoreUpdate {
+                score,
+                lines,
+                level,
+                combo,
+            },
         }
     }
 }
@@ -157,13 +168,7 @@ impl RoomActor {
             Some(g) => g.tick(),
             None => return,
         };
-        for (i, update) in updates.into_iter().enumerate() {
-            if let Some(update) = update {
-                if let Some(slot) = self.players.get(i) {
-                    let _ = slot.tx.try_send(ServerMsg::from(update));
-                }
-            }
-        }
+        self.dispatch(updates).await;
     }
 
     async fn on_input(&mut self, player_id: &str, action: GameAction) {
@@ -177,13 +182,7 @@ impl RoomActor {
             Some(g) => g.apply_input(player_i, action),
             None => return,
         };
-        for (i, update) in updates.into_iter().enumerate() {
-            if let Some(update) = update {
-                if let Some(slot) = self.players.get(i) {
-                    let _ = slot.tx.try_send(ServerMsg::from(update));
-                }
-            }
-        }
+        self.dispatch(updates).await;
     }
 
     async fn on_leave(&mut self, player_id: &str) {
@@ -199,9 +198,14 @@ impl RoomActor {
             Some(g) => g.full_state_updates(),
             None => return,
         };
-        for (i, update) in updates.into_iter().enumerate() {
-            if let Some(update) = update {
-                if let Some(slot) = self.players.get(i) {
+        self.dispatch(updates).await;
+    }
+
+    /// Send each player their respective Vec of updates in order.
+    async fn dispatch(&self, updates: [Vec<crate::game::PlayerUpdate>; 2]) {
+        for (i, player_updates) in updates.into_iter().enumerate() {
+            if let Some(slot) = self.players.get(i) {
+                for update in player_updates {
                     let _ = slot.tx.try_send(ServerMsg::from(update));
                 }
             }
