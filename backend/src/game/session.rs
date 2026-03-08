@@ -7,6 +7,14 @@ use super::{
 /// Number of upcoming pieces shown in the preview queue.
 pub const LOOKAHEAD: usize = 5;
 
+/// Ticks a grounded piece waits before locking at level 0.
+/// Decreases by 1 per level, flooring at `LOCK_TICKS_MIN`.
+pub const LOCK_TICKS_BASE: u8 = 30;
+/// Minimum lock delay ticks regardless of level.
+pub const LOCK_TICKS_MIN: u8 = 5;
+/// Maximum number of times a player can reset the lock timer per piece.
+pub const LOCK_RESET_MAX: u8 = 15;
+
 pub enum TickEvent {
     PieceMoved,
     PieceLocked { lines_cleared: u32 },
@@ -40,12 +48,48 @@ impl GameSession {
 
         match try_move_down(&self.players[i].board, &piece) {
             Some(moved) => {
+                // Piece is airborne — cancel the countdown but keep the reset count.
+                // lock_reset_count is per-piece (cleared only on spawn), not per-grounding,
+                // so it must NOT be reset here or players can kick airborne to farm resets.
+                if self.players[i].lock_ticks_remaining > 0 {
+                    tracing::debug!(
+                        player = i,
+                        resets_used = self.players[i].lock_reset_count,
+                        "piece became airborne, lock timer cancelled"
+                    );
+                    self.players[i].lock_ticks_remaining = 0;
+                }
                 self.players[i].active_piece = Some(moved);
                 TickEvent::PieceMoved
             }
             None => {
-                let lines_cleared = self.lock_and_advance(i, piece);
-                TickEvent::PieceLocked { lines_cleared }
+                // Piece is grounded — drive the lock delay countdown.
+                if self.players[i].lock_ticks_remaining == 0 {
+                    // First tick touching the ground: start the timer.
+                    let ticks = lock_ticks_for_level(self.players[i].level);
+                    self.players[i].lock_ticks_remaining = ticks;
+                    tracing::debug!(
+                        player = i,
+                        ticks,
+                        level = self.players[i].level,
+                        "lock delay started"
+                    );
+                    TickEvent::PieceMoved
+                } else {
+                    self.players[i].lock_ticks_remaining -= 1;
+                    tracing::debug!(
+                        player = i,
+                        ticks_remaining = self.players[i].lock_ticks_remaining,
+                        "lock delay tick"
+                    );
+                    if self.players[i].lock_ticks_remaining == 0 {
+                        tracing::debug!(player = i, "lock delay expired, locking piece");
+                        let lines_cleared = self.lock_and_advance(i, piece);
+                        TickEvent::PieceLocked { lines_cleared }
+                    } else {
+                        TickEvent::PieceMoved
+                    }
+                }
             }
         }
     }
@@ -64,6 +108,8 @@ impl GameSession {
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].lines_cleared += lines_cleared;
         self.players[i].hold_used = false;
+        self.players[i].lock_ticks_remaining = 0;
+        self.players[i].lock_reset_count = 0;
         self.compact_queue();
 
         lines_cleared
@@ -78,6 +124,8 @@ impl GameSession {
         let upcoming = self.queue.get(next_index + 1);
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
+        self.players[i].lock_ticks_remaining = 0;
+        self.players[i].lock_reset_count = 0;
         self.compact_queue();
     }
 
@@ -98,24 +146,53 @@ impl GameSession {
 
         match action {
             GameAction::MoveLeft => {
-                self.players[player_i].active_piece = Some(try_move_left(board, &piece)?);
+                let moved = try_move_left(board, &piece)?;
+                self.players[player_i].active_piece = Some(moved);
+                if self.try_lock_reset(player_i, &moved) {
+                    let lines_cleared = self.lock_and_advance(player_i, moved);
+                    return Some(InputResult::PieceLocked { lines_cleared });
+                }
                 Some(InputResult::PieceMoved)
             }
             GameAction::MoveRight => {
-                self.players[player_i].active_piece = Some(try_move_right(board, &piece)?);
+                let moved = try_move_right(board, &piece)?;
+                self.players[player_i].active_piece = Some(moved);
+                if self.try_lock_reset(player_i, &moved) {
+                    let lines_cleared = self.lock_and_advance(player_i, moved);
+                    return Some(InputResult::PieceLocked { lines_cleared });
+                }
                 Some(InputResult::PieceMoved)
             }
             GameAction::RotateCw => {
-                self.players[player_i].active_piece = Some(try_rotate_cw(board, &piece)?);
+                let moved = try_rotate_cw(board, &piece)?;
+                self.players[player_i].active_piece = Some(moved);
+                if self.try_lock_reset(player_i, &moved) {
+                    let lines_cleared = self.lock_and_advance(player_i, moved);
+                    return Some(InputResult::PieceLocked { lines_cleared });
+                }
                 Some(InputResult::PieceMoved)
             }
             GameAction::RotateCcw => {
-                self.players[player_i].active_piece = Some(try_rotate_ccw(board, &piece)?);
+                let moved = try_rotate_ccw(board, &piece)?;
+                self.players[player_i].active_piece = Some(moved);
+                if self.try_lock_reset(player_i, &moved) {
+                    let lines_cleared = self.lock_and_advance(player_i, moved);
+                    return Some(InputResult::PieceLocked { lines_cleared });
+                }
                 Some(InputResult::PieceMoved)
             }
             GameAction::SoftDrop => {
-                self.players[player_i].active_piece = Some(try_move_down(board, &piece)?);
-                Some(InputResult::PieceMoved)
+                // Soft drop bypasses lock delay — if the piece can't move down it locks immediately.
+                match try_move_down(board, &piece) {
+                    Some(moved) => {
+                        self.players[player_i].active_piece = Some(moved);
+                        Some(InputResult::PieceMoved)
+                    }
+                    None => {
+                        let lines_cleared = self.lock_and_advance(player_i, piece);
+                        Some(InputResult::PieceLocked { lines_cleared })
+                    }
+                }
             }
             GameAction::HardDrop => {
                 let landed = sonic_drop(board, &piece);
@@ -143,6 +220,9 @@ impl GameSession {
                         // active_piece will be None and game-over logic handles it later.
                     }
                 }
+                // New piece in play — reset lock state.
+                self.players[player_i].lock_ticks_remaining = 0;
+                self.players[player_i].lock_reset_count = 0;
                 self.players[player_i].hold_used = true;
                 Some(InputResult::StateChanged)
             }
@@ -185,6 +265,44 @@ impl GameSession {
         let start = self.players[player_i].queue_index;
         (start..start + n).map(|idx| self.queue.get(idx)).collect()
     }
+
+    /// Handles lock delay after a successful move/rotate.
+    /// Returns `true` if the caller should immediately lock the piece (budget exhausted).
+    /// Returns `false` if the timer was reset normally or the piece is now airborne.
+    fn try_lock_reset(&mut self, i: usize, moved: &ActivePiece) -> bool {
+        // Timer not yet active — nothing to do until the first grounding tick.
+        if self.players[i].lock_ticks_remaining == 0 {
+            return false;
+        }
+        // Piece is now airborne — gravity tick will cancel the timer naturally.
+        if try_move_down(&self.players[i].board, moved).is_some() {
+            return false;
+        }
+        // Budget exhausted — signal caller to lock immediately.
+        if self.players[i].lock_reset_count >= LOCK_RESET_MAX {
+            tracing::debug!(
+                player = i,
+                "lock reset budget exhausted, locking immediately"
+            );
+            return true;
+        }
+        let ticks = lock_ticks_for_level(self.players[i].level);
+        self.players[i].lock_ticks_remaining = ticks;
+        self.players[i].lock_reset_count += 1;
+        tracing::debug!(
+            player = i,
+            reset_count = self.players[i].lock_reset_count,
+            ticks,
+            "lock delay reset"
+        );
+        false
+    }
+}
+
+/// Returns the lock delay in ticks for the given level.
+/// Decreases by 1 tick per level, clamped to `LOCK_TICKS_MIN`.
+fn lock_ticks_for_level(level: u32) -> u8 {
+    LOCK_TICKS_BASE.saturating_sub(level as u8).max(LOCK_TICKS_MIN)
 }
 
 fn spawn(kind: Piece, board: &super::Board) -> Option<ActivePiece> {

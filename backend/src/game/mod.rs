@@ -34,6 +34,13 @@ pub struct PlayerGameState {
     /// True after hold has been used for the current active piece.
     /// Reset to false each time a new piece spawns.
     pub hold_used: bool,
+
+    /// Ticks remaining before the grounded piece locks.
+    /// 0 means the piece is airborne (lock delay not active).
+    pub lock_ticks_remaining: u8,
+    /// How many times the player has reset the lock timer for the current piece.
+    /// Capped at `LOCK_RESET_MAX`; once exhausted no further resets are granted.
+    pub lock_reset_count: u8,
 }
 
 impl PlayerGameState {
@@ -56,6 +63,8 @@ impl PlayerGameState {
             queue_index,
             hold_piece: None,
             hold_used: false,
+            lock_ticks_remaining: 0,
+            lock_reset_count: 0,
         }
     }
 }
