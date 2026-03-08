@@ -1,8 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useGameClient } from '../hooks/useGameClient';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
 import { HoldCanvas } from '../components/HoldCanvas';
+
+// Delayed Auto Shift: how long (ms) to hold a key before auto-repeat begins.
+const DAS_MS = 150;
+// Auto Repeat Rate: interval (ms) between repeated moves once DAS fires.
+const ARR_MS = 33;
 
 interface Props {
   onExitToLobby: () => void;
@@ -12,17 +17,41 @@ export function GameScreen({ onExitToLobby }: Props) {
   const { state, client } = useGameClient();
   const { gameStatus } = state;
 
-  useEffect(() => {
+  // Refs so timer IDs are accessible inside event handlers without re-registering.
+  const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const arrTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heldKey = useRef<string | null>(null);
 
+  useEffect(() => {
     if (gameStatus.status !== 'playing') return;
 
+    const clearDasArr = () => {
+      if (dasTimer.current !== null) { clearTimeout(dasTimer.current); dasTimer.current = null; }
+      if (arrTimer.current !== null) { clearInterval(arrTimer.current); arrTimer.current = null; }
+      heldKey.current = null;
+    };
+
+    const startDasArr = (action: { type: 'move_left' | 'move_right' }) => {
+      clearDasArr();
+      heldKey.current = action.type;
+      // Fire immediately, then start DAS countdown.
+      client.sendAction(action);
+      dasTimer.current = setTimeout(() => {
+        dasTimer.current = null;
+        arrTimer.current = setInterval(() => {
+          client.sendAction(action);
+        }, ARR_MS);
+      }, DAS_MS);
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return; // browser repeat — we handle our own
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        client.sendAction({ type: 'move_left' });
+        startDasArr({ type: 'move_left' });
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        client.sendAction({ type: 'move_right' });
+        startDasArr({ type: 'move_right' });
       } else if (e.key === 'ArrowUp' || e.key === 'x') {
         e.preventDefault();
         client.sendAction({ type: 'rotate_cw' });
@@ -41,8 +70,22 @@ export function GameScreen({ onExitToLobby }: Props) {
       }
     };
 
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (
+        (e.key === 'ArrowLeft' && heldKey.current === 'move_left') ||
+        (e.key === 'ArrowRight' && heldKey.current === 'move_right')
+      ) {
+        clearDasArr();
+      }
+    };
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      clearDasArr();
+    };
   }, [gameStatus.status, client]);
 
   const handleGoToLobby = () => {
