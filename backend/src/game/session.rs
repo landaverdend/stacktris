@@ -1,22 +1,23 @@
-use super::{try_move_down, Piece, PlayerGameState};
+use super::{try_move_down, PieceBag, PlayerGameState};
 
 pub enum TickEvent {
     PieceMoved,
-    // PieceLocked { player: usize } — next
+    // PieceLocked — next
 }
 
 pub struct GameSession {
     players: [PlayerGameState; 2],
+    bag: PieceBag,
 }
 
 impl GameSession {
-    pub fn new(p0: (Piece, Piece), p1: (Piece, Piece)) -> Self {
-        Self {
-            players: [
-                PlayerGameState::new(p0.0, p0.1),
-                PlayerGameState::new(p1.0, p1.1),
-            ],
-        }
+    pub fn new() -> Self {
+        let mut bag = PieceBag::new();
+        let first = bag.next();
+        let next = bag.next();
+        // Both players start with the same piece sequence for fairness.
+        let players = std::array::from_fn(|_| PlayerGameState::new(first, next));
+        Self { players, bag }
     }
 
     /// Advance gravity for both players. Returns one TickEvent per player.
@@ -26,7 +27,7 @@ impl GameSession {
             if let Some(piece) = state.active_piece {
                 state.active_piece = Some(
                     try_move_down(&state.board, &piece).unwrap_or(piece)
-                    // TODO: on None → lock + spawn next
+                    // TODO: on None → lock + self.bag.next() (same draw for both players)
                 );
             }
             TickEvent::PieceMoved

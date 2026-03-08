@@ -1,3 +1,5 @@
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 
 /// The seven standard tetrominoes.
@@ -138,3 +140,36 @@ const SHAPES: [[[(i8, i8); 4]; 4]; 7] = [
         [(0,0),(0,1),(1,1),(2,1)],
     ],
 ];
+
+// ── 7-bag randomizer ──────────────────────────────────────────────────────────
+
+const ALL_PIECES: [Piece; 7] = [Piece::I, Piece::O, Piece::T, Piece::S, Piece::Z, Piece::J, Piece::L];
+
+/// Generates pieces using the Tetris Guideline 7-bag algorithm.
+/// All seven tetrominoes are shuffled into a bag and dealt out one by one.
+/// When the bag is empty a new shuffled bag is generated, guaranteeing no
+/// piece drought longer than 12 and no S/Z run longer than 4.
+pub struct PieceBag {
+    bag: Vec<Piece>,
+}
+
+impl PieceBag {
+    pub fn new() -> Self {
+        let mut bag = Self { bag: Vec::with_capacity(7) };
+        bag.refill();
+        bag
+    }
+
+    /// Draw the next piece, refilling the bag if it is empty.
+    pub fn next(&mut self) -> Piece {
+        if self.bag.is_empty() {
+            self.refill();
+        }
+        self.bag.pop().expect("bag is non-empty after refill")
+    }
+
+    fn refill(&mut self) {
+        self.bag.extend_from_slice(&ALL_PIECES);
+        self.bag.shuffle(&mut thread_rng());
+    }
+}

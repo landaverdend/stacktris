@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::time;
 use uuid::Uuid;
 
-use crate::game::{tick_ms, GameSession, Piece, PlayerGameState, TickEvent, VISIBLE_ROW_START};
+use crate::game::{tick_ms, GameSession, PlayerGameState, TickEvent, VISIBLE_ROW_START};
 use crate::protocol::{GameAction, OpponentSnapshot, PieceSnapshot, PlayerSnapshot, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -118,11 +118,7 @@ impl RoomActor {
         tracing::info!(room = %self.id, player = %player_id, players = self.players.len(), "player joined");
 
         if self.players.len() == 2 {
-            // TODO: random-bag piece generator
-            self.game = Some(GameSession::new(
-                (Piece::T, Piece::I),
-                (Piece::T, Piece::I),
-            ));
+            self.game = Some(GameSession::new());
             self.phase = RoomPhase::Playing;
             self.send_to(0, ServerMsg::PlayerJoined).await;
             self.broadcast(ServerMsg::GameStart { countdown: 3 }).await;
