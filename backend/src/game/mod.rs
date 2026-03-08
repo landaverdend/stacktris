@@ -43,7 +43,7 @@ impl PlayerGameState {
             board: empty_board(),
             active_piece: Some(ActivePiece {
                 kind: first_piece,
-                row: VISIBLE_ROW_START as i8 - 2,
+                row: VISIBLE_ROW_START as i8,
                 col: first_piece.spawn_col(),
                 rotation: 0,
             }),

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
@@ -57,6 +59,8 @@ pub struct ActivePiece {
     pub col: i8,
     /// Rotation state
     pub rotation: u8,
+
+
 }
 
 impl ActivePiece {
@@ -236,28 +240,40 @@ impl PieceBag {
 /// Shared rolling piece queue.
 ///
 /// Both players read from the same pre-generated sequence via independent
-/// index pointers. The queue grows lazily: `get(i)` generates pieces up to
-/// index `i` on demand. This ensures player A and player B always get the
-/// same piece for their Nth lock, regardless of when they lock.
+/// index pointers (`queue_index` on each `PlayerGameState`). The queue grows
+/// lazily: `get(i)` generates pieces up to index `i` on demand.
+///
+/// Call `compact(n)` after each lock to drain the first `n` entries and get
+/// back the number actually drained — callers must subtract that from both
+/// players' `queue_index` values to keep indices in sync.
 pub struct PieceQueue {
-    queue: Vec<Piece>,
+    queue: VecDeque<Piece>,
     bag: PieceBag,
 }
 
 impl PieceQueue {
     pub fn new() -> Self {
         Self {
-            queue: Vec::new(),
+            queue: VecDeque::new(),
             bag: PieceBag::new(),
         }
     }
 
-    /// Returns the piece at `index`, extending the queue if necessary.
+    /// Returns the piece at `index` (a direct VecDeque position), generating
+    /// pieces lazily as needed.
     pub fn get(&mut self, index: usize) -> Piece {
         while self.queue.len() <= index {
-            let p = self.bag.next();
-            self.queue.push(p);
+            self.queue.push_back(self.bag.next());
         }
         self.queue[index]
+    }
+
+    /// Drain the first `n` entries from the front of the queue.
+    /// Returns the number of entries actually drained (may be less than `n` if
+    /// the queue is shorter, though in practice it will always be full enough).
+    pub fn compact(&mut self, n: usize) -> usize {
+        let drain = n.min(self.queue.len());
+        self.queue.drain(..drain);
+        drain
     }
 }

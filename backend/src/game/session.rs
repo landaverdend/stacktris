@@ -64,6 +64,7 @@ impl GameSession {
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].lines_cleared += lines_cleared;
         self.players[i].hold_used = false;
+        self.compact_queue();
 
         lines_cleared
     }
@@ -77,6 +78,16 @@ impl GameSession {
         let upcoming = self.queue.get(next_index + 1);
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
+        self.compact_queue();
+    }
+
+    /// Drop queue entries that neither player will ever read again.
+    /// Drains the front of the shared queue and adjusts both players' indices.
+    fn compact_queue(&mut self) {
+        let drain = self.players[0].queue_index.min(self.players[1].queue_index);
+        let drained = self.queue.compact(drain);
+        self.players[0].queue_index -= drained;
+        self.players[1].queue_index -= drained;
     }
 
     /// Applies a player input and returns the result, or `None` if the move
