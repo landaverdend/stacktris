@@ -1,6 +1,6 @@
 # Stacktris
 
-Multiplayer battle Tetris with a Bitcoin Lightning betting layer (in progress). Two players share the same piece sequence and play head-to-head in real time. Clearing lines will eventually send garbage to the opponent.
+Multiplayer battle Tetris with a Bitcoin Lightning betting layer (in progress) 
 
 **Stack:** Rust (Axum, Tokio) · WebSockets · React · TypeScript · Canvas 2D
 
