@@ -31,6 +31,20 @@ impl Piece {
             _ => 3,        // 3- or 4-wide pieces
         }
     }
+
+    /// SRS wall-kick offsets for this piece rotating from `from_rotation`.
+    /// Returns 5 `(dc, dr)` offsets to try in order (first is always `(0,0)`).
+    ///
+    /// Coordinate conversion from the harddrop wiki (x=col, y=up):
+    ///   wiki (x, y) → our (dc, dr) = (x, -y)  since rows increase downward.
+    pub fn kick_offsets(self, from_rotation: u8, cw: bool) -> [(i8, i8); 5] {
+        let i = from_rotation as usize % 4;
+        match self {
+            Piece::O => O_KICKS[i],
+            Piece::I => if cw { I_CW_KICKS[i] } else { I_CCW_KICKS[i] },
+            _ =>        if cw { JLSTZ_CW_KICKS[i] } else { JLSTZ_CCW_KICKS[i] },
+        }
+    }
 }
 
 /// The falling piece currently in play.
@@ -41,6 +55,7 @@ pub struct ActivePiece {
     pub row: i8,
     /// Column of the top-left corner of the piece's bounding box.
     pub col: i8,
+    /// Rotation state
     pub rotation: u8,
 }
 
@@ -52,6 +67,45 @@ impl ActivePiece {
             .map(|(dr, dc)| (self.row + dr, self.col + dc))
     }
 }
+
+// ── SRS wall-kick tables ──────────────────────────────────────────────────────
+// Offsets are (dc, dr) = (x, -y) from the harddrop.com/wiki/SRS tables.
+// Indexed by from_rotation (0=spawn, 1=R, 2=2, 3=L).
+
+#[rustfmt::skip]
+const JLSTZ_CW_KICKS: [[(i8, i8); 5]; 4] = [
+    [(0,0),(-1,0),(-1,-1),(0, 2),(-1, 2)], // 0→R
+    [(0,0),( 1,0),( 1, 1),(0,-2),( 1,-2)], // R→2
+    [(0,0),( 1,0),( 1,-1),(0, 2),( 1, 2)], // 2→L
+    [(0,0),(-1,0),(-1, 1),(0,-2),(-1,-2)], // L→0
+];
+
+#[rustfmt::skip]
+const JLSTZ_CCW_KICKS: [[(i8, i8); 5]; 4] = [
+    [(0,0),( 1,0),( 1,-1),(0, 2),( 1, 2)], // 0→L
+    [(0,0),( 1,0),( 1, 1),(0,-2),( 1,-2)], // R→0
+    [(0,0),(-1,0),(-1,-1),(0, 2),(-1, 2)], // 2→R
+    [(0,0),(-1,0),(-1, 1),(0,-2),(-1,-2)], // L→2
+];
+
+#[rustfmt::skip]
+const I_CW_KICKS: [[(i8, i8); 5]; 4] = [
+    [(0,0),(-2,0),( 1,0),(-2, 1),( 1,-2)], // 0→R
+    [(0,0),(-1,0),( 2,0),(-1,-2),( 2, 1)], // R→2
+    [(0,0),( 2,0),(-1,0),( 2,-1),(-1, 2)], // 2→L
+    [(0,0),( 1,0),(-2,0),( 1, 2),(-2,-1)], // L→0
+];
+
+#[rustfmt::skip]
+const I_CCW_KICKS: [[(i8, i8); 5]; 4] = [
+    [(0,0),(-1,0),( 2,0),(-1,-2),( 2, 1)], // 0→L
+    [(0,0),( 2,0),(-1,0),( 2,-1),(-1, 2)], // R→0
+    [(0,0),( 1,0),(-2,0),( 1, 2),(-2,-1)], // 2→R
+    [(0,0),(-2,0),( 1,0),(-2, 1),( 1,-2)], // L→2
+];
+
+// O piece never kicks.
+const O_KICKS: [[(i8, i8); 5]; 4] = [[(0, 0); 5]; 4];
 
 // ── Shape tables ─────────────────────────────────────────────────────────────
 // Layout: SHAPES[piece as usize - 1][rotation] = four (row, col) offsets

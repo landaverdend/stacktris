@@ -1,7 +1,7 @@
 use super::{
-    clear_lines, is_valid, lock_piece, try_move_down, try_move_left, try_move_right, ActivePiece,
-    GameAction, InputResult, OpponentSnapshot, Piece, PieceQueue, PlayerGameState, PlayerSnapshot,
-    VISIBLE_ROW_START,
+    clear_lines, is_valid, lock_piece, try_move_down, try_move_left, try_move_right,
+    try_rotate_ccw, try_rotate_cw, ActivePiece, GameAction, InputResult, OpponentSnapshot, Piece,
+    PieceQueue, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
 };
 
 /// Number of upcoming pieces shown in the preview queue.
@@ -72,6 +72,8 @@ impl GameSession {
         let moved = match action {
             GameAction::MoveLeft => try_move_left(board, &piece),
             GameAction::MoveRight => try_move_right(board, &piece),
+            GameAction::RotateCw => try_rotate_cw(board, &piece),
+            GameAction::RotateCcw => try_rotate_ccw(board, &piece),
             _ => return None, // other actions not yet implemented
         }?;
 

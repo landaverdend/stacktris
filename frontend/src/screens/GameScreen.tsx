@@ -24,6 +24,12 @@ export function GameScreen({ onExitToLobby }: Props) {
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         client.sendAction({ type: 'move_right' });
+      } else if (e.key === 'ArrowUp' || e.key === 'x') {
+        e.preventDefault();
+        client.sendAction({ type: 'rotate_cw' });
+      } else if (e.key === 'z') {
+        e.preventDefault();
+        client.sendAction({ type: 'rotate_ccw' });
       }
     };
 
