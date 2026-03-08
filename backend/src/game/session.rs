@@ -194,7 +194,7 @@ impl GameSession {
     fn spawn_next(&mut self, i: usize) {
         let next_kind = self.players[i].next_piece;
         self.players[i].queue_index += 1;
-        let upcoming = self.queue.get(self.players[i].queue_index + 1);
+        let upcoming = self.queue.get(self.players[i].queue_index);
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].hold_used = false;
