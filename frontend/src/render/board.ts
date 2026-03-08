@@ -51,7 +51,7 @@ export function renderBoard(
     const cells = pieceOffsets(activePiece);
 
     // ── Ghost piece ─────────────────────────────────────────────────────────
-    const ghostRow = ghostDrop(board, cells, activePiece.row);
+    const ghostRow = ghostDrop(board, cells, activePiece.row, activePiece.col);
     const drop = ghostRow - activePiece.row;
     if (drop > 0) {
       ctx.globalAlpha = dimmed ? 0.1 : GHOST_ALPHA;
@@ -147,17 +147,17 @@ function pieceOffsets(p: PieceSnapshot): [number, number][] {
 }
 
 /** Finds the lowest valid row for the piece to drop to (ghost position). */
-function ghostDrop(board: number[][], cells: [number, number][], pieceRow: number): number {
+function ghostDrop(board: number[][], cells: [number, number][], pieceRow: number, pieceCol: number): number {
   let drop = 0;
-  while (canPlace(board, cells, pieceRow, drop + 1)) drop++;
+  while (canPlace(board, cells, pieceRow, pieceCol, drop + 1)) drop++;
   return pieceRow + drop;
 }
 
-function canPlace(board: number[][], cells: [number, number][], pieceRow: number, dy: number): boolean {
+function canPlace(board: number[][], cells: [number, number][], pieceRow: number, pieceCol: number, dy: number): boolean {
   for (const [dr, dc] of cells) {
     const r = pieceRow + dr + dy;
-    const c = dc; // dc is absolute col offset from piece.col, anchor already baked in by caller
-    if (r >= ROWS) return false;
+    const c = pieceCol + dc;
+    if (r >= ROWS || c < 0 || c >= COLS) return false;
     if (r >= 0 && (board[r]?.[c] ?? 0) !== 0) return false;
   }
   return true;
