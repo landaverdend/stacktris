@@ -47,6 +47,13 @@ pub enum ServerMsg {
         your_piece: Option<PieceSnapshot>,
     },
 
+    /// Sent when a hold swap occurs. Cheaper than a full GameState — board/score unchanged.
+    HoldUpdate {
+        hold_piece: String,
+        your_piece: Option<PieceSnapshot>,
+        next_pieces: Vec<String>,
+    },
+
     /// Sent to both players when the game ends.
     GameOver {
         winner_id: String,

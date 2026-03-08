@@ -131,6 +131,22 @@ export class GameClient {
         break;
       }
 
+      case 'hold_update': {
+        const s = this.state.gameStatus;
+        if (s.status !== 'playing') break;
+        this.setStatus({
+          ...s,
+          your: {
+            ...s.your,
+            hold_piece: msg.hold_piece,
+            hold_used: true,
+            current_piece: msg.your_piece,
+            next_pieces: msg.next_pieces,
+          },
+        });
+        break;
+      }
+
       case 'game_over':
         this.setStatus({
           status: 'result',

@@ -161,6 +161,15 @@ impl GameSession {
         &self.players[i]
     }
 
+    /// Returns the minimal data needed to build a `HoldUpdate` message.
+    /// Returns `None` if the hold slot is somehow empty (shouldn't happen after a hold).
+    pub fn hold_update_data(&mut self, i: usize) -> Option<(String, Option<ActivePiece>, Vec<String>)> {
+        let hold_name = format!("{:?}", self.players[i].hold_piece?);
+        let active = self.players[i].active_piece;
+        let next_pieces = self.lookahead(i, LOOKAHEAD).iter().map(|p| format!("{p:?}")).collect();
+        Some((hold_name, active, next_pieces))
+    }
+
     fn lookahead(&mut self, player_i: usize, n: usize) -> Vec<Piece> {
         let start = self.players[player_i].queue_index;
         (start..start + n).map(|idx| self.queue.get(idx)).collect()

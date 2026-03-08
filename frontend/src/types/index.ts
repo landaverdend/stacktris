@@ -86,5 +86,6 @@ export type ServerMessage =
   | { type: 'game_start'; countdown: number }
   | { type: 'game_state'; your: PlayerSnapshot; opponent: OpponentSnapshot }
   | { type: 'piece_moved'; your_piece: PieceSnapshot | null }
+  | { type: 'hold_update'; hold_piece: string; your_piece: PieceSnapshot | null; next_pieces: string[] }
   | { type: 'game_over'; winner_id: string; your_score: number; opponent_score: number }
   | { type: 'error'; message: string };

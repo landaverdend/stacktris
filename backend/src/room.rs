@@ -179,8 +179,25 @@ impl RoomActor {
                 let piece = piece_snapshot(game.player(player_i));
                 let _ = self.players[player_i].tx.try_send(ServerMsg::PieceMoved { your_piece: piece });
             }
-            Some(InputResult::PieceLocked { .. }) | Some(InputResult::StateChanged) => {
+            Some(InputResult::PieceLocked { .. }) => {
                 self.broadcast_state().await;
+            }
+            Some(InputResult::StateChanged) => {
+                if let Some((hold_piece, active, next_pieces)) =
+                    self.game.as_mut().and_then(|g| g.hold_update_data(player_i))
+                {
+                    let your_piece = active.map(|p| PieceSnapshot {
+                        kind: format!("{:?}", p.kind),
+                        row: p.row as i32 - VISIBLE_ROW_START as i32,
+                        col: p.col as i32,
+                        rotation: p.rotation,
+                    });
+                    let _ = self.players[player_i].tx.try_send(ServerMsg::HoldUpdate {
+                        hold_piece,
+                        your_piece,
+                        next_pieces,
+                    });
+                }
             }
             None => {}
         }
