@@ -28,6 +28,7 @@ export function renderBoard(
   board: number[][],
   activePiece: PieceSnapshot | null,
   dimmed = false,
+  pieceAlpha = 1,
 ): void {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -71,6 +72,7 @@ export function renderBoard(
     }
 
     // ── Active piece ─────────────────────────────────────────────────────────
+    ctx.globalAlpha = dimmed ? 0.4 * pieceAlpha : pieceAlpha;
     ctx.fillStyle = COLORS[pieceColorIndex(activePiece.kind)];
     for (const [dr, dc] of cells) {
       const r = activePiece.row + dr;

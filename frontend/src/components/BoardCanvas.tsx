@@ -16,8 +16,25 @@ export function BoardCanvas({ board, activePiece = null, dimmed = false, label, 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (ctx) renderBoard(ctx, board, activePiece, dimmed);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (!activePiece?.lock_active) {
+      renderBoard(ctx, board, activePiece, dimmed);
+      return;
+    }
+
+    // Pulse the active piece while lock delay is counting down.
+    let rafId: ReturnType<typeof requestAnimationFrame>;
+    const animate = () => {
+      const alpha = 0.55 + 0.45 * Math.sin(Date.now() / 70);
+      renderBoard(ctx, board, activePiece, dimmed, alpha);
+      rafId = requestAnimationFrame(animate);
+    };
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
   }, [board, activePiece, dimmed]);
 
   return (

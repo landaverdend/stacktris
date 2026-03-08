@@ -33,6 +33,8 @@ pub struct PieceSnapshot {
     pub col: i32,
     pub row: i32,
     pub rotation: u8,
+    /// True while the lock-delay countdown is running for this piece.
+    pub lock_active: bool,
 }
 
 impl From<&PlayerGameState> for PlayerSnapshot {
@@ -44,6 +46,7 @@ impl From<&PlayerGameState> for PlayerSnapshot {
                 row: p.row as i32 - VISIBLE_ROW_START as i32,
                 col: p.col as i32,
                 rotation: p.rotation,
+                lock_active: s.lock.is_active(),
             }),
             // Populated with the full lookahead by GameSession::player_snapshot;
             // the From impl alone only has access to next_piece.

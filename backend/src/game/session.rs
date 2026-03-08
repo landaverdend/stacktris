@@ -11,7 +11,7 @@ pub const LOOKAHEAD: usize = 5;
 
 /// Lock delay in milliseconds at level 0.
 /// Independent of gravity — piece locks 500 ms after it touches the ground.
-pub const LOCK_DELAY_MS_BASE: u64 = 300;
+pub const LOCK_DELAY_MS_BASE: u64 = 500;
 /// Minimum lock delay regardless of level.
 pub const LOCK_DELAY_MS_MIN: u64 = 100;
 /// Maximum number of times a player can reset the lock timer per piece.
@@ -256,8 +256,6 @@ impl GameSession {
     }
 
     /// Builds a full `PlayerSnapshot` for player `i`, including the lookahead
-    /// piece queue. This is the only place in the codebase that needs to know
-    /// about both player state and the shared queue.
     fn player_snapshot(&mut self, i: usize) -> PlayerSnapshot {
         let next_pieces = self
             .lookahead(i, LOOKAHEAD)
@@ -353,6 +351,7 @@ impl GameSession {
             row: p.row as i32 - VISIBLE_ROW_START as i32,
             col: p.col as i32,
             rotation: p.rotation,
+            lock_active: self.players[player_i].lock.is_active(),
         })
     }
 

@@ -41,6 +41,7 @@ export interface PieceSnapshot {
   row: number;
   col: number;
   rotation: number;
+  lock_active: boolean;
 }
 
 /** board[row][col]: 0 = empty, 1–7 = piece type (matches Piece enum). */
