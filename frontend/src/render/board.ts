@@ -5,7 +5,7 @@ const GAP = 2;
 const COLS = 10;
 const ROWS = 20;
 
-// Index matches Piece enum on server: 0=empty, 1=I, 2=O, 3=T, 4=S, 5=Z, 6=J, 7=L
+// Index matches Piece enum on server: 0=empty, 1=I, 2=O, 3=T, 4=S, 5=Z, 6=J, 7=L, 8=garbage
 const COLORS: readonly string[] = [
   '',          // 0 - empty
   '#00f0f0',   // 1 - I
@@ -15,6 +15,7 @@ const COLORS: readonly string[] = [
   '#f00000',   // 5 - Z
   '#0000f0',   // 6 - J
   '#f0a000',   // 7 - L
+  '#888888',   // 8 - garbage
 ];
 
 const EMPTY_COLOR = '#111111';

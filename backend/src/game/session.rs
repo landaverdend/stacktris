@@ -1,9 +1,10 @@
 use std::time::Instant;
 
 use super::{
-    clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left, try_move_right,
-    try_rotate_ccw, try_rotate_cw, ActivePiece, Board, GameAction, OpponentSnapshot, Piece,
-    PieceQueue, PieceSnapshot, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
+    add_garbage, clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left,
+    try_move_right, try_rotate_ccw, try_rotate_cw, ActivePiece, Board, GameAction,
+    OpponentSnapshot, Piece, PieceQueue, PieceSnapshot, PlayerGameState, PlayerSnapshot,
+    VISIBLE_ROW_START,
 };
 
 /// Number of upcoming pieces shown in the preview queue.
@@ -148,11 +149,37 @@ impl GameSession {
     }
 
     /// Lock `piece` onto player `i`'s board, clear lines, score, and spawn the next piece.
+    ///
+    /// Garbage sequence:
+    ///   1. Cancel outgoing garbage against own incoming queue.
+    ///   2. Send remainder to opponent.
+    ///   3. Flush own remaining incoming garbage onto the board.
     fn lock_and_advance(&mut self, i: usize, piece: ActivePiece) -> u32 {
         lock_piece(&mut self.players[i].board, &piece);
         let lines = clear_lines(&mut self.players[i].board);
-        let garbage = self.players[i].apply_clear(lines);
-        self.players[1 - i].pending_garbage += garbage;
+        let mut sent = self.players[i].apply_clear(lines);
+
+        // Cancel outgoing garbage against own incoming queue first.
+        let cancelled = sent.min(self.players[i].pending_garbage);
+        sent -= cancelled;
+        self.players[i].pending_garbage -= cancelled;
+        tracing::debug!(
+            player = i,
+            sent,
+            cancelled,
+            remaining_incoming = self.players[i].pending_garbage,
+            "garbage exchange"
+        );
+
+        // Send remainder to opponent.
+        self.players[1 - i].pending_garbage += sent;
+
+        // Flush own remaining incoming garbage onto the board.
+        if self.players[i].pending_garbage > 0 {
+            add_garbage(&mut self.players[i].board, self.players[i].pending_garbage);
+            self.players[i].pending_garbage = 0;
+        }
+
         self.spawn_next(i);
         lines
     }

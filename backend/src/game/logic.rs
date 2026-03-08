@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use super::{empty_board, ActivePiece, Board, COLS, ROWS};
 
 /// Returns the tick interval in milliseconds for a given level.
@@ -57,6 +59,33 @@ pub fn lock_piece(board: &mut Board, piece: &ActivePiece) {
             board[r as usize][c as usize] = piece.kind as u8;
         }
     }
+}
+
+/// Adds `count` garbage rows at the bottom of the board.
+///
+/// All existing rows shift up by `count` (rows that overflow the top are lost —
+/// game-over is detected at the next spawn). Each garbage row is fully filled with
+/// cell value `8` (gray) except for one randomly chosen hole column, which is the
+/// same across all rows in this batch so the player can plan a path through them.
+pub fn add_garbage(board: &mut Board, count: u32) {
+    let count = count as usize;
+    if count == 0 {
+        return;
+    }
+    let hole = rand::thread_rng().gen_range(0..COLS);
+
+    // Shift existing rows up, discarding rows that fall off the top.
+    for r in 0..ROWS - count {
+        board[r] = board[r + count];
+    }
+
+    // Fill the bottom `count` rows with garbage.
+    for r in ROWS - count..ROWS {
+        let mut row = [8u8; COLS];
+        row[hole] = 0;
+        board[r] = row;
+    }
+    tracing::debug!(count, hole, "garbage added to board");
 }
 
 /// Removes any full rows from the board and shifts remaining rows down.
