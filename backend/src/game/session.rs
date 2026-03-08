@@ -1,5 +1,5 @@
 use super::{
-    clear_lines, is_valid, lock_piece, try_move_down, try_move_left, try_move_right,
+    clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left, try_move_right,
     try_rotate_ccw, try_rotate_cw, ActivePiece, GameAction, InputResult, OpponentSnapshot, Piece,
     PieceQueue, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
 };
@@ -44,23 +44,27 @@ impl GameSession {
                 TickEvent::PieceMoved
             }
             None => {
-                lock_piece(&mut self.players[i].board, &piece);
-                let lines_cleared = clear_lines(&mut self.players[i].board);
-
-                self.players[i].queue_index += 1;
-                let next_index = self.players[i].queue_index;
-                let next_kind = self.players[i].next_piece;
-
-                let upcoming = self.queue.get(next_index + 1);
-
-                self.players[i].next_piece = upcoming;
-                let new_active = spawn(next_kind, &self.players[i].board);
-                self.players[i].active_piece = new_active;
-                self.players[i].lines_cleared += lines_cleared;
-
+                let lines_cleared = self.lock_and_advance(i, piece);
                 TickEvent::PieceLocked { lines_cleared }
             }
         }
+    }
+
+    /// Lock `piece` onto player `i`'s board, clear lines, and advance the queue.
+    fn lock_and_advance(&mut self, i: usize, piece: ActivePiece) -> u32 {
+        lock_piece(&mut self.players[i].board, &piece);
+        let lines_cleared = clear_lines(&mut self.players[i].board);
+
+        self.players[i].queue_index += 1;
+        let next_index = self.players[i].queue_index;
+        let next_kind = self.players[i].next_piece;
+        let upcoming = self.queue.get(next_index + 1);
+
+        self.players[i].next_piece = upcoming;
+        self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
+        self.players[i].lines_cleared += lines_cleared;
+
+        lines_cleared
     }
 
     /// Applies a player input and returns the result, or `None` if the move
@@ -69,16 +73,34 @@ impl GameSession {
         let piece = self.players[player_i].active_piece?;
         let board = &self.players[player_i].board;
 
-        let moved = match action {
-            GameAction::MoveLeft => try_move_left(board, &piece),
-            GameAction::MoveRight => try_move_right(board, &piece),
-            GameAction::RotateCw => try_rotate_cw(board, &piece),
-            GameAction::RotateCcw => try_rotate_ccw(board, &piece),
-            _ => return None, // other actions not yet implemented
-        }?;
-
-        self.players[player_i].active_piece = Some(moved);
-        Some(InputResult::PieceMoved)
+        match action {
+            GameAction::MoveLeft => {
+                self.players[player_i].active_piece = Some(try_move_left(board, &piece)?);
+                Some(InputResult::PieceMoved)
+            }
+            GameAction::MoveRight => {
+                self.players[player_i].active_piece = Some(try_move_right(board, &piece)?);
+                Some(InputResult::PieceMoved)
+            }
+            GameAction::RotateCw => {
+                self.players[player_i].active_piece = Some(try_rotate_cw(board, &piece)?);
+                Some(InputResult::PieceMoved)
+            }
+            GameAction::RotateCcw => {
+                self.players[player_i].active_piece = Some(try_rotate_ccw(board, &piece)?);
+                Some(InputResult::PieceMoved)
+            }
+            GameAction::SoftDrop => {
+                self.players[player_i].active_piece = Some(try_move_down(board, &piece)?);
+                Some(InputResult::PieceMoved)
+            }
+            GameAction::HardDrop => {
+                let landed = sonic_drop(board, &piece);
+                let lines_cleared = self.lock_and_advance(player_i, landed);
+                Some(InputResult::PieceLocked { lines_cleared })
+            }
+            _ => None,
+        }
     }
 
     /// Builds a full `PlayerSnapshot` for player `i`, including the lookahead

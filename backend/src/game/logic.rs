@@ -37,6 +37,16 @@ pub fn try_move_down(board: &Board, piece: &ActivePiece) -> Option<ActivePiece> 
     }
 }
 
+/// Returns the piece at its lowest valid row (hard-drop destination).
+/// Does not lock — just finds where it would land.
+pub fn sonic_drop(board: &Board, piece: &ActivePiece) -> ActivePiece {
+    let mut p = *piece;
+    while let Some(moved) = try_move_down(board, &p) {
+        p = moved;
+    }
+    p
+}
+
 /// Stamps the active piece onto the board, writing its piece type value into
 /// each occupied cell. Call this when the piece can no longer move down.
 pub fn lock_piece(board: &mut Board, piece: &ActivePiece) {

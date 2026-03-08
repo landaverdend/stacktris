@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::time;
 use uuid::Uuid;
 
-use crate::game::{tick_ms, GameSession, PlayerGameState, TickEvent, VISIBLE_ROW_START};
+use crate::game::{tick_ms, GameSession, InputResult, PlayerGameState, TickEvent, VISIBLE_ROW_START};
 use crate::protocol::{GameAction, PieceSnapshot, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -174,9 +174,15 @@ impl RoomActor {
         let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else { return };
         let Some(game) = self.game.as_mut() else { return };
 
-        if game.apply_input(player_i, action).is_some() {
-            let piece = piece_snapshot(game.player(player_i));
-            let _ = self.players[player_i].tx.try_send(ServerMsg::PieceMoved { your_piece: piece });
+        match game.apply_input(player_i, action) {
+            Some(InputResult::PieceMoved) => {
+                let piece = piece_snapshot(game.player(player_i));
+                let _ = self.players[player_i].tx.try_send(ServerMsg::PieceMoved { your_piece: piece });
+            }
+            Some(InputResult::PieceLocked { .. }) => {
+                self.broadcast_state().await;
+            }
+            None => {}
         }
     }
 

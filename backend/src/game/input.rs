@@ -18,6 +18,7 @@ pub enum GameAction {
 /// Result of applying a player input.
 pub enum InputResult {
     PieceMoved,
+    PieceLocked { lines_cleared: u32 },
 }
 
 pub fn try_move_left(board: &Board, piece: &ActivePiece) -> Option<ActivePiece> {
@@ -65,7 +66,6 @@ fn try_with_kicks(
     kicks: &[(i8, i8); 5],
 ) -> Option<ActivePiece> {
 
-    /// Try each kick offset (starting with 0,0)
     for &(dc, dr) in kicks {
         let candidate = ActivePiece {
             rotation: to_rotation,

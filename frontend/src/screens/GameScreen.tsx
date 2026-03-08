@@ -30,6 +30,12 @@ export function GameScreen({ onExitToLobby }: Props) {
       } else if (e.key === 'z') {
         e.preventDefault();
         client.sendAction({ type: 'rotate_ccw' });
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        client.sendAction({ type: 'soft_drop' });
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        client.sendAction({ type: 'hard_drop' });
       }
     };
 
