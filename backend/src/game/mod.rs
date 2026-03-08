@@ -13,6 +13,68 @@ pub use piece::{ActivePiece, Piece, PieceQueue};
 pub use session::{GameSession, PlayerUpdate, LOCK_DELAY_MS_BASE, LOCK_DELAY_MS_MIN, LOCK_RESET_MAX, LOOKAHEAD};
 pub use snapshot::{OpponentSnapshot, PieceSnapshot, PlayerSnapshot};
 
+// ── Lock delay state ──────────────────────────────────────────────────────────
+
+/// Per-piece lock-delay state.
+///
+/// `reset_count` is per-piece (cleared only on spawn), not per-grounding —
+/// resetting it on every airborne transition would let players farm resets.
+#[derive(Debug, Clone, Default)]
+pub struct LockState {
+    deadline: Option<std::time::Instant>,
+    reset_count: u8,
+}
+
+impl LockState {
+    /// True if the lock deadline is currently running.
+    pub fn is_active(&self) -> bool {
+        self.deadline.is_some()
+    }
+
+    /// True if the deadline has expired.
+    pub fn is_expired(&self) -> bool {
+        self.deadline.map_or(false, |d| std::time::Instant::now() >= d)
+    }
+
+    /// Start the deadline when the piece first touches the ground.
+    pub fn start(&mut self, delay_ms: u64) {
+        self.deadline =
+            Some(std::time::Instant::now() + std::time::Duration::from_millis(delay_ms));
+    }
+
+    /// Cancel the deadline because the piece became airborne again.
+    /// Returns `true` if the deadline was active (useful for debug logging).
+    /// Keeps `reset_count` intact — budget is per-piece, not per-grounding.
+    pub fn cancel(&mut self) -> bool {
+        self.deadline.take().is_some()
+    }
+
+    /// Try to reset the deadline after a successful move or rotate.
+    /// Returns `true` if the reset budget is exhausted (caller should lock immediately).
+    pub fn try_reset(&mut self, delay_ms: u64, max_resets: u8) -> bool {
+        if self.reset_count >= max_resets {
+            return true;
+        }
+        self.deadline =
+            Some(std::time::Instant::now() + std::time::Duration::from_millis(delay_ms));
+        self.reset_count += 1;
+        false
+    }
+
+    /// How many resets have been used so far (for debug logging).
+    pub fn reset_count(&self) -> u8 {
+        self.reset_count
+    }
+
+    /// Full reset — call when a new piece spawns.
+    pub fn clear(&mut self) {
+        self.deadline = None;
+        self.reset_count = 0;
+    }
+}
+
+// ── PlayerGameState ───────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone)]
 pub struct PlayerGameState {
     pub board: Board,
@@ -36,12 +98,8 @@ pub struct PlayerGameState {
     /// Reset to false each time a new piece spawns.
     pub hold_used: bool,
 
-    /// Wall-clock deadline after which the grounded piece locks.
-    /// `None` means the piece is airborne (lock delay not active).
-    pub lock_deadline: Option<std::time::Instant>,
-    /// How many times the player has reset the lock timer for the current piece.
-    /// Capped at `LOCK_RESET_MAX`; once exhausted no further resets are granted.
-    pub lock_reset_count: u8,
+    /// Lock-delay state for the current piece.
+    pub lock: LockState,
 
     /// Number of consecutive piece locks that each cleared at least one line.
     /// Reset to 0 on any lock that clears zero lines.
@@ -95,8 +153,7 @@ impl PlayerGameState {
             queue_index,
             hold_piece: None,
             hold_used: false,
-            lock_deadline: None,
-            lock_reset_count: 0,
+            lock: LockState::default(),
             combo: 0,
             back_to_back: false,
         }

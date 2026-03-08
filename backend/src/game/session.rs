@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use super::{
     clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left, try_move_right,
@@ -114,12 +114,12 @@ impl GameSession {
         match try_move_down(&self.players[i].board, &piece) {
             Some(moved) => {
                 // Piece is airborne — cancel the deadline but keep the reset count.
-                // lock_reset_count is per-piece (cleared only on spawn), not per-grounding,
+                // reset_count is per-piece (cleared only on spawn), not per-grounding,
                 // so it must NOT be reset here or players can kick airborne to farm resets.
-                if self.players[i].lock_deadline.take().is_some() {
+                if self.players[i].lock.cancel() {
                     tracing::debug!(
                         player = i,
-                        resets_used = self.players[i].lock_reset_count,
+                        resets_used = self.players[i].lock.reset_count(),
                         "piece became airborne, lock deadline cancelled"
                     );
                 }
@@ -128,29 +128,21 @@ impl GameSession {
             }
             None => {
                 // Piece is grounded — check or start the lock deadline.
-                match self.players[i].lock_deadline {
-                    None => {
-                        let delay = lock_delay_ms_for_level(self.players[i].level);
-                        self.players[i].lock_deadline =
-                            Some(Instant::now() + Duration::from_millis(delay));
-                        tracing::debug!(
-                            player = i,
-                            delay_ms = delay,
-                            level = self.players[i].level,
-                            "lock delay started"
-                        );
-                        TickEvent::PieceMoved
-                    }
-                    Some(deadline) => {
-                        if Instant::now() >= deadline {
-                            tracing::debug!(player = i, "lock delay expired, locking piece");
-                            let lines_cleared = self.lock_and_advance(i, piece);
-                            TickEvent::PieceLocked { lines_cleared }
-                        } else {
-                            TickEvent::PieceMoved
-                        }
-                    }
+                if !self.players[i].lock.is_active() {
+                    let delay = lock_delay_ms_for_level(self.players[i].level);
+                    self.players[i].lock.start(delay);
+                    tracing::debug!(
+                        player = i,
+                        delay_ms = delay,
+                        level = self.players[i].level,
+                        "lock delay started"
+                    );
+                } else if self.players[i].lock.is_expired() {
+                    tracing::debug!(player = i, "lock delay expired, locking piece");
+                    let lines_cleared = self.lock_and_advance(i, piece);
+                    return TickEvent::PieceLocked { lines_cleared };
                 }
+                TickEvent::PieceMoved
             }
         }
     }
@@ -174,8 +166,7 @@ impl GameSession {
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].hold_used = false;
-        self.players[i].lock_deadline = None;
-        self.players[i].lock_reset_count = 0;
+        self.players[i].lock.clear();
         self.compact_queue();
     }
 
@@ -257,8 +248,7 @@ impl GameSession {
                     }
                 }
                 // New piece in play — reset lock state.
-                self.players[player_i].lock_deadline = None;
-                self.players[player_i].lock_reset_count = 0;
+                self.players[player_i].lock.clear();
                 self.players[player_i].hold_used = true;
                 self.hold_update(player_i)
             }
@@ -376,27 +366,21 @@ impl GameSession {
     /// Returns `false` if the timer was reset normally or the piece is now airborne.
     fn try_lock_reset(&mut self, i: usize, moved: &ActivePiece) -> bool {
         // Deadline not active — piece hasn't touched the ground yet via a tick.
-        if self.players[i].lock_deadline.is_none() {
+        if !self.players[i].lock.is_active() {
             return false;
         }
         // Piece is now airborne — gravity tick will cancel the deadline naturally.
         if try_move_down(&self.players[i].board, moved).is_some() {
             return false;
         }
-        // Budget exhausted — signal caller to lock immediately.
-        if self.players[i].lock_reset_count >= LOCK_RESET_MAX {
-            tracing::debug!(
-                player = i,
-                "lock reset budget exhausted, locking immediately"
-            );
+        let delay = lock_delay_ms_for_level(self.players[i].level);
+        if self.players[i].lock.try_reset(delay, LOCK_RESET_MAX) {
+            tracing::debug!(player = i, "lock reset budget exhausted, locking immediately");
             return true;
         }
-        let delay = lock_delay_ms_for_level(self.players[i].level);
-        self.players[i].lock_deadline = Some(Instant::now() + Duration::from_millis(delay));
-        self.players[i].lock_reset_count += 1;
         tracing::debug!(
             player = i,
-            reset_count = self.players[i].lock_reset_count,
+            reset_count = self.players[i].lock.reset_count(),
             delay_ms = delay,
             "lock delay reset"
         );
