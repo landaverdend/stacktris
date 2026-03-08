@@ -1,7 +1,7 @@
 use super::{
     clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left, try_move_right,
-    try_rotate_ccw, try_rotate_cw, ActivePiece, GameAction, InputResult, OpponentSnapshot, Piece,
-    PieceQueue, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
+    try_rotate_ccw, try_rotate_cw, ActivePiece, GameAction, OpponentSnapshot, Piece, PieceQueue,
+    PieceSnapshot, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
 };
 
 /// Number of upcoming pieces shown in the preview queue.
@@ -15,7 +15,13 @@ pub const LOCK_TICKS_MIN: u8 = 5;
 /// Maximum number of times a player can reset the lock timer per piece.
 pub const LOCK_RESET_MAX: u8 = 15;
 
-pub enum TickEvent {
+pub enum PlayerUpdate {
+    PieceMoved { piece: Option<PieceSnapshot> },
+    FullState { your: PlayerSnapshot, opponent: OpponentSnapshot },
+    HoldSwapped { hold_piece: String, your_piece: Option<PieceSnapshot>, next_pieces: Vec<String> },
+}
+
+enum TickEvent {
     PieceMoved,
     PieceLocked { lines_cleared: u32 },
 }
@@ -36,9 +42,20 @@ impl GameSession {
         Self { players, queue }
     }
 
-    /// Advance gravity for both players. Returns one TickEvent per player.
-    pub fn tick(&mut self) -> [TickEvent; 2] {
-        [self.tick_player(0), self.tick_player(1)]
+    /// Advance gravity for both players. Returns one PlayerUpdate per player.
+    pub fn tick(&mut self) -> [Option<PlayerUpdate>; 2] {
+        let e0 = self.tick_player(0);
+        let e1 = self.tick_player(1);
+        let locked = matches!(e0, TickEvent::PieceLocked { .. })
+            || matches!(e1, TickEvent::PieceLocked { .. });
+        if locked {
+            self.full_state_updates()
+        } else {
+            [
+                Some(PlayerUpdate::PieceMoved { piece: self.active_piece_snapshot(0) }),
+                Some(PlayerUpdate::PieceMoved { piece: self.active_piece_snapshot(1) }),
+            ]
+        }
     }
 
     fn tick_player(&mut self, i: usize) -> TickEvent {
@@ -138,76 +155,102 @@ impl GameSession {
         self.players[1].queue_index -= drained;
     }
 
-    /// Applies a player input and returns the result, or `None` if the move
-    /// was invalid (e.g. piece already at the wall).
-    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> Option<InputResult> {
-        let piece = self.players[player_i].active_piece?;
-        let board = &self.players[player_i].board;
+    /// Applies a player input and returns per-player updates.
+    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> [Option<PlayerUpdate>; 2] {
+        let Some(piece) = self.players[player_i].active_piece else {
+            return [None, None];
+        };
 
         match action {
             GameAction::MoveLeft => {
-                let moved = try_move_left(board, &piece)?;
+                let moved = {
+                    let board = &self.players[player_i].board;
+                    try_move_left(board, &piece)
+                };
+                let Some(moved) = moved else { return [None, None]; };
                 self.players[player_i].active_piece = Some(moved);
                 if self.try_lock_reset(player_i, &moved) {
-                    let lines_cleared = self.lock_and_advance(player_i, moved);
-                    return Some(InputResult::PieceLocked { lines_cleared });
+                    self.lock_and_advance(player_i, moved);
+                    return self.full_state_updates();
                 }
-                Some(InputResult::PieceMoved)
+                self.piece_moved_update(player_i)
             }
             GameAction::MoveRight => {
-                let moved = try_move_right(board, &piece)?;
+                let moved = {
+                    let board = &self.players[player_i].board;
+                    try_move_right(board, &piece)
+                };
+                let Some(moved) = moved else { return [None, None]; };
                 self.players[player_i].active_piece = Some(moved);
                 if self.try_lock_reset(player_i, &moved) {
-                    let lines_cleared = self.lock_and_advance(player_i, moved);
-                    return Some(InputResult::PieceLocked { lines_cleared });
+                    self.lock_and_advance(player_i, moved);
+                    return self.full_state_updates();
                 }
-                Some(InputResult::PieceMoved)
+                self.piece_moved_update(player_i)
             }
             GameAction::RotateCw => {
-                let moved = try_rotate_cw(board, &piece)?;
+                let moved = {
+                    let board = &self.players[player_i].board;
+                    try_rotate_cw(board, &piece)
+                };
+                let Some(moved) = moved else { return [None, None]; };
                 self.players[player_i].active_piece = Some(moved);
                 if self.try_lock_reset(player_i, &moved) {
-                    let lines_cleared = self.lock_and_advance(player_i, moved);
-                    return Some(InputResult::PieceLocked { lines_cleared });
+                    self.lock_and_advance(player_i, moved);
+                    return self.full_state_updates();
                 }
-                Some(InputResult::PieceMoved)
+                self.piece_moved_update(player_i)
             }
             GameAction::RotateCcw => {
-                let moved = try_rotate_ccw(board, &piece)?;
+                let moved = {
+                    let board = &self.players[player_i].board;
+                    try_rotate_ccw(board, &piece)
+                };
+                let Some(moved) = moved else { return [None, None]; };
                 self.players[player_i].active_piece = Some(moved);
                 if self.try_lock_reset(player_i, &moved) {
-                    let lines_cleared = self.lock_and_advance(player_i, moved);
-                    return Some(InputResult::PieceLocked { lines_cleared });
+                    self.lock_and_advance(player_i, moved);
+                    return self.full_state_updates();
                 }
-                Some(InputResult::PieceMoved)
+                self.piece_moved_update(player_i)
             }
             GameAction::SoftDrop => {
                 // Soft drop bypasses lock delay — if the piece can't move down it locks immediately.
-                match try_move_down(board, &piece) {
+                let moved = {
+                    let board = &self.players[player_i].board;
+                    try_move_down(board, &piece)
+                };
+                match moved {
                     Some(moved) => {
                         self.players[player_i].active_piece = Some(moved);
-                        Some(InputResult::PieceMoved)
+                        self.piece_moved_update(player_i)
                     }
                     None => {
-                        let lines_cleared = self.lock_and_advance(player_i, piece);
-                        Some(InputResult::PieceLocked { lines_cleared })
+                        self.lock_and_advance(player_i, piece);
+                        self.full_state_updates()
                     }
                 }
             }
             GameAction::HardDrop => {
-                let landed = sonic_drop(board, &piece);
-                let lines_cleared = self.lock_and_advance(player_i, landed);
-                Some(InputResult::PieceLocked { lines_cleared })
+                let landed = {
+                    let board = &self.players[player_i].board;
+                    sonic_drop(board, &piece)
+                };
+                self.lock_and_advance(player_i, landed);
+                self.full_state_updates()
             }
             GameAction::Hold => {
                 if self.players[player_i].hold_used {
-                    return None;
+                    return [None, None];
                 }
                 let current_kind = piece.kind;
                 match self.players[player_i].hold_piece {
                     Some(held_kind) => {
                         // Swap current piece with the held piece.
-                        let new_active = spawn(held_kind, &self.players[player_i].board)?;
+                        let new_active = match spawn(held_kind, &self.players[player_i].board) {
+                            Some(a) => a,
+                            None => return [None, None],
+                        };
                         self.players[player_i].active_piece = Some(new_active);
                         self.players[player_i].hold_piece = Some(current_kind);
                     }
@@ -224,7 +267,7 @@ impl GameSession {
                 self.players[player_i].lock_ticks_remaining = 0;
                 self.players[player_i].lock_reset_count = 0;
                 self.players[player_i].hold_used = true;
-                Some(InputResult::StateChanged)
+                self.hold_update(player_i)
             }
         }
     }
@@ -232,33 +275,58 @@ impl GameSession {
     /// Builds a full `PlayerSnapshot` for player `i`, including the lookahead
     /// piece queue. This is the only place in the codebase that needs to know
     /// about both player state and the shared queue.
-    pub fn player_snapshot(&mut self, i: usize) -> PlayerSnapshot {
+    fn player_snapshot(&mut self, i: usize) -> PlayerSnapshot {
         let next_pieces = self
             .lookahead(i, LOOKAHEAD)
             .iter()
             .map(|p| format!("{p:?}"))
             .collect();
-        let mut snapshot = PlayerSnapshot::from(self.player(i));
+        let mut snapshot = PlayerSnapshot::from(&self.players[i]);
         snapshot.next_pieces = next_pieces;
         snapshot
     }
 
     /// Builds an `OpponentSnapshot` for player `i`.
-    pub fn opponent_snapshot(&self, i: usize) -> OpponentSnapshot {
-        OpponentSnapshot::from(self.player(i))
+    fn opponent_snapshot(&self, i: usize) -> OpponentSnapshot {
+        OpponentSnapshot::from(&self.players[i])
     }
 
-    pub fn player(&self, i: usize) -> &PlayerGameState {
-        &self.players[i]
+    /// Returns full-state updates for both players.
+    pub fn full_state_updates(&mut self) -> [Option<PlayerUpdate>; 2] {
+        let snap0 = self.player_snapshot(0);
+        let opp1  = self.opponent_snapshot(1);
+        let snap1 = self.player_snapshot(1);
+        let opp0  = self.opponent_snapshot(0);
+        [
+            Some(PlayerUpdate::FullState { your: snap0, opponent: opp1 }),
+            Some(PlayerUpdate::FullState { your: snap1, opponent: opp0 }),
+        ]
     }
 
-    /// Returns the minimal data needed to build a `HoldUpdate` message.
-    /// Returns `None` if the hold slot is somehow empty (shouldn't happen after a hold).
-    pub fn hold_update_data(&mut self, i: usize) -> Option<(String, Option<ActivePiece>, Vec<String>)> {
-        let hold_name = format!("{:?}", self.players[i].hold_piece?);
-        let active = self.players[i].active_piece;
-        let next_pieces = self.lookahead(i, LOOKAHEAD).iter().map(|p| format!("{p:?}")).collect();
-        Some((hold_name, active, next_pieces))
+    fn piece_moved_update(&self, player_i: usize) -> [Option<PlayerUpdate>; 2] {
+        let mut updates: [Option<PlayerUpdate>; 2] = [None, None];
+        updates[player_i] = Some(PlayerUpdate::PieceMoved {
+            piece: self.active_piece_snapshot(player_i),
+        });
+        updates
+    }
+
+    fn hold_update(&mut self, player_i: usize) -> [Option<PlayerUpdate>; 2] {
+        let hold_piece = format!("{:?}", self.players[player_i].hold_piece.unwrap());
+        let your_piece = self.active_piece_snapshot(player_i);
+        let next_pieces = self.lookahead(player_i, LOOKAHEAD).iter().map(|p| format!("{p:?}")).collect();
+        let mut updates: [Option<PlayerUpdate>; 2] = [None, None];
+        updates[player_i] = Some(PlayerUpdate::HoldSwapped { hold_piece, your_piece, next_pieces });
+        updates
+    }
+
+    fn active_piece_snapshot(&self, player_i: usize) -> Option<PieceSnapshot> {
+        self.players[player_i].active_piece.map(|p| PieceSnapshot {
+            kind: format!("{:?}", p.kind),
+            row: p.row as i32 - VISIBLE_ROW_START as i32,
+            col: p.col as i32,
+            rotation: p.rotation,
+        })
     }
 
     fn lookahead(&mut self, player_i: usize, n: usize) -> Vec<Piece> {

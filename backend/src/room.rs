@@ -6,12 +6,25 @@ use tokio::sync::mpsc;
 use tokio::time;
 use uuid::Uuid;
 
-use crate::game::{tick_ms, GameSession, InputResult, PlayerGameState, TickEvent, VISIBLE_ROW_START};
-use crate::protocol::{GameAction, PieceSnapshot, ServerMsg};
+use crate::game::{tick_ms, GameSession, PlayerUpdate};
+use crate::protocol::{GameAction, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 pub type RoomId = Arc<str>;
+
+impl From<PlayerUpdate> for ServerMsg {
+    fn from(u: PlayerUpdate) -> Self {
+        match u {
+            PlayerUpdate::PieceMoved { piece } =>
+                ServerMsg::PieceMoved { your_piece: piece },
+            PlayerUpdate::FullState { your, opponent } =>
+                ServerMsg::GameState { your, opponent },
+            PlayerUpdate::HoldSwapped { hold_piece, your_piece, next_pieces } =>
+                ServerMsg::HoldUpdate { hold_piece, your_piece, next_pieces },
+        }
+    }
+}
 
 // ── Phase ─────────────────────────────────────────────────────────────────────
 
@@ -132,74 +145,33 @@ impl RoomActor {
     }
 
     async fn on_tick(&mut self) {
-        if self.phase != RoomPhase::Playing {
-            return;
-        }
-
-        // Tick the game and collect what we need to send while `game` is borrowed.
-        let outcome: Option<[TickEvent; 2]> = self.game.as_mut().map(|g| g.tick());
-        let events = match outcome {
-            Some(e) => e,
+        if self.phase != RoomPhase::Playing { return; }
+        let updates = match self.game.as_mut() {
+            Some(g) => g.tick(),
             None => return,
         };
-
-        // Determine what to broadcast. For PieceMoved we only need the piece coords.
-        // For PieceLocked we broadcast full state (done after this block).
-        let mut needs_full_state = false;
-        for (i, event) in events.iter().enumerate() {
-            match event {
-                TickEvent::PieceMoved => {
-                    let msg = ServerMsg::PieceMoved {
-                        your_piece: self
-                            .game
-                            .as_ref()
-                            .map(|g| piece_snapshot(g.player(i)))
-                            .flatten(),
-                    };
-                    let _ = self.players[i].tx.try_send(msg);
-                }
-                TickEvent::PieceLocked { .. } => {
-                    needs_full_state = true;
+        for (i, update) in updates.into_iter().enumerate() {
+            if let Some(update) = update {
+                if let Some(slot) = self.players.get(i) {
+                    let _ = slot.tx.try_send(ServerMsg::from(update));
                 }
             }
-        }
-
-        if needs_full_state {
-            self.broadcast_state().await;
         }
     }
 
     async fn on_input(&mut self, player_id: &str, action: GameAction) {
         if self.phase != RoomPhase::Playing { return; }
-        let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else { return };
-        let Some(game) = self.game.as_mut() else { return };
-
-        match game.apply_input(player_i, action) {
-            Some(InputResult::PieceMoved) => {
-                let piece = piece_snapshot(game.player(player_i));
-                let _ = self.players[player_i].tx.try_send(ServerMsg::PieceMoved { your_piece: piece });
-            }
-            Some(InputResult::PieceLocked { .. }) => {
-                self.broadcast_state().await;
-            }
-            Some(InputResult::StateChanged) => {
-                if let Some((hold_piece, active, next_pieces)) =
-                    self.game.as_mut().and_then(|g| g.hold_update_data(player_i))
-                {
-                    let your_piece = active.map(|p| PieceSnapshot {
-                        kind: format!("{:?}", p.kind),
-                        row: p.row as i32 - VISIBLE_ROW_START as i32,
-                        col: p.col as i32,
-                        rotation: p.rotation,
-                    });
-                    let _ = self.players[player_i].tx.try_send(ServerMsg::HoldUpdate {
-                        hold_piece,
-                        your_piece,
-                        next_pieces,
-                    });
+        let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else { return; };
+        let updates = match self.game.as_mut() {
+            Some(g) => g.apply_input(player_i, action),
+            None => return,
+        };
+        for (i, update) in updates.into_iter().enumerate() {
+            if let Some(update) = update {
+                if let Some(slot) = self.players.get(i) {
+                    let _ = slot.tx.try_send(ServerMsg::from(update));
                 }
             }
-            None => {}
         }
     }
 
@@ -212,18 +184,15 @@ impl RoomActor {
     }
 
     async fn broadcast_state(&mut self) {
-        let Some(game) = self.game.as_mut() else { return };
-
-        let mut msgs: [Option<ServerMsg>; 2] = [None, None];
-        for i in 0..2 {
-            msgs[i] = Some(ServerMsg::GameState {
-                your: game.player_snapshot(i),
-                opponent: game.opponent_snapshot(1 - i),
-            });
-        }
-        for (i, msg) in msgs.into_iter().enumerate() {
-            if let Some((m, slot)) = msg.zip(self.players.get(i)) {
-                let _ = slot.tx.try_send(m);
+        let updates = match self.game.as_mut() {
+            Some(g) => g.full_state_updates(),
+            None => return,
+        };
+        for (i, update) in updates.into_iter().enumerate() {
+            if let Some(update) = update {
+                if let Some(slot) = self.players.get(i) {
+                    let _ = slot.tx.try_send(ServerMsg::from(update));
+                }
             }
         }
     }
@@ -239,17 +208,6 @@ impl RoomActor {
             let _ = slot.tx.try_send(msg);
         }
     }
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-fn piece_snapshot(state: &PlayerGameState) -> Option<PieceSnapshot> {
-    state.active_piece.map(|p| PieceSnapshot {
-        kind: format!("{:?}", p.kind),
-        row: p.row as i32 - VISIBLE_ROW_START as i32,
-        col: p.col as i32,
-        rotation: p.rotation,
-    })
 }
 
 // ── Registry ──────────────────────────────────────────────────────────────────
