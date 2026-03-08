@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub use crate::game::{OpponentSnapshot, PieceSnapshot, PlayerSnapshot};
+pub use crate::game::{GameAction, OpponentSnapshot, PieceSnapshot, PlayerSnapshot};
 
 // ── Client → Server ───────────────────────────────────────────────────────────
 
@@ -10,20 +10,6 @@ pub enum ClientMsg {
     CreateRoom { bet_sats: u64 },
     JoinRoom { room_id: String, bet_sats: u64 },
     GameAction { action: GameAction },
-}
-
-/// Raw player inputs. The server buffers these and applies them on the next
-/// game tick. Sending multiple per frame is fine (e.g. DAS repeat).
-#[derive(Debug, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum GameAction {
-    MoveLeft,
-    MoveRight,
-    RotateCw,
-    RotateCcw,
-    SoftDrop,
-    HardDrop,
-    Hold,
 }
 
 // ── Server → Client ───────────────────────────────────────────────────────────

@@ -92,7 +92,7 @@ impl RoomActor {
                     match cmd {
                         RoomCmd::PlayerJoin { player_id, tx } => self.on_join(player_id, tx).await,
                         RoomCmd::PlayerLeave { player_id } => self.on_leave(&player_id).await,
-                        RoomCmd::PlayerInput { .. } => { /* TODO */ }
+                        RoomCmd::PlayerInput { player_id, action } => self.on_input(&player_id, action).await,
                     }
                 }
                 _ = interval.tick() => {
@@ -166,6 +166,17 @@ impl RoomActor {
 
         if needs_full_state {
             self.broadcast_state().await;
+        }
+    }
+
+    async fn on_input(&mut self, player_id: &str, action: GameAction) {
+        if self.phase != RoomPhase::Playing { return; }
+        let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else { return };
+        let Some(game) = self.game.as_mut() else { return };
+
+        if game.apply_input(player_i, action).is_some() {
+            let piece = piece_snapshot(game.player(player_i));
+            let _ = self.players[player_i].tx.try_send(ServerMsg::PieceMoved { your_piece: piece });
         }
     }
 

@@ -12,7 +12,7 @@ use tokio::sync::{mpsc, RwLock};
 use uuid::Uuid;
 
 use crate::protocol::{ClientMsg, ServerMsg};
-use crate::room::RoomCmd;
+use crate::room::{RoomCmd, RoomHandle};
 use crate::AppState;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -83,6 +83,8 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     state.sessions.register(player_id.clone(), tx).await;
     tracing::info!(id = %player_id, "connected  (total: {})", state.sessions.connected_count().await);
 
+    let mut current_room: Option<RoomHandle> = None;
+
     loop {
         tokio::select! {
             // ── Inbound from WebSocket ─────────────────────────────────────
@@ -90,7 +92,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
                 match ws_msg {
                     Some(Ok(Message::Text(text))) => {
                         match serde_json::from_str::<ClientMsg>(&text) {
-                            Ok(msg) => on_client_msg(msg, &player_id, &state).await,
+                            Ok(msg) => on_client_msg(msg, &player_id, &state, &mut current_room).await,
                             Err(e) => {
                                 let _ = state.sessions.send(
                                     &player_id,
@@ -128,10 +130,12 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
 
 // ── Message dispatch ──────────────────────────────────────────────────────────
 
-/// Routes an incoming client message to the appropriate subsystem.
-/// Right now everything is a stub — room routing gets wired in here once
-/// we have a RoomRegistry in AppState.
-async fn on_client_msg(msg: ClientMsg, player_id: &str, state: &AppState) {
+async fn on_client_msg(
+    msg: ClientMsg,
+    player_id: &str,
+    state: &AppState,
+    current_room: &mut Option<RoomHandle>,
+) {
     tracing::debug!(player = %player_id, ?msg, "recv");
 
     match msg {
@@ -140,32 +144,61 @@ async fn on_client_msg(msg: ClientMsg, player_id: &str, state: &AppState) {
             let room_id = handle.id.to_string();
 
             if let Some(tx) = state.sessions.get_sender(player_id).await {
-                handle.send(RoomCmd::PlayerJoin { player_id: player_id.to_string(), tx }).await;
+                handle
+                    .send(RoomCmd::PlayerJoin {
+                        player_id: player_id.to_string(),
+                        tx,
+                    })
+                    .await;
             }
 
-            state.sessions.send(player_id, ServerMsg::RoomCreated { room_id }).await;
+            state
+                .sessions
+                .send(player_id, ServerMsg::RoomCreated { room_id })
+                .await;
+            *current_room = Some(handle);
         }
 
-        ClientMsg::JoinRoom { room_id, bet_sats: _ } => {
-            match state.rooms.get(&room_id) {
-                Some(handle) => {
-                    if let Some(tx) = state.sessions.get_sender(player_id).await {
-                        handle.send(RoomCmd::PlayerJoin { player_id: player_id.to_string(), tx }).await;
-                    }
-                    state.sessions.send(player_id, ServerMsg::RoomJoined { room_id }).await;
+        ClientMsg::JoinRoom {
+            room_id,
+            bet_sats: _,
+        } => match state.rooms.get(&room_id) {
+            Some(handle) => {
+                if let Some(tx) = state.sessions.get_sender(player_id).await {
+                    handle
+                        .send(RoomCmd::PlayerJoin {
+                            player_id: player_id.to_string(),
+                            tx,
+                        })
+                        .await;
                 }
-                None => {
-                    state.sessions.send(
+                state
+                    .sessions
+                    .send(player_id, ServerMsg::RoomJoined { room_id })
+                    .await;
+                *current_room = Some(handle);
+            }
+            None => {
+                state
+                    .sessions
+                    .send(
                         player_id,
-                        ServerMsg::Error { message: format!("room '{}' not found", room_id) },
-                    ).await;
-                }
+                        ServerMsg::Error {
+                            message: format!("room '{}' not found", room_id),
+                        },
+                    )
+                    .await;
             }
-        }
+        },
 
         ClientMsg::GameAction { action } => {
-            // Will forward to the room actor once we track which room a player is in.
-            tracing::debug!(player = %player_id, ?action, "game action (no-op until room tracking)");
+            if let Some(room) = current_room {
+                room.send(RoomCmd::PlayerInput {
+                    player_id: player_id.to_string(),
+                    action,
+                })
+                .await;
+            }
         }
     }
 }

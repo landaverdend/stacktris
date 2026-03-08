@@ -1,6 +1,7 @@
 use super::{
-    clear_lines, is_valid, lock_piece, try_move_down, ActivePiece, OpponentSnapshot, Piece,
-    PieceQueue, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
+    clear_lines, is_valid, lock_piece, try_move_down, try_move_left, try_move_right, ActivePiece,
+    GameAction, InputResult, OpponentSnapshot, Piece, PieceQueue, PlayerGameState, PlayerSnapshot,
+    VISIBLE_ROW_START,
 };
 
 /// Number of upcoming pieces shown in the preview queue.
@@ -60,6 +61,22 @@ impl GameSession {
                 TickEvent::PieceLocked { lines_cleared }
             }
         }
+    }
+
+    /// Applies a player input and returns the result, or `None` if the move
+    /// was invalid (e.g. piece already at the wall).
+    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> Option<InputResult> {
+        let piece = self.players[player_i].active_piece?;
+        let board = &self.players[player_i].board;
+
+        let moved = match action {
+            GameAction::MoveLeft => try_move_left(board, &piece),
+            GameAction::MoveRight => try_move_right(board, &piece),
+            _ => return None, // other actions not yet implemented
+        }?;
+
+        self.players[player_i].active_piece = Some(moved);
+        Some(InputResult::PieceMoved)
     }
 
     /// Builds a full `PlayerSnapshot` for player `i`, including the lookahead

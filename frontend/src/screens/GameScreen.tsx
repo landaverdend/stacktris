@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useGameClient } from '../hooks/useGameClient';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
@@ -9,6 +10,26 @@ interface Props {
 export function GameScreen({ onExitToLobby }: Props) {
   const { state, client } = useGameClient();
   const { gameStatus } = state;
+
+  useEffect(() => {
+    console.log('gameStatus', gameStatus);
+
+    if (gameStatus.status !== 'playing') return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      console.log('onKeyDown ', e.key);
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        client.sendAction({ type: 'move_left' });
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        client.sendAction({ type: 'move_right' });
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [gameStatus.status, client]);
 
   const handleGoToLobby = () => {
     client.goToLobby();
