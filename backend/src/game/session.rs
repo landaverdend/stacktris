@@ -46,9 +46,23 @@ pub enum PlayerUpdate {
     },
 }
 
+/// The result of a `tick()` or `apply_input()` call.
+pub enum SessionOutcome {
+    /// Game continues — deliver these per-player update batches.
+    Continue([Vec<PlayerUpdate>; 2]),
+    /// A player topped out. `winner_i` is the winning player's game index (0 or 1).
+    GameOver { winner_i: usize },
+}
+
+/// Result of a single lock-and-spawn cycle.
+enum LockOutcome {
+    Continue,
+    TopOut,
+}
+
 enum TickEvent {
     PieceMoved,
-    PieceLocked { lines_cleared: u32 },
+    PieceLocked(LockOutcome),
 }
 
 pub struct GameSession {
@@ -74,6 +88,11 @@ impl GameSession {
         }
     }
 
+    /// Returns `[score_p0, score_p1]`.
+    pub fn scores(&self) -> [u64; 2] {
+        [self.players[0].score, self.players[1].score]
+    }
+
     /// Returns the current gravity tick interval in milliseconds, escalating every
     /// `GRAVITY_STEP_SECS` seconds up to `GRAVITY_LEVEL_MAX`. Call after each tick
     /// and recreate the interval if the value changed.
@@ -92,23 +111,32 @@ impl GameSession {
         super::tick_ms(self.gravity_level)
     }
 
-    /// Advance gravity for both players. Returns one Vec<PlayerUpdate> per player.
-    pub fn tick(&mut self) -> [Vec<PlayerUpdate>; 2] {
+    /// Advance gravity for both players.
+    pub fn tick(&mut self) -> SessionOutcome {
         let e0 = self.tick_player(0);
         let e1 = self.tick_player(1);
-        let locked = matches!(e0, TickEvent::PieceLocked { .. })
-            || matches!(e1, TickEvent::PieceLocked { .. });
+
+        let go0 = matches!(e0, TickEvent::PieceLocked(LockOutcome::TopOut));
+        let go1 = matches!(e1, TickEvent::PieceLocked(LockOutcome::TopOut));
+        if go0 || go1 {
+            return SessionOutcome::GameOver {
+                winner_i: winner_index(go0, go1, &self.players),
+            };
+        }
+
+        let locked = matches!(e0, TickEvent::PieceLocked(_))
+            || matches!(e1, TickEvent::PieceLocked(_));
         if locked {
-            self.full_state_updates()
+            SessionOutcome::Continue(self.full_state_updates())
         } else {
-            [
+            SessionOutcome::Continue([
                 vec![PlayerUpdate::PieceMoved {
                     piece: self.active_piece_snapshot(0),
                 }],
                 vec![PlayerUpdate::PieceMoved {
                     piece: self.active_piece_snapshot(1),
                 }],
-            ]
+            ])
         }
     }
 
@@ -145,8 +173,8 @@ impl GameSession {
                     );
                 } else if self.players[i].lock.is_expired() {
                     tracing::debug!(player = i, "lock delay expired, locking piece");
-                    let lines_cleared = self.lock_and_advance(i, piece);
-                    return TickEvent::PieceLocked { lines_cleared };
+                    let outcome = self.lock_and_advance(i, piece);
+                    return TickEvent::PieceLocked(outcome);
                 }
                 TickEvent::PieceMoved
             }
@@ -159,7 +187,7 @@ impl GameSession {
     ///   1. Cancel outgoing garbage against own incoming queue.
     ///   2. Send remainder to opponent.
     ///   3. Flush own remaining incoming garbage onto the board.
-    fn lock_and_advance(&mut self, i: usize, piece: ActivePiece) -> u32 {
+    fn lock_and_advance(&mut self, i: usize, piece: ActivePiece) -> LockOutcome {
         lock_piece(&mut self.players[i].board, &piece);
         let lines = clear_lines(&mut self.players[i].board);
         let mut sent = self.players[i].apply_clear(lines);
@@ -185,13 +213,12 @@ impl GameSession {
             self.players[i].pending_garbage = 0;
         }
 
-        self.spawn_next(i);
-        lines
+        self.spawn_next(i)
     }
 
     /// Advance the queue and spawn the next piece for player `i`.
-    /// Resets all per-piece state (lock timers, hold flag).
-    fn spawn_next(&mut self, i: usize) {
+    /// Returns `TopOut` if the spawn position is blocked (stack too high).
+    fn spawn_next(&mut self, i: usize) -> LockOutcome {
         let next_kind = self.players[i].next_piece;
         self.players[i].queue_index += 1;
         let upcoming = self.queue.get(self.players[i].queue_index);
@@ -200,6 +227,12 @@ impl GameSession {
         self.players[i].hold_used = false;
         self.players[i].lock.clear();
         self.compact_queue();
+        if self.players[i].active_piece.is_none() {
+            tracing::info!(player = i, "topped out");
+            LockOutcome::TopOut
+        } else {
+            LockOutcome::Continue
+        }
     }
 
     /// Drop queue entries that neither player will ever read again.
@@ -211,10 +244,10 @@ impl GameSession {
         self.players[1].queue_index -= drained;
     }
 
-    /// Applies a player input and returns per-player updates.
-    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> [Vec<PlayerUpdate>; 2] {
+    /// Applies a player input and returns the session outcome.
+    pub fn apply_input(&mut self, player_i: usize, action: GameAction) -> SessionOutcome {
         let Some(piece) = self.players[player_i].active_piece else {
-            return [vec![], vec![]];
+            return SessionOutcome::Continue([vec![], vec![]]);
         };
 
         match action {
@@ -236,12 +269,12 @@ impl GameSession {
                         self.players[player_i].score += rows;
                         let mut updates = self.piece_moved_update(player_i);
                         updates[player_i].push(self.score_update(player_i));
-                        updates
+                        SessionOutcome::Continue(updates)
                     }
-                    None => {
-                        self.lock_and_advance(player_i, piece);
-                        self.full_state_updates()
-                    }
+                    None => match self.lock_and_advance(player_i, piece) {
+                        LockOutcome::TopOut => SessionOutcome::GameOver { winner_i: 1 - player_i },
+                        LockOutcome::Continue => SessionOutcome::Continue(self.full_state_updates()),
+                    },
                 }
             }
             GameAction::HardDrop => {
@@ -252,12 +285,14 @@ impl GameSession {
                 // +2 points per row dropped. Score is then included in the FullState.
                 let rows = (landed.row as i32 - piece.row as i32).max(0) as u64;
                 self.players[player_i].score += rows * 2;
-                self.lock_and_advance(player_i, landed);
-                self.full_state_updates()
+                match self.lock_and_advance(player_i, landed) {
+                    LockOutcome::TopOut => SessionOutcome::GameOver { winner_i: 1 - player_i },
+                    LockOutcome::Continue => SessionOutcome::Continue(self.full_state_updates()),
+                }
             }
             GameAction::Hold => {
                 if self.players[player_i].hold_used {
-                    return [vec![], vec![]];
+                    return SessionOutcome::Continue([vec![], vec![]]);
                 }
                 let current_kind = piece.kind;
                 match self.players[player_i].hold_piece {
@@ -265,7 +300,7 @@ impl GameSession {
                         // Swap current piece with the held piece.
                         let new_active = match spawn(held_kind, &self.players[player_i].board) {
                             Some(a) => a,
-                            None => return [vec![], vec![]],
+                            None => return SessionOutcome::GameOver { winner_i: 1 - player_i },
                         };
                         self.players[player_i].active_piece = Some(new_active);
                         self.players[player_i].hold_piece = Some(current_kind);
@@ -273,16 +308,16 @@ impl GameSession {
                     None => {
                         // First hold — stash current piece, pull next from queue.
                         self.players[player_i].hold_piece = Some(current_kind);
-                        self.players[player_i].active_piece = None; // clear before spawn
-                        self.spawn_next(player_i);
-                        // advance_from_queue may fail to spawn (stack too high) — that's fine,
-                        // active_piece will be None and game-over logic handles it later.
+                        self.players[player_i].active_piece = None;
+                        if matches!(self.spawn_next(player_i), LockOutcome::TopOut) {
+                            return SessionOutcome::GameOver { winner_i: 1 - player_i };
+                        }
                     }
                 }
                 // New piece in play — reset lock state.
                 self.players[player_i].lock.clear();
                 self.players[player_i].hold_used = true;
-                self.hold_update(player_i)
+                SessionOutcome::Continue(self.hold_update(player_i))
             }
         }
     }
@@ -365,16 +400,18 @@ impl GameSession {
         player_i: usize,
         piece: ActivePiece,
         try_fn: impl Fn(&Board, &ActivePiece) -> Option<ActivePiece>,
-    ) -> [Vec<PlayerUpdate>; 2] {
+    ) -> SessionOutcome {
         let Some(moved) = try_fn(&self.players[player_i].board, &piece) else {
-            return [vec![], vec![]];
+            return SessionOutcome::Continue([vec![], vec![]]);
         };
         self.players[player_i].active_piece = Some(moved);
         if self.try_lock_reset(player_i, &moved) {
-            self.lock_and_advance(player_i, moved);
-            return self.full_state_updates();
+            return match self.lock_and_advance(player_i, moved) {
+                LockOutcome::TopOut => SessionOutcome::GameOver { winner_i: 1 - player_i },
+                LockOutcome::Continue => SessionOutcome::Continue(self.full_state_updates()),
+            };
         }
-        self.piece_moved_update(player_i)
+        SessionOutcome::Continue(self.piece_moved_update(player_i))
     }
 
     fn active_piece_snapshot(&self, player_i: usize) -> Option<PieceSnapshot> {
@@ -419,6 +456,18 @@ impl GameSession {
             "lock delay reset"
         );
         false
+    }
+}
+
+/// Determines the winner when one or both players have topped out.
+/// Higher score wins on a simultaneous top-out; player 0 wins ties.
+fn winner_index(p0_out: bool, p1_out: bool, players: &[super::PlayerGameState; 2]) -> usize {
+    match (p0_out, p1_out) {
+        (true, false) => 1,
+        (false, true) => 0,
+        _ => {
+            if players[0].score >= players[1].score { 0 } else { 1 }
+        }
     }
 }
 

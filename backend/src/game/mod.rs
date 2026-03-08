@@ -10,7 +10,7 @@ pub use board::{empty_board, Board, COLS, ROWS, VISIBLE_ROW_START};
 pub use input::{try_move_left, try_move_right, try_rotate_cw, try_rotate_ccw, GameAction};
 pub use logic::{add_garbage, clear_lines, is_valid, lock_piece, sonic_drop, tick_ms, try_move_down};
 pub use piece::{ActivePiece, Piece, PieceQueue};
-pub use session::{GameSession, PlayerUpdate, LOCK_DELAY_MS_BASE, LOCK_DELAY_MS_MIN, LOCK_RESET_MAX, LOOKAHEAD};
+pub use session::{GameSession, PlayerUpdate, SessionOutcome, LOCK_DELAY_MS_BASE, LOCK_DELAY_MS_MIN, LOCK_RESET_MAX, LOOKAHEAD};
 pub use snapshot::{OpponentSnapshot, PieceSnapshot, PlayerSnapshot};
 
 // ── Lock delay state ──────────────────────────────────────────────────────────
@@ -86,7 +86,6 @@ pub struct PlayerGameState {
 
     /// Garbage lines queued to be sent to this player's board on next lock.
     pub pending_garbage: u32,
-    pub game_over: bool,
 
     /// Index into the shared PieceQueue pointing at the current `next_piece`.
     /// Incremented on every lock to advance to the following piece.
@@ -149,7 +148,6 @@ impl PlayerGameState {
             lines_cleared: 0,
             level: 0,
             pending_garbage: 0,
-            game_over: false,
             queue_index,
             hold_piece: None,
             hold_used: false,

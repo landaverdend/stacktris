@@ -89,5 +89,5 @@ export type ServerMessage =
   | { type: 'piece_moved'; your_piece: PieceSnapshot | null }
   | { type: 'hold_update'; hold_piece: string; your_piece: PieceSnapshot | null; next_pieces: string[] }
   | { type: 'score_update'; score: number; lines: number; level: number; combo: number }
-  | { type: 'game_over'; winner_id: string; your_score: number; opponent_score: number }
+  | { type: 'game_over'; winner_id: string; you_won: boolean; your_score: number; opponent_score: number }
   | { type: 'error'; message: string };

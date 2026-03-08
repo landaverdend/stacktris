@@ -6,10 +6,10 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'er
 
 export type GameStatus =
   | { status: 'lobby' }
-  | { status: 'waiting_payment'; roomId: string }
   | { status: 'waiting_opponent'; roomId: string }
+  | { status: 'countdown'; roomId: string; from: number }
   | { status: 'playing'; roomId: string; your: PlayerSnapshot; opponent: OpponentSnapshot }
-  | { status: 'result'; winnerId: string; yourScore: number; opponentScore: number };
+  | { status: 'result'; youWon: boolean; yourScore: number; opponentScore: number };
 
 export interface GameClientState {
   connection: ConnectionStatus;
@@ -94,28 +94,28 @@ export class GameClient {
 
     switch (msg.type) {
       case 'room_created':
-        this.setStatus({ status: 'waiting_payment', roomId: msg.room_id });
+        this.setStatus({ status: 'waiting_opponent', roomId: msg.room_id });
         break;
 
       case 'room_joined':
-        this.setStatus({ status: 'waiting_payment', roomId: msg.room_id });
+        this.setStatus({ status: 'waiting_opponent', roomId: msg.room_id });
         break;
 
       case 'player_joined':
-        // Second player joined our room — stay on waiting_payment until game_start
+        // Second player joined — stay on waiting_opponent
         break;
 
       case 'game_start': {
         const s = this.state.gameStatus;
-        if (s.status === 'waiting_payment' || s.status === 'waiting_opponent') {
-          this.setStatus({ status: 'waiting_opponent', roomId: s.roomId });
+        if (s.status === 'waiting_opponent') {
+          this.setStatus({ status: 'countdown', roomId: s.roomId, from: msg.countdown });
         }
         break;
       }
 
       case 'game_state': {
         const s = this.state.gameStatus;
-        const roomId = 'roomId' in s ? s.roomId : '';
+        const roomId = s.status === 'countdown' || s.status === 'playing' || s.status === 'waiting_opponent' ? s.roomId : '';
         this.setStatus({ status: 'playing', roomId, your: msg.your, opponent: msg.opponent });
         break;
       }
@@ -165,7 +165,7 @@ export class GameClient {
       case 'game_over':
         this.setStatus({
           status: 'result',
-          winnerId: msg.winner_id,
+          youWon: msg.you_won,
           yourScore: msg.your_score,
           opponentScore: msg.opponent_score,
         });

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameClient } from '../hooks/useGameClient';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
@@ -22,6 +22,28 @@ export function GameScreen({ onExitToLobby }: Props) {
   const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const arrTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const heldKey = useRef<string | null>(null);
+
+  // Countdown tick: counts down from `from` to 0 (or "GO!").
+  const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
+
+  useEffect(() => {
+    if (gameStatus.status !== 'countdown') {
+      setCountdownDisplay(null);
+      return;
+    }
+    let n = gameStatus.from;
+    setCountdownDisplay(n);
+    const iv = setInterval(() => {
+      n -= 1;
+      if (n > 0) {
+        setCountdownDisplay(n);
+      } else {
+        setCountdownDisplay('GO!');
+        clearInterval(iv);
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [gameStatus.status, gameStatus.status === 'countdown' ? gameStatus.from : 0]);
 
   useEffect(() => {
     if (gameStatus.status !== 'playing') return;
@@ -96,19 +118,21 @@ export function GameScreen({ onExitToLobby }: Props) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 pt-10">
-      {gameStatus.status === 'waiting_payment' && (
+      {gameStatus.status === 'waiting_opponent' && (
         <>
-          <p className="text-zinc-400 text-sm">Waiting for payment confirmation...</p>
+          <p className="text-zinc-400 text-sm">Waiting for opponent...</p>
+          <RoomIdBadge roomId={gameStatus.roomId} />
           <GhostBtn onClick={handleGoToLobby}>Cancel</GhostBtn>
         </>
       )}
 
-      {gameStatus.status === 'waiting_opponent' && (
-        <>
-          <p className="text-bitcoin text-lg font-bold">⚡ Paid</p>
-          <p className="text-zinc-500 text-sm">Waiting for opponent to join...</p>
-          <GhostBtn onClick={handleGoToLobby}>Cancel</GhostBtn>
-        </>
+      {gameStatus.status === 'countdown' && (
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-zinc-500 text-sm tracking-widest uppercase">Get Ready</p>
+          <p className="text-bitcoin font-bold" style={{ fontSize: '6rem', lineHeight: 1 }}>
+            {countdownDisplay}
+          </p>
+        </div>
       )}
 
       {gameStatus.status === 'playing' && (
@@ -153,9 +177,9 @@ export function GameScreen({ onExitToLobby }: Props) {
 
       {gameStatus.status === 'result' && (
         <>
-          <p className="text-4xl">{gameStatus.winnerId === 'you' ? '🏆' : '💀'}</p>
+          <p className="text-4xl">{gameStatus.youWon ? '🏆' : '💀'}</p>
           <p className="text-bitcoin text-2xl font-bold">
-            {gameStatus.winnerId === 'you' ? 'You Win' : 'You Lose'}
+            {gameStatus.youWon ? 'You Win' : 'You Lose'}
           </p>
           <p className="text-zinc-600 text-sm">
             You: {gameStatus.yourScore.toLocaleString()} pts · Opponent: {gameStatus.opponentScore.toLocaleString()} pts
@@ -163,6 +187,34 @@ export function GameScreen({ onExitToLobby }: Props) {
           <OrangeBtn onClick={handleGoToLobby}>Play Again</OrangeBtn>
         </>
       )}
+    </div>
+  );
+}
+
+function RoomIdBadge({ roomId }: { roomId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(roomId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-zinc-600 text-xs tracking-widest uppercase">Room ID</p>
+      <div className="flex items-center gap-2 bg-surface border border-border-hi rounded-lg px-4 py-2">
+        <span className="text-zinc-300 font-mono text-sm tracking-wider">{roomId}</span>
+        <button
+          onClick={copy}
+          className="text-zinc-600 hover:text-bitcoin transition-colors text-xs ml-2"
+          title="Copy room ID"
+        >
+          {copied ? '✓' : 'Copy'}
+        </button>
+      </div>
+      <p className="text-zinc-700 text-xs">Share this with your opponent</p>
     </div>
   );
 }

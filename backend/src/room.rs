@@ -1,12 +1,12 @@
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
 use tokio::sync::mpsc;
 use tokio::time;
 use uuid::Uuid;
 
-use crate::game::{tick_ms, GameSession, PlayerUpdate};
+use crate::game::{tick_ms, GameSession, PlayerUpdate, SessionOutcome};
 use crate::protocol::{GameAction, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -46,9 +46,10 @@ impl From<PlayerUpdate> for ServerMsg {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum RoomPhase {
-    Waiting, // 1 player joined, waiting for opponent
-    Playing, // game loop active
-    Done,    // game over, actor will exit
+    Waiting,                    // 1 player joined, waiting for opponent
+    CountingDown(Instant),      // both players joined, countdown before game starts
+    Playing,                    // game loop active
+    Done,                       // game over, actor will exit
 }
 
 // ── Commands sent into the actor ──────────────────────────────────────────────
@@ -164,41 +165,96 @@ impl RoomActor {
 
         if self.players.len() == 2 {
             self.game = Some(GameSession::new());
-            self.phase = RoomPhase::Playing;
             self.send_to(0, ServerMsg::PlayerJoined).await;
             self.broadcast(ServerMsg::GameStart { countdown: 3 }).await;
-            self.broadcast_state().await;
+            self.phase = RoomPhase::CountingDown(Instant::now() + Duration::from_secs(3));
         }
     }
 
     async fn on_tick(&mut self) {
+        // Countdown phase: transition to Playing once the deadline passes.
+        if let RoomPhase::CountingDown(deadline) = self.phase {
+            if Instant::now() >= deadline {
+                self.phase = RoomPhase::Playing;
+                self.broadcast_state().await;
+                tracing::info!(room = %self.id, "countdown finished, game started");
+            }
+            return;
+        }
+
         if self.phase != RoomPhase::Playing {
             return;
         }
-        let updates = match self.game.as_mut() {
+        let outcome = match self.game.as_mut() {
             Some(g) => g.tick(),
             None => return,
         };
-        self.dispatch(updates).await;
+        self.handle_outcome(outcome).await;
     }
 
     async fn on_input(&mut self, player_id: &str, action: GameAction) {
-        if self.phase != RoomPhase::Playing {
+        if !matches!(self.phase, RoomPhase::Playing) {
             return;
         }
         let Some(player_i) = self.players.iter().position(|p| p.player_id == player_id) else {
             return;
         };
-        let updates = match self.game.as_mut() {
+        let outcome = match self.game.as_mut() {
             Some(g) => g.apply_input(player_i, action),
             None => return,
         };
-        self.dispatch(updates).await;
+        self.handle_outcome(outcome).await;
+    }
+
+    async fn handle_outcome(&mut self, outcome: SessionOutcome) {
+        match outcome {
+            SessionOutcome::Continue(updates) => self.dispatch(updates).await,
+            SessionOutcome::GameOver { winner_i } => {
+                let scores = self.game.as_ref().map(|g| g.scores()).unwrap_or([0, 0]);
+                let winner_id = self
+                    .players
+                    .get(winner_i)
+                    .map(|s| s.player_id.clone())
+                    .unwrap_or_default();
+                tracing::info!(room = %self.id, winner = %winner_id, "game over");
+                for (slot_i, slot) in self.players.iter().enumerate() {
+                    let _ = slot.tx.try_send(ServerMsg::GameOver {
+                        winner_id: winner_id.clone(),
+                        you_won: slot_i == winner_i,
+                        your_score: scores[slot_i],
+                        opponent_score: scores[1 - slot_i],
+                    });
+                }
+                self.phase = RoomPhase::Done;
+            }
+        }
     }
 
     async fn on_leave(&mut self, player_id: &str) {
-        self.players.retain(|p| p.player_id != player_id);
         tracing::info!(room = %self.id, player = %player_id, "player left");
+
+        if matches!(self.phase, RoomPhase::Playing | RoomPhase::CountingDown(_)) {
+            // Find the leaver's game index before removing them.
+            let leaver_i = self.players.iter().position(|p| p.player_id == player_id);
+            self.players.retain(|p| p.player_id != player_id);
+
+            if let (Some(li), Some(winner_slot)) = (leaver_i, self.players.first()) {
+                let winner_i = 1 - li;
+                let scores = self.game.as_ref().map(|g| g.scores()).unwrap_or([0, 0]);
+                let winner_id = winner_slot.player_id.clone();
+                tracing::info!(room = %self.id, winner = %winner_id, "forfeit win");
+                let _ = winner_slot.tx.try_send(ServerMsg::GameOver {
+                    winner_id,
+                    you_won: true,
+                    your_score: scores[winner_i],
+                    opponent_score: scores[li],
+                });
+            }
+            self.phase = RoomPhase::Done;
+            return;
+        }
+
+        self.players.retain(|p| p.player_id != player_id);
         if self.players.is_empty() {
             self.phase = RoomPhase::Done;
         }

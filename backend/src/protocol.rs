@@ -65,6 +65,7 @@ pub enum ServerMsg {
     /// Sent to both players when the game ends.
     GameOver {
         winner_id: String,
+        you_won: bool,
         your_score: u64,
         opponent_score: u64,
     },
