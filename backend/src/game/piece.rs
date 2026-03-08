@@ -145,23 +145,18 @@ const SHAPES: [[[(i8, i8); 4]; 4]; 7] = [
 
 const ALL_PIECES: [Piece; 7] = [Piece::I, Piece::O, Piece::T, Piece::S, Piece::Z, Piece::J, Piece::L];
 
-/// Generates pieces using the Tetris Guideline 7-bag algorithm.
-/// All seven tetrominoes are shuffled into a bag and dealt out one by one.
-/// When the bag is empty a new shuffled bag is generated, guaranteeing no
-/// piece drought longer than 12 and no S/Z run longer than 4.
-pub struct PieceBag {
+struct PieceBag {
     bag: Vec<Piece>,
 }
 
 impl PieceBag {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let mut bag = Self { bag: Vec::with_capacity(7) };
         bag.refill();
         bag
     }
 
-    /// Draw the next piece, refilling the bag if it is empty.
-    pub fn next(&mut self) -> Piece {
+    fn next(&mut self) -> Piece {
         if self.bag.is_empty() {
             self.refill();
         }
@@ -171,5 +166,31 @@ impl PieceBag {
     fn refill(&mut self) {
         self.bag.extend_from_slice(&ALL_PIECES);
         self.bag.shuffle(&mut thread_rng());
+    }
+}
+
+/// Shared rolling piece queue.
+///
+/// Both players read from the same pre-generated sequence via independent
+/// index pointers. The queue grows lazily: `get(i)` generates pieces up to
+/// index `i` on demand. This ensures player A and player B always get the
+/// same piece for their Nth lock, regardless of when they lock.
+pub struct PieceQueue {
+    queue: Vec<Piece>,
+    bag: PieceBag,
+}
+
+impl PieceQueue {
+    pub fn new() -> Self {
+        Self { queue: Vec::new(), bag: PieceBag::new() }
+    }
+
+    /// Returns the piece at `index`, extending the queue if necessary.
+    pub fn get(&mut self, index: usize) -> Piece {
+        while self.queue.len() <= index {
+            let p = self.bag.next();
+            self.queue.push(p);
+        }
+        self.queue[index]
     }
 }

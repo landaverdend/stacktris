@@ -130,20 +130,33 @@ impl RoomActor {
         if self.phase != RoomPhase::Playing {
             return;
         }
-        let game = match self.game.as_mut() {
-            Some(g) => g,
+
+        // Tick the game and collect what we need to send while `game` is borrowed.
+        let outcome: Option<[TickEvent; 2]> = self.game.as_mut().map(|g| g.tick());
+        let events = match outcome {
+            Some(e) => e,
             None => return,
         };
 
-        let events = game.tick();
-
+        // Determine what to broadcast. For PieceMoved we only need the piece coords.
+        // For PieceLocked we broadcast full state (done after this block).
+        let mut needs_full_state = false;
         for (i, event) in events.iter().enumerate() {
-            let msg = match event {
-                TickEvent::PieceMoved => ServerMsg::PieceMoved {
-                    your_piece: piece_snapshot(game.player(i)),
-                },
-            };
-            let _ = self.players[i].tx.try_send(msg);
+            match event {
+                TickEvent::PieceMoved => {
+                    let msg = ServerMsg::PieceMoved {
+                        your_piece: self.game.as_ref().map(|g| piece_snapshot(g.player(i))).flatten(),
+                    };
+                    let _ = self.players[i].tx.try_send(msg);
+                }
+                TickEvent::PieceLocked { .. } => {
+                    needs_full_state = true;
+                }
+            }
+        }
+
+        if needs_full_state {
+            self.broadcast_state().await;
         }
     }
 
