@@ -1,4 +1,10 @@
-use super::{clear_lines, is_valid, lock_piece, try_move_down, ActivePiece, Piece, PieceQueue, PlayerGameState, VISIBLE_ROW_START};
+use super::{
+    clear_lines, is_valid, lock_piece, try_move_down, ActivePiece, OpponentSnapshot, Piece,
+    PieceQueue, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
+};
+
+/// Number of upcoming pieces shown in the preview queue.
+pub const LOOKAHEAD: usize = 5;
 
 pub enum TickEvent {
     PieceMoved,
@@ -37,16 +43,13 @@ impl GameSession {
                 TickEvent::PieceMoved
             }
             None => {
-                // Stamp piece onto board, clear full lines.
                 lock_piece(&mut self.players[i].board, &piece);
                 let lines_cleared = clear_lines(&mut self.players[i].board);
 
-                // Advance queue pointer and fetch the next-next piece.
                 self.players[i].queue_index += 1;
                 let next_index = self.players[i].queue_index;
                 let next_kind = self.players[i].next_piece;
 
-                // Borrow queue independently from players (different fields).
                 let upcoming = self.queue.get(next_index + 1);
 
                 self.players[i].next_piece = upcoming;
@@ -59,8 +62,32 @@ impl GameSession {
         }
     }
 
+    /// Builds a full `PlayerSnapshot` for player `i`, including the lookahead
+    /// piece queue. This is the only place in the codebase that needs to know
+    /// about both player state and the shared queue.
+    pub fn player_snapshot(&mut self, i: usize) -> PlayerSnapshot {
+        let next_pieces = self
+            .lookahead(i, LOOKAHEAD)
+            .iter()
+            .map(|p| format!("{p:?}"))
+            .collect();
+        let mut snapshot = PlayerSnapshot::from(self.player(i));
+        snapshot.next_pieces = next_pieces;
+        snapshot
+    }
+
+    /// Builds an `OpponentSnapshot` for player `i`.
+    pub fn opponent_snapshot(&self, i: usize) -> OpponentSnapshot {
+        OpponentSnapshot::from(self.player(i))
+    }
+
     pub fn player(&self, i: usize) -> &PlayerGameState {
         &self.players[i]
+    }
+
+    fn lookahead(&mut self, player_i: usize, n: usize) -> Vec<Piece> {
+        let start = self.players[player_i].queue_index;
+        (start..start + n).map(|idx| self.queue.get(idx)).collect()
     }
 }
 
@@ -71,5 +98,9 @@ fn spawn(kind: Piece, board: &super::Board) -> Option<ActivePiece> {
         col: kind.spawn_col(),
         rotation: 0,
     };
-    if is_valid(board, &piece) { Some(piece) } else { None }
+    if is_valid(board, &piece) {
+        Some(piece)
+    } else {
+        None
+    }
 }

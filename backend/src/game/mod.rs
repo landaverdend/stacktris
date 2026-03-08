@@ -2,11 +2,13 @@ pub mod board;
 pub mod logic;
 pub mod piece;
 pub mod session;
+pub mod snapshot;
 
 pub use board::{empty_board, Board, COLS, ROWS, VISIBLE_ROW_START};
 pub use logic::{clear_lines, is_valid, lock_piece, tick_ms, try_move_down};
 pub use piece::{ActivePiece, Piece, PieceQueue};
-pub use session::{GameSession, TickEvent};
+pub use session::{GameSession, TickEvent, LOOKAHEAD};
+pub use snapshot::{OpponentSnapshot, PieceSnapshot, PlayerSnapshot};
 
 #[derive(Debug, Clone)]
 pub struct PlayerGameState {

@@ -1,5 +1,6 @@
 import { useGameClient } from '../hooks/useGameClient';
 import { BoardCanvas } from '../components/BoardCanvas';
+import { QueueCanvas } from '../components/QueueCanvas';
 
 interface Props {
   onExitToLobby: () => void;
@@ -33,17 +34,20 @@ export function GameScreen({ onExitToLobby }: Props) {
 
       {gameStatus.status === 'playing' && (
         <div className="relative flex items-start justify-center w-full pt-4">
-          {/* Your board — centered */}
-          <div className="flex flex-col gap-2">
-            <BoardCanvas
-              board={gameStatus.your.board}
-              activePiece={gameStatus.your.current_piece}
-              label="You"
-            />
-            <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
-              <span>{gameStatus.your.score.toLocaleString()} pts</span>
-              <span>Lv {gameStatus.your.level}</span>
+          {/* Your board + queue */}
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col gap-2">
+              <BoardCanvas
+                board={gameStatus.your.board}
+                activePiece={gameStatus.your.current_piece}
+                label="You"
+              />
+              <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
+                <span>{gameStatus.your.score.toLocaleString()} pts</span>
+                <span>Lv {gameStatus.your.level}</span>
+              </div>
             </div>
+            <QueueCanvas nextPieces={gameStatus.your.next_pieces} />
           </div>
 
           {/* Opponent board — small, top-right */}

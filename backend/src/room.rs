@@ -7,7 +7,7 @@ use tokio::time;
 use uuid::Uuid;
 
 use crate::game::{tick_ms, GameSession, PlayerGameState, TickEvent, VISIBLE_ROW_START};
-use crate::protocol::{GameAction, OpponentSnapshot, PieceSnapshot, PlayerSnapshot, ServerMsg};
+use crate::protocol::{GameAction, PieceSnapshot, ServerMsg};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,9 +17,9 @@ pub type RoomId = Arc<str>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum RoomPhase {
-    Waiting,   // 1 player joined, waiting for opponent
-    Playing,   // game loop active
-    Done,      // game over, actor will exit
+    Waiting, // 1 player joined, waiting for opponent
+    Playing, // game loop active
+    Done,    // game over, actor will exit
 }
 
 // ── Commands sent into the actor ──────────────────────────────────────────────
@@ -110,11 +110,16 @@ impl RoomActor {
 
     async fn on_join(&mut self, player_id: String, tx: mpsc::Sender<ServerMsg>) {
         if self.players.len() >= 2 {
-            let _ = tx.try_send(ServerMsg::Error { message: "Room is full".into() });
+            let _ = tx.try_send(ServerMsg::Error {
+                message: "Room is full".into(),
+            });
             return;
         }
 
-        self.players.push(PlayerSlot { player_id: player_id.clone(), tx });
+        self.players.push(PlayerSlot {
+            player_id: player_id.clone(),
+            tx,
+        });
         tracing::info!(room = %self.id, player = %player_id, players = self.players.len(), "player joined");
 
         if self.players.len() == 2 {
@@ -145,7 +150,11 @@ impl RoomActor {
             match event {
                 TickEvent::PieceMoved => {
                     let msg = ServerMsg::PieceMoved {
-                        your_piece: self.game.as_ref().map(|g| piece_snapshot(g.player(i))).flatten(),
+                        your_piece: self
+                            .game
+                            .as_ref()
+                            .map(|g| piece_snapshot(g.player(i)))
+                            .flatten(),
                     };
                     let _ = self.players[i].tx.try_send(msg);
                 }
@@ -168,17 +177,20 @@ impl RoomActor {
         }
     }
 
-    async fn broadcast_state(&self) {
-        let game = match &self.game {
-            Some(g) => g,
-            None => return,
-        };
-        for (i, slot) in self.players.iter().enumerate() {
-            let msg = ServerMsg::GameState {
-                your: PlayerSnapshot::from(game.player(i)),
-                opponent: OpponentSnapshot::from(game.player(1 - i)),
-            };
-            let _ = slot.tx.try_send(msg);
+    async fn broadcast_state(&mut self) {
+        let Some(game) = self.game.as_mut() else { return };
+
+        let mut msgs: [Option<ServerMsg>; 2] = [None, None];
+        for i in 0..2 {
+            msgs[i] = Some(ServerMsg::GameState {
+                your: game.player_snapshot(i),
+                opponent: game.opponent_snapshot(1 - i),
+            });
+        }
+        for (i, msg) in msgs.into_iter().enumerate() {
+            if let Some((m, slot)) = msg.zip(self.players.get(i)) {
+                let _ = slot.tx.try_send(m);
+            }
         }
     }
 
@@ -214,7 +226,9 @@ pub struct RoomRegistry {
 
 impl RoomRegistry {
     pub fn new() -> Self {
-        Self { rooms: DashMap::new() }
+        Self {
+            rooms: DashMap::new(),
+        }
     }
 
     pub fn create(&self, bet_sats: u64) -> RoomHandle {
@@ -224,7 +238,10 @@ impl RoomRegistry {
         let actor = RoomActor::new(id.clone(), bet_sats, cmd_rx);
         tokio::spawn(actor.run());
 
-        let handle = RoomHandle { id: id.clone(), tx: cmd_tx };
+        let handle = RoomHandle {
+            id: id.clone(),
+            tx: cmd_tx,
+        };
         self.rooms.insert(id, handle.clone());
         handle
     }

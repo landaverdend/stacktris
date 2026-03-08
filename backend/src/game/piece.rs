@@ -143,7 +143,15 @@ const SHAPES: [[[(i8, i8); 4]; 4]; 7] = [
 
 // ── 7-bag randomizer ──────────────────────────────────────────────────────────
 
-const ALL_PIECES: [Piece; 7] = [Piece::I, Piece::O, Piece::T, Piece::S, Piece::Z, Piece::J, Piece::L];
+const ALL_PIECES: [Piece; 7] = [
+    Piece::I,
+    Piece::O,
+    Piece::T,
+    Piece::S,
+    Piece::Z,
+    Piece::J,
+    Piece::L,
+];
 
 struct PieceBag {
     bag: Vec<Piece>,
@@ -151,7 +159,9 @@ struct PieceBag {
 
 impl PieceBag {
     fn new() -> Self {
-        let mut bag = Self { bag: Vec::with_capacity(7) };
+        let mut bag = Self {
+            bag: Vec::with_capacity(7),
+        };
         bag.refill();
         bag
     }
@@ -182,7 +192,10 @@ pub struct PieceQueue {
 
 impl PieceQueue {
     pub fn new() -> Self {
-        Self { queue: Vec::new(), bag: PieceBag::new() }
+        Self {
+            queue: Vec::new(),
+            bag: PieceBag::new(),
+        }
     }
 
     /// Returns the piece at `index`, extending the queue if necessary.
