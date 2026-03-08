@@ -49,6 +49,7 @@ export interface PlayerSnapshot {
   current_piece: PieceSnapshot | null;
   next_pieces: string[];
   hold_piece: string | null;
+  hold_used: boolean;
   pending_garbage: number;
   score: number;
   lines: number;

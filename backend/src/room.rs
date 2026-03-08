@@ -179,7 +179,7 @@ impl RoomActor {
                 let piece = piece_snapshot(game.player(player_i));
                 let _ = self.players[player_i].tx.try_send(ServerMsg::PieceMoved { your_piece: piece });
             }
-            Some(InputResult::PieceLocked { .. }) => {
+            Some(InputResult::PieceLocked { .. }) | Some(InputResult::StateChanged) => {
                 self.broadcast_state().await;
             }
             None => {}

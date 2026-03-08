@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useGameClient } from '../hooks/useGameClient';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
+import { HoldCanvas } from '../components/HoldCanvas';
 
 interface Props {
   onExitToLobby: () => void;
@@ -12,12 +13,10 @@ export function GameScreen({ onExitToLobby }: Props) {
   const { gameStatus } = state;
 
   useEffect(() => {
-    console.log('gameStatus', gameStatus);
 
     if (gameStatus.status !== 'playing') return;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      console.log('onKeyDown ', e.key);
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         client.sendAction({ type: 'move_left' });
@@ -36,6 +35,9 @@ export function GameScreen({ onExitToLobby }: Props) {
       } else if (e.key === ' ') {
         e.preventDefault();
         client.sendAction({ type: 'hard_drop' });
+      } else if (e.key === 'c') {
+        e.preventDefault();
+        client.sendAction({ type: 'hold' });
       }
     };
 
@@ -67,8 +69,12 @@ export function GameScreen({ onExitToLobby }: Props) {
 
       {gameStatus.status === 'playing' && (
         <div className="relative flex items-start justify-center w-full pt-4">
-          {/* Your board + queue */}
+          {/* Your board + hold (left) + queue (right) */}
           <div className="flex items-start gap-3">
+            <HoldCanvas
+              holdPiece={gameStatus.your.hold_piece}
+              dimmed={gameStatus.your.hold_used}
+            />
             <div className="flex flex-col gap-2">
               <BoardCanvas
                 board={gameStatus.your.board}

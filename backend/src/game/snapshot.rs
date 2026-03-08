@@ -10,6 +10,7 @@ pub struct PlayerSnapshot {
     pub current_piece: Option<PieceSnapshot>,
     pub next_pieces: Vec<String>,
     pub hold_piece: Option<String>,
+    pub hold_used: bool,
     pub pending_garbage: u32,
     pub score: u64,
     pub lines: u32,
@@ -47,7 +48,8 @@ impl From<&PlayerGameState> for PlayerSnapshot {
             // Populated with the full lookahead by GameSession::player_snapshot;
             // the From impl alone only has access to next_piece.
             next_pieces: vec![format!("{:?}", s.next_piece)],
-            hold_piece: None,
+            hold_piece: s.hold_piece.map(|p| format!("{p:?}")),
+            hold_used: s.hold_used,
             pending_garbage: s.pending_garbage,
             score: s.score,
             lines: s.lines_cleared,

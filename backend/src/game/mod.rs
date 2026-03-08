@@ -28,6 +28,12 @@ pub struct PlayerGameState {
     /// Index into the shared PieceQueue pointing at the current `next_piece`.
     /// Incremented on every lock to advance to the following piece.
     pub queue_index: usize,
+
+    /// The piece currently stored in the hold slot, if any.
+    pub hold_piece: Option<Piece>,
+    /// True after hold has been used for the current active piece.
+    /// Reset to false each time a new piece spawns.
+    pub hold_used: bool,
 }
 
 impl PlayerGameState {
@@ -48,6 +54,8 @@ impl PlayerGameState {
             pending_garbage: 0,
             game_over: false,
             queue_index,
+            hold_piece: None,
+            hold_used: false,
         }
     }
 }

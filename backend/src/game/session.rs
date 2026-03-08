@@ -63,8 +63,20 @@ impl GameSession {
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].lines_cleared += lines_cleared;
+        self.players[i].hold_used = false;
 
         lines_cleared
+    }
+
+    /// Consume the next piece from the queue as the new active piece.
+    /// Used when hold is triggered with an empty hold slot.
+    fn advance_from_queue(&mut self, i: usize) {
+        let next_kind = self.players[i].next_piece;
+        self.players[i].queue_index += 1;
+        let next_index = self.players[i].queue_index;
+        let upcoming = self.queue.get(next_index + 1);
+        self.players[i].next_piece = upcoming;
+        self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
     }
 
     /// Applies a player input and returns the result, or `None` if the move
@@ -99,7 +111,30 @@ impl GameSession {
                 let lines_cleared = self.lock_and_advance(player_i, landed);
                 Some(InputResult::PieceLocked { lines_cleared })
             }
-            _ => None,
+            GameAction::Hold => {
+                if self.players[player_i].hold_used {
+                    return None;
+                }
+                let current_kind = piece.kind;
+                match self.players[player_i].hold_piece {
+                    Some(held_kind) => {
+                        // Swap current piece with the held piece.
+                        let new_active = spawn(held_kind, &self.players[player_i].board)?;
+                        self.players[player_i].active_piece = Some(new_active);
+                        self.players[player_i].hold_piece = Some(current_kind);
+                    }
+                    None => {
+                        // First hold — stash current piece, pull next from queue.
+                        self.players[player_i].hold_piece = Some(current_kind);
+                        self.players[player_i].active_piece = None; // clear before advance
+                        self.advance_from_queue(player_i);
+                        // advance_from_queue may fail to spawn (stack too high) — that's fine,
+                        // active_piece will be None and game-over logic handles it later.
+                    }
+                }
+                self.players[player_i].hold_used = true;
+                Some(InputResult::StateChanged)
+            }
         }
     }
 

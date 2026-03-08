@@ -17,8 +17,12 @@ pub enum GameAction {
 
 /// Result of applying a player input.
 pub enum InputResult {
+    /// Only the active piece position changed — cheap PieceMoved message suffices.
     PieceMoved,
+    /// A piece locked and lines may have cleared — full GameState broadcast needed.
     PieceLocked { lines_cleared: u32 },
+    /// State changed in a way that requires a full GameState broadcast (e.g. hold swap).
+    StateChanged,
 }
 
 pub fn try_move_left(board: &Board, piece: &ActivePiece) -> Option<ActivePiece> {

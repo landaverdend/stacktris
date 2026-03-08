@@ -32,6 +32,28 @@ const ROT0: Record<string, [number, number][]> = {
 
 const KIND_INDEX: Record<string, number> = { I: 1, O: 2, T: 3, S: 4, Z: 5, J: 6, L: 7 };
 
+export const HOLD_WIDTH = COLS * CELL;
+export const HOLD_HEIGHT = ROWS_PER_PIECE * CELL;
+
+export function renderHold(
+  ctx: CanvasRenderingContext2D,
+  holdPiece: string | null,
+  dimmed: boolean,
+): void {
+  ctx.clearRect(0, 0, HOLD_WIDTH, HOLD_HEIGHT);
+  if (!holdPiece) return;
+
+  const cells = ROT0[holdPiece] ?? [];
+  const colorFull = COLORS[KIND_INDEX[holdPiece] ?? 0];
+  if (!colorFull) return;
+
+  // Dim the piece when hold is locked out for this piece.
+  ctx.fillStyle = dimmed ? '#555' : colorFull;
+  for (const [dr, dc] of cells) {
+    ctx.fillRect(dc * CELL + 1, dr * CELL + 1, CELL - 2, CELL - 2);
+  }
+}
+
 export function renderQueue(ctx: CanvasRenderingContext2D, nextPieces: string[]): void {
   ctx.clearRect(0, 0, QUEUE_WIDTH, QUEUE_HEIGHT);
 
