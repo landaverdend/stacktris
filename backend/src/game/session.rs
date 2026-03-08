@@ -1,10 +1,9 @@
 use std::time::{Duration, Instant};
 
 use super::{
-    clear_lines, is_valid, lock_piece, scoring, sonic_drop, try_move_down, try_move_left,
-    try_move_right, try_rotate_ccw, try_rotate_cw, ActivePiece, Board, GameAction,
-    OpponentSnapshot, Piece, PieceQueue, PieceSnapshot, PlayerGameState, PlayerSnapshot,
-    VISIBLE_ROW_START,
+    clear_lines, is_valid, lock_piece, sonic_drop, try_move_down, try_move_left, try_move_right,
+    try_rotate_ccw, try_rotate_cw, ActivePiece, Board, GameAction, OpponentSnapshot, Piece,
+    PieceQueue, PieceSnapshot, PlayerGameState, PlayerSnapshot, VISIBLE_ROW_START,
 };
 
 /// Number of upcoming pieces shown in the preview queue.
@@ -131,71 +130,25 @@ impl GameSession {
         }
     }
 
-    /// Lock `piece` onto player `i`'s board, clear lines, update scoring, and advance the queue.
+    /// Lock `piece` onto player `i`'s board, clear lines, score, and spawn the next piece.
     fn lock_and_advance(&mut self, i: usize, piece: ActivePiece) -> u32 {
         lock_piece(&mut self.players[i].board, &piece);
-        let lines_cleared = clear_lines(&mut self.players[i].board);
+        let lines = clear_lines(&mut self.players[i].board);
+        let garbage = self.players[i].apply_clear(lines);
+        self.players[1 - i].pending_garbage += garbage;
+        self.spawn_next(i);
+        lines
+    }
 
-        // ── Scoring ───────────────────────────────────────────────────────────
-        let pts = scoring::score_for_clear(
-            lines_cleared,
-            self.players[i].level,
-            self.players[i].back_to_back,
-            self.players[i].combo,
-        );
-        self.players[i].score += pts;
-        tracing::debug!(
-            player = i,
-            lines = lines_cleared,
-            pts,
-            combo = self.players[i].combo,
-            back_to_back = self.players[i].back_to_back,
-            "score updated"
-        );
-
-        // Update combo and back-to-back state.
-        if lines_cleared > 0 {
-            self.players[i].combo += 1;
-            self.players[i].back_to_back = lines_cleared == 4;
-        } else {
-            self.players[i].combo = 0;
-            self.players[i].back_to_back = false;
-        }
-
-        // Level progression.
-        self.players[i].lines_cleared += lines_cleared;
-        self.players[i].level = scoring::level_for_lines(self.players[i].lines_cleared);
-
-        // Garbage sent to opponent.
-        let garbage = scoring::garbage_for_clear(lines_cleared, self.players[i].back_to_back);
-        let j = 1 - i;
-        self.players[j].pending_garbage += garbage;
-
-        // ── Advance queue ─────────────────────────────────────────────────────
-        self.players[i].queue_index += 1;
-        let next_index = self.players[i].queue_index;
+    /// Advance the queue and spawn the next piece for player `i`.
+    /// Resets all per-piece state (lock timers, hold flag).
+    fn spawn_next(&mut self, i: usize) {
         let next_kind = self.players[i].next_piece;
-        let upcoming = self.queue.get(next_index + 1);
-
+        self.players[i].queue_index += 1;
+        let upcoming = self.queue.get(self.players[i].queue_index + 1);
         self.players[i].next_piece = upcoming;
         self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].hold_used = false;
-        self.players[i].lock_deadline = None;
-        self.players[i].lock_reset_count = 0;
-        self.compact_queue();
-
-        lines_cleared
-    }
-
-    /// Consume the next piece from the queue as the new active piece.
-    /// Used when hold is triggered with an empty hold slot.
-    fn advance_from_queue(&mut self, i: usize) {
-        let next_kind = self.players[i].next_piece;
-        self.players[i].queue_index += 1;
-        let next_index = self.players[i].queue_index;
-        let upcoming = self.queue.get(next_index + 1);
-        self.players[i].next_piece = upcoming;
-        self.players[i].active_piece = spawn(next_kind, &self.players[i].board);
         self.players[i].lock_deadline = None;
         self.players[i].lock_reset_count = 0;
         self.compact_queue();
@@ -272,8 +225,8 @@ impl GameSession {
                     None => {
                         // First hold — stash current piece, pull next from queue.
                         self.players[player_i].hold_piece = Some(current_kind);
-                        self.players[player_i].active_piece = None; // clear before advance
-                        self.advance_from_queue(player_i);
+                        self.players[player_i].active_piece = None; // clear before spawn
+                        self.spawn_next(player_i);
                         // advance_from_queue may fail to spawn (stack too high) — that's fine,
                         // active_piece will be None and game-over logic handles it later.
                     }

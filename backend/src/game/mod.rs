@@ -52,6 +52,30 @@ pub struct PlayerGameState {
 }
 
 impl PlayerGameState {
+    /// Updates score, combo, back-to-back, lines cleared, and level after a lock.
+    /// Returns the number of garbage lines to send to the opponent.
+    pub fn apply_clear(&mut self, lines: u32) -> u32 {
+        let pts = scoring::score_for_clear(lines, self.level, self.back_to_back, self.combo);
+        self.score += pts;
+        tracing::debug!(
+            lines,
+            pts,
+            combo = self.combo,
+            back_to_back = self.back_to_back,
+            "apply_clear"
+        );
+        if lines > 0 {
+            self.combo += 1;
+            self.back_to_back = lines == 4;
+        } else {
+            self.combo = 0;
+            self.back_to_back = false;
+        }
+        self.lines_cleared += lines;
+        self.level = scoring::level_for_lines(self.lines_cleared);
+        scoring::garbage_for_clear(lines, self.back_to_back)
+    }
+
     /// `queue_index` must be the index of `next_piece` inside the shared queue.
     pub fn new(first_piece: Piece, next_piece: Piece, queue_index: usize) -> Self {
         Self {
