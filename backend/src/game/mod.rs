@@ -9,7 +9,7 @@ pub use board::{empty_board, Board, COLS, ROWS, VISIBLE_ROW_START};
 pub use input::{try_move_left, try_move_right, try_rotate_cw, try_rotate_ccw, GameAction};
 pub use logic::{clear_lines, is_valid, lock_piece, sonic_drop, tick_ms, try_move_down};
 pub use piece::{ActivePiece, Piece, PieceQueue};
-pub use session::{GameSession, PlayerUpdate, LOOKAHEAD, LOCK_TICKS_BASE, LOCK_TICKS_MIN, LOCK_RESET_MAX};
+pub use session::{GameSession, PlayerUpdate, LOCK_DELAY_MS_BASE, LOCK_DELAY_MS_MIN, LOCK_RESET_MAX, LOOKAHEAD};
 pub use snapshot::{OpponentSnapshot, PieceSnapshot, PlayerSnapshot};
 
 #[derive(Debug, Clone)]
@@ -35,9 +35,9 @@ pub struct PlayerGameState {
     /// Reset to false each time a new piece spawns.
     pub hold_used: bool,
 
-    /// Ticks remaining before the grounded piece locks.
-    /// 0 means the piece is airborne (lock delay not active).
-    pub lock_ticks_remaining: u8,
+    /// Wall-clock deadline after which the grounded piece locks.
+    /// `None` means the piece is airborne (lock delay not active).
+    pub lock_deadline: Option<std::time::Instant>,
     /// How many times the player has reset the lock timer for the current piece.
     /// Capped at `LOCK_RESET_MAX`; once exhausted no further resets are granted.
     pub lock_reset_count: u8,
@@ -63,7 +63,7 @@ impl PlayerGameState {
             queue_index,
             hold_piece: None,
             hold_used: false,
-            lock_ticks_remaining: 0,
+            lock_deadline: None,
             lock_reset_count: 0,
         }
     }
