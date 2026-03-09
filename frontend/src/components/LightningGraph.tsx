@@ -5,8 +5,8 @@ import * as d3Force from 'd3-force';
 
 interface GNode extends d3Force.SimulationNodeDatum {
   id: number;
-  label: string;       // short hex or kanji label
-  r: number;           // radius
+  label: string;
+  r: number;
   opacity: number;
   targetOpacity: number;
   dying: boolean;
@@ -20,33 +20,31 @@ interface GLink extends d3Force.SimulationLinkDatum<GNode> {
 }
 
 interface Pulse {
-  t: number;    // 0..1 progress along the link
+  t: number;      // head position 0..1 along the link
   speed: number;
   opacity: number;
 }
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
-const TARGET_NODES = 28;
+const TARGET_NODES = 35;
 const MAX_LINKS_PER_NODE = 3;
-const ADD_INTERVAL = 2800;   // ms between node additions
-const DIE_INTERVAL = 4200;   // ms between node removals
-const PULSE_INTERVAL = 600;   // ms between pulse spawns per link
+const ADD_INTERVAL = 3000;
+const DIE_INTERVAL = 4200;
+const PULSE_INTERVAL = 80;   // ms between spawns
+const PULSE_BURST = 3;    // pulses per spawn
 
-// Color palette: amber nodes, cyan-green edges, deep-blue glow
-const COL_NODE = [247, 147, 26] as const;  // bitcoin amber — node core
-const COL_PULSE = [0, 255, 180] as const;  // neon cyan-green — payment pulses
-const COL_LINK = [0, 80, 60] as const;  // dark teal — link lines
-const COL_GLOW = [0, 40, 120] as const;  // deep blue — node glow halo
+// Colors
+const COL_NODE = [247, 147, 26] as const;  // amber
+const COL_PULSE = [0, 255, 180] as const;  // neon cyan-green
+const COL_WHITE = [220, 255, 255] as const;  // near-white core
+const COL_LINK = [0, 120, 90] as const;  // teal channel
 
 function hex(len: number) {
   return Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
-const LABELS = [
-  '稲妻', '電力', '閃光', '速度', '接続',
-  '経路', '取引', '決済', '秘密', '信頼',
-];
+const LABELS = ['稲妻', '電力', '閃光', '速度', '接続', '経路', '取引', '決済', '秘密', '信頼'];
 
 function makeLabel() {
   return Math.random() > 0.5 ? LABELS[Math.floor(Math.random() * LABELS.length)] : hex(6);
@@ -70,20 +68,21 @@ export function LightningGraph() {
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     function rgba(col: readonly [number, number, number], a: number) {
-      return `rgba(${col[0]},${col[1]},${col[2]},${a.toFixed(3)})`;
+      return `rgba(${col[0]},${col[1]},${col[2]},${Math.max(0, a).toFixed(3)})`;
     }
 
-    // Draw a flat-top hexagon path centered at (cx, cy) with outer radius r
     function hexPath(cx: number, cy: number, r: number) {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 180) * (60 * i - 30); // flat-top
-        const x = cx + r * Math.cos(angle);
-        const y = cy + r * Math.sin(angle);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        const a = (Math.PI / 3) * i - Math.PI / 6;
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
     }
+
+    // ── Node management ────────────────────────────────────────────────────────
 
     function addNode() {
       if (nodes.filter(n => !n.dying).length >= TARGET_NODES) return;
@@ -99,13 +98,11 @@ export function LightningGraph() {
       };
       nodes.push(node);
 
-      // Connect to 1-3 random existing live nodes
       const candidates = nodes.filter(n => n !== node && !n.dying);
       const count = Math.min(1 + Math.floor(Math.random() * MAX_LINKS_PER_NODE), candidates.length);
-      const targets = candidates.sort(() => Math.random() - 0.5).slice(0, count);
-      for (const t of targets) {
+      candidates.sort(() => Math.random() - 0.5).slice(0, count).forEach(t => {
         links.push({ source: node, target: t, opacity: 0, pulses: [] });
-      }
+      });
 
       sim.nodes(nodes);
       (sim.force('link') as d3Force.ForceLink<GNode, GLink>).links(links);
@@ -115,47 +112,39 @@ export function LightningGraph() {
     function killRandomNode() {
       const live = nodes.filter(n => !n.dying);
       if (live.length <= 6) return;
-      const victim = live[Math.floor(Math.random() * live.length)];
-      victim.dying = true;
+      live[Math.floor(Math.random() * live.length)].dying = true;
     }
 
-    // ── Simulation setup ────────────────────────────────────────────────────────
+    // ── Simulation ─────────────────────────────────────────────────────────────
+
     function initSim() {
       sim = d3Force.forceSimulation<GNode, GLink>([])
         .force('link', d3Force.forceLink<GNode, GLink>([])
-          .id(d => d.id)
-          .distance(160)
-          .strength(0.2))
+          .id(d => d.id).distance(160).strength(0.2))
         .force('charge', d3Force.forceManyBody().strength(-320))
         .force('center', d3Force.forceCenter(W / 2, H / 2).strength(0.02))
         .force('collision', d3Force.forceCollide<GNode>(d => d.r + 32))
         .alphaDecay(0.015)
         .velocityDecay(0.7)
-        .on('tick', () => { });  // we render manually in rAF
+        .on('tick', () => { });
 
-      // Seed initial nodes
       for (let i = 0; i < Math.floor(TARGET_NODES * 0.6); i++) addNode();
     }
 
-    // ── Render loop ────────────────────────────────────────────────────────────
+    // ── Render ─────────────────────────────────────────────────────────────────
 
     let lastPulseTime = 0;
     let rafId = 0;
 
     function render(now: number) {
       rafId = requestAnimationFrame(render);
-
       ctx.clearRect(0, 0, W, H);
 
-      // Fade / cleanup dying nodes
+      // Fade / cleanup
       const toRemove = new Set<GNode>();
       for (const n of nodes) {
-        if (n.dying) {
-          n.opacity -= 0.004;
-          if (n.opacity <= 0) toRemove.add(n);
-        } else {
-          n.opacity += (n.targetOpacity - n.opacity) * 0.03;
-        }
+        if (n.dying) { n.opacity -= 0.004; if (n.opacity <= 0) toRemove.add(n); }
+        else n.opacity += (n.targetOpacity - n.opacity) * 0.03;
       }
       if (toRemove.size) {
         nodes = nodes.filter(n => !toRemove.has(n));
@@ -167,10 +156,12 @@ export function LightningGraph() {
       // Spawn pulses
       if (now - lastPulseTime > PULSE_INTERVAL) {
         lastPulseTime = now;
-        const candidates = links.filter(l => !l.source.dying && !l.target.dying);
-        if (candidates.length) {
-          const link = candidates[Math.floor(Math.random() * candidates.length)];
-          link.pulses.push({ t: 0, speed: 0.004 + Math.random() * 0.004, opacity: 0.8 });
+        const alive = links.filter(l => !l.source.dying && !l.target.dying);
+        if (alive.length) {
+          for (let b = 0; b < PULSE_BURST; b++) {
+            const link = alive[Math.floor(Math.random() * alive.length)];
+            link.pulses.push({ t: 0, speed: 0.014 + Math.random() * 0.02, opacity: 1 });
+          }
         }
       }
 
@@ -179,38 +170,47 @@ export function LightningGraph() {
         const s = link.source, t = link.target;
         if (s.x == null || s.y == null || t.x == null || t.y == null) continue;
 
-        const lo = Math.min(s.opacity, t.opacity) * 0.4;
-        link.opacity += (lo - link.opacity) * 0.05;
+        const lo = Math.min(s.opacity, t.opacity);
+        link.opacity += (lo * 0.65 - link.opacity) * 0.05;
 
-        // Link line
+        // Wide dim glow underlay
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.strokeStyle = rgba(COL_LINK, link.opacity * 0.3);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Sharp channel line
         ctx.beginPath();
         ctx.moveTo(s.x, s.y);
         ctx.lineTo(t.x, t.y);
         ctx.strokeStyle = rgba(COL_LINK, link.opacity);
-        ctx.lineWidth = 0.6;
+        ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Pulses — neon cyan-green dot racing along the channel
+        // ── Pulses ───────────────────────────────────────────────────────────
         link.pulses = link.pulses.filter(p => {
           p.t += p.speed;
-          p.opacity -= p.speed * 0.8;
+          p.opacity -= p.speed * 1.1;
           if (p.t >= 1 || p.opacity <= 0) return false;
 
           const px = s.x! + (t.x! - s.x!) * p.t;
           const py = s.y! + (t.y! - s.y!) * p.t;
 
-          // Glow trail around pulse
-          const pg = ctx.createRadialGradient(px, py, 0, px, py, 5);
-          pg.addColorStop(0, rgba(COL_PULSE, Math.min(p.opacity, 0.6)));
+          // Outer glow
+          const pg = ctx.createRadialGradient(px, py, 0, px, py, 6);
+          pg.addColorStop(0, rgba(COL_PULSE, p.opacity * 0.5));
           pg.addColorStop(1, rgba(COL_PULSE, 0));
           ctx.beginPath();
-          ctx.arc(px, py, 5, 0, Math.PI * 2);
+          ctx.arc(px, py, 6, 0, Math.PI * 2);
           ctx.fillStyle = pg;
           ctx.fill();
 
+          // Core dot
           ctx.beginPath();
-          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(COL_PULSE, Math.min(p.opacity, 1));
+          ctx.arc(px, py, 2, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(COL_WHITE, p.opacity);
           ctx.fill();
 
           return true;
@@ -222,32 +222,13 @@ export function LightningGraph() {
         if (n.x == null || n.y == null) continue;
         const op = Math.max(0, Math.min(1, n.opacity));
 
-        // Deep-blue wide halo (radial, still circular — halos look fine round)
-        const halo = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 7);
-        halo.addColorStop(0,   rgba(COL_GLOW, op * 0.22));
-        halo.addColorStop(0.4, rgba(COL_GLOW, op * 0.08));
-        halo.addColorStop(1,   rgba(COL_GLOW, 0));
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r * 7, 0, Math.PI * 2);
-        ctx.fillStyle = halo;
-        ctx.fill();
-
-        // Amber inner glow (radial)
-        const inner = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.8);
-        inner.addColorStop(0, rgba(COL_NODE, op * 0.45));
-        inner.addColorStop(1, rgba(COL_NODE, 0));
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r * 2.8, 0, Math.PI * 2);
-        ctx.fillStyle = inner;
-        ctx.fill();
-
-        // Outer hexagon stroke — cyan
+        // Outer hex ring — cyan
         hexPath(n.x, n.y, n.r + 4);
-        ctx.strokeStyle = rgba(COL_PULSE, op * 0.25);
+        ctx.strokeStyle = rgba(COL_PULSE, op * 0.3);
         ctx.lineWidth = 0.8;
         ctx.stroke();
 
-        // Core hexagon — filled amber with dark interior
+        // Core hex — amber
         hexPath(n.x, n.y, n.r);
         ctx.fillStyle = rgba(COL_NODE, op * 0.12);
         ctx.fill();
@@ -261,7 +242,7 @@ export function LightningGraph() {
         ctx.fillStyle = rgba(COL_NODE, op);
         ctx.fill();
 
-        // Label — kanji in cyan, hex in amber
+        // Label
         const isKanji = /[^\x00-\x7F]/.test(n.label);
         ctx.font = `${Math.round(n.r * 0.7)}px "Share Tech Mono", monospace`;
         ctx.fillStyle = isKanji ? rgba(COL_PULSE, op * 0.6) : rgba(COL_NODE, op * 0.5);
@@ -275,17 +256,15 @@ export function LightningGraph() {
     function resize() {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
-      if (sim) sim.force('center', d3Force.forceCenter(W / 2, H / 2).strength(0.04));
+      if (sim) sim.force('center', d3Force.forceCenter(W / 2, H / 2).strength(0.02));
     }
 
     resize();
     initSim();
     rafId = requestAnimationFrame(render);
 
-    // Schedule node add / kill
     const addTimer = setInterval(addNode, ADD_INTERVAL);
     const killTimer = setInterval(killRandomNode, DIE_INTERVAL);
-
     window.addEventListener('resize', resize);
 
     return () => {

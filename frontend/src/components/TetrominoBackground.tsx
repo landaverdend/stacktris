@@ -104,7 +104,7 @@ function makeLCG(seed: number) {
   return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
 }
 
-const PIECE_COUNT = 18;
+const PIECE_COUNT = 20;
 const FOV = 5;
 
 export function TetrominoBackground() {
