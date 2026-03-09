@@ -1,5 +1,4 @@
 import { ClientMessage, GameAction, OpponentSnapshot, PlayerSnapshot, ServerMessage } from '../types';
-import { predictMove } from '../game/prediction';
 
 // ── State types ───────────────────────────────────────────────────────────────
 
@@ -201,10 +200,10 @@ export class GameClient {
     // authoritative response (piece_moved / game_state) snap to truth.
     const s = this.state.gameStatus;
     if (s.status === 'playing' && s.your.current_piece) {
-      const predicted = predictMove(s.your.board, s.your.current_piece, action);
-      if (predicted !== s.your.current_piece) {
-        this.setStatus({ ...s, your: { ...s.your, current_piece: predicted } });
-      }
+      // const predicted = predictMove(s.your.board, s.your.current_piece, action);
+      // if (predicted !== s.your.current_piece) {
+      //   this.setStatus({ ...s, your: { ...s.your, current_piece: predicted } });
+      // }
     }
     this.send({ type: 'game_action', action });
   }

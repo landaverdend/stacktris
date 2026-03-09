@@ -18,7 +18,7 @@ interface Stats {
 function toSnapshot(piece: ActivePiece): PieceSnapshot {
   return {
     kind: piece.kind,
-    row: piece.row - VISIBLE_ROW_START + 2,
+    row: piece.row - VISIBLE_ROW_START,
     col: piece.col,
     rotation: piece.rotation,
     lock_active: false,
@@ -26,16 +26,16 @@ function toSnapshot(piece: ActivePiece): PieceSnapshot {
 }
 
 const KEY_MAP: Record<string, InputAction> = {
-  ArrowLeft:  'move_left',
+  ArrowLeft: 'move_left',
   ArrowRight: 'move_right',
-  ArrowDown:  'soft_drop',
-  ArrowUp:    'rotate_cw',
-  z:          'rotate_ccw',
-  Z:          'rotate_ccw',
-  ' ':        'hard_drop',
-  c:          'hold',
-  C:          'hold',
-  Shift:      'hold',
+  ArrowDown: 'soft_drop',
+  ArrowUp: 'rotate_cw',
+  z: 'rotate_ccw',
+  Z: 'rotate_ccw',
+  ' ': 'hard_drop',
+  c: 'hold',
+  C: 'hold',
+  Shift: 'hold',
 };
 
 export function SoloScreen({ onExit }: Props) {
