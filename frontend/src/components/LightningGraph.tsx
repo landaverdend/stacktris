@@ -32,10 +32,10 @@ interface Pulse {
 
 const TARGET_NODES = 35;
 const MAX_LINKS_PER_NODE = 3;
-const ADD_INTERVAL = 3000;
+const ADD_INTERVAL = 4000;
 const DIE_INTERVAL = 4000;
-const PULSE_INTERVAL = 80;   // ms between spawns
-const PULSE_BURST = 3;    // pulses per spawn
+const PULSE_INTERVAL = 300;  // ms between spawns
+const PULSE_BURST = 1;    // pulses per spawn
 
 // Colors
 const COL_NODE = [247, 147, 26] as const;  // amber
