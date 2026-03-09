@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavBar } from './components/NavBar';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GameScreen } from './screens/GameScreen';
+import { LightningGraph } from './components/LightningGraph';
 import { TetrominoBackground } from './components/TetrominoBackground';
 
 type View = 'lobby' | 'game';
@@ -11,7 +12,8 @@ export default function App() {
 
   return (
     <>
-      <TetrominoBackground />
+      {view === 'lobby' && <LightningGraph />}
+      {view === 'lobby' && <TetrominoBackground />}
       <div className="relative" style={{ zIndex: 1 }}>
         <NavBar />
 
