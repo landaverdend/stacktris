@@ -23,13 +23,16 @@ export class SoloGame {
 
     const interval = gravityTickMs(this.game.state.level);
     if (now - this.lastGravityMs >= interval) {
-      this.game = applyGravity(this.game);
+      this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
+    } else if (this.game.state.lockDelay !== null) {
+      // Keep ticking lock delay even between gravity intervals
+      this.game = applyGravity(this.game, now);
     }
   }
 
-  input(action: InputAction): void {
+  input(action: InputAction, now: number): void {
     if (this.game.state.isGameOver) return;
-    this.game = applyInput(this.game, action);
+    this.game = applyInput(this.game, action, now);
   }
 }

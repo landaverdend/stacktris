@@ -30,7 +30,7 @@ export function SoloScreen({ onExit }: Props) {
 
   // I <3 Refs 
   const gameRef = useRef<SoloGame>(new SoloGame());
-  const inputRef = useRef<InputHandler>(new InputHandler(action => gameRef.current.input(action)));
+  const inputRef = useRef<InputHandler>(new InputHandler(action => gameRef.current.input(action, performance.now())));
 
   const boardCanvasRef = useRef<HTMLCanvasElement>(null);
   const queueCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,7 +56,10 @@ export function SoloScreen({ onExit }: Props) {
       const boardCtx = boardCanvasRef.current?.getContext('2d');
       if (boardCtx) {
         const piece = state.activePiece ? toSnapshot(state.activePiece) : null;
-        renderBoard(boardCtx, visibleBoard(state.board), piece);
+        const pieceAlpha = state.lockDelay
+          ? 0.4 + 0.6 * Math.abs(Math.sin(now * Math.PI / 180))
+          : 1;
+        renderBoard(boardCtx, visibleBoard(state.board), piece, false, pieceAlpha);
       }
 
       const queueCtx = queueCanvasRef.current?.getContext('2d');
