@@ -6,6 +6,7 @@ mod session;
 use axum::{extract::State, routing::get, Json, Router};
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use room::RoomRegistry;
@@ -37,10 +38,14 @@ async fn main() {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    let static_files = ServeDir::new("dist")
+        .not_found_service(ServeFile::new("dist/index.html"));
+
     let app = Router::new()
         .route("/health", get(health))
         .route("/rooms", get(list_rooms))
         .route("/ws", get(session::ws_handler))
+        .fallback_service(static_files)
         .layer(cors)
         .with_state(state);
 
