@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { NavBar } from './components/NavBar';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GameScreen } from './screens/GameScreen';
+import { SoloScreen } from './screens/SoloScreen';
 import { LightningGraph } from './components/LightningGraph';
 import { TetrominoBackground } from './components/TetrominoBackground';
 import { GlitchOverlay } from './components/GlitchOverlay';
 import { GenesisBlock } from './components/GenesisBlock';
 
-type View = 'lobby' | 'game';
+type View = 'lobby' | 'game' | 'solo';
 
 export default function App() {
   const [view, setView] = useState<View>('lobby');
@@ -22,11 +23,15 @@ export default function App() {
         <NavBar />
 
         {view === 'lobby' && (
-          <LobbyScreen onEnterGame={() => setView('game')} />
+          <LobbyScreen onEnterGame={() => setView('game')} onEnterSolo={() => setView('solo')} />
         )}
 
         {view === 'game' && (
           <GameScreen onExitToLobby={() => setView('lobby')} />
+        )}
+
+        {view === 'solo' && (
+          <SoloScreen onExit={() => setView('lobby')} />
         )}
       </div>
     </>

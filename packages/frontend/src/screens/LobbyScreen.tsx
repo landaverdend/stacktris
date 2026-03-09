@@ -11,9 +11,10 @@ interface LobbyEntry {
 
 interface Props {
   onEnterGame: () => void;
+  onEnterSolo: () => void;
 }
 
-export function LobbyScreen({ onEnterGame }: Props) {
+export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
   const { state, client } = useGameClient();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
@@ -179,6 +180,13 @@ export function LobbyScreen({ onEnterGame }: Props) {
 
         </div>
       </div>
+
+      <button
+        onClick={onEnterSolo}
+        className="text-nerv-dim text-xs tracking-[0.3em] font-display hover:text-bitcoin transition-colors"
+      >
+        SOLO MODE // ソロプレイ
+      </button>
 
       <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp">
         ⚡ ライトニングネットワーク搭載
