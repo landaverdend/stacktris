@@ -49,20 +49,20 @@ export class GameServer {
   }
 
   private handleCreateRoom(socket: WebSocket, msg: Record<string, unknown>): void {
-    const betSats = Number(msg.betSats ?? 0);
+    const betSats = Number(msg.bet_sats ?? 0);
     const room = this.manager.createRoom(socket, betSats);
-    this.send(socket, { type: 'room_created', roomId: room.id });
+    this.send(socket, { type: 'room_created', room_id: room.id });
   }
 
   private handleJoinRoom(socket: WebSocket, msg: Record<string, unknown>): void {
-    const roomId = String(msg.roomId ?? '');
+    const roomId = String(msg.room_id ?? '');
     const room = this.manager.joinRoom(socket, roomId);
     if (!room) {
       this.send(socket, { type: 'error', message: 'Room not available' });
       return;
     }
     room.players.forEach(p =>
-      this.send(p.socket, { type: 'room_joined', roomId: room.id, playerIndex: p.index })
+      this.send(p.socket, { type: 'room_joined', room_id: room.id, player_index: p.index })
     );
   }
 
