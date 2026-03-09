@@ -3,7 +3,7 @@ mod protocol;
 mod room;
 mod session;
 
-use axum::{routing::get, Router};
+use axum::{extract::State, routing::get, Json, Router};
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -39,6 +39,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
+        .route("/rooms", get(list_rooms))
         .route("/ws", get(session::ws_handler))
         .layer(cors)
         .with_state(state);
@@ -52,4 +53,11 @@ async fn main() {
 
 async fn health() -> &'static str {
     "ok"
+}
+
+async fn list_rooms(State(state): State<AppState>) -> Json<Vec<room::LobbyEntry>> {
+    let mut rooms = state.rooms.list_open();
+    // Newest first.
+    rooms.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    Json(rooms)
 }

@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useGameClient } from '../hooks/useGameClient';
 
+const API_BASE = `${window.location.protocol}//${window.location.host}`;
+
+interface LobbyEntry {
+  id: string;
+  bet_sats: number;
+  created_at: number;
+}
+
 interface Props {
   onEnterGame: () => void;
 }
@@ -9,7 +17,9 @@ export function LobbyScreen({ onEnterGame }: Props) {
   const { state, client } = useGameClient();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
-  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const [tab, setTab] = useState<'create' | 'join' | 'browse'>('browse');
+  const [rooms, setRooms] = useState<LobbyEntry[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
 
   useEffect(() => {
     if (state.gameStatus.status !== 'lobby') {
@@ -17,9 +27,31 @@ export function LobbyScreen({ onEnterGame }: Props) {
     }
   }, [state.gameStatus.status, onEnterGame]);
 
+  // Poll open rooms every 2s while on browse tab.
+  useEffect(() => {
+    if (tab !== 'browse') return;
+
+    const fetchRooms = async () => {
+      setLoadingRooms(true);
+      try {
+        const res = await fetch(`${API_BASE}/rooms`);
+        if (res.ok) setRooms(await res.json() as LobbyEntry[]);
+      } catch {
+        // ignore — backend might not be up yet
+      } finally {
+        setLoadingRooms(false);
+      }
+    };
+
+    fetchRooms();
+    const iv = setInterval(fetchRooms, 2000);
+    return () => clearInterval(iv);
+  }, [tab]);
+
   const tabs = [
+    { id: 'browse', label: 'Browse' },
     { id: 'create', label: 'Create' },
-    { id: 'join', label: 'Join' },
+    { id: 'join',   label: 'Join ID' },
   ] as const;
 
   return (
@@ -37,18 +69,52 @@ export function LobbyScreen({ onEnterGame }: Props) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-3 text-sm font-bold tracking-wider transition-colors ${tab === t.id
+              className={`flex-1 py-3 text-sm font-bold tracking-wider transition-colors ${
+                tab === t.id
                   ? 'text-bitcoin border-b-2 border-bitcoin bg-surface-2'
                   : 'text-zinc-600 hover:text-zinc-400'
-                }`}
+              }`}
             >
               {t.label}
             </button>
           ))}
         </div>
 
-        <div className="p-6 flex flex-col gap-4">
+        <div className="p-4 flex flex-col gap-4">
 
+          {/* ── Browse ── */}
+          {tab === 'browse' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-zinc-600 text-xs tracking-widest uppercase">Open Rooms</span>
+                {loadingRooms && <span className="text-zinc-700 text-xs">refreshing...</span>}
+              </div>
+
+              {rooms.length === 0 ? (
+                <div className="text-center py-8 text-zinc-700 text-sm">
+                  No open rooms.{' '}
+                  <button
+                    className="text-zinc-500 hover:text-zinc-300 underline"
+                    onClick={() => setTab('create')}
+                  >
+                    Create one?
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {rooms.map(r => (
+                    <RoomRow
+                      key={r.id}
+                      room={r}
+                      onJoin={() => client.joinRoom(r.id, r.bet_sats)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Create ── */}
           {tab === 'create' && (
             <>
               <Field label="Bet Amount">
@@ -70,6 +136,7 @@ export function LobbyScreen({ onEnterGame }: Props) {
             </>
           )}
 
+          {/* ── Join by ID ── */}
           {tab === 'join' && (
             <>
               <Field label="Room ID">
@@ -105,6 +172,35 @@ export function LobbyScreen({ onEnterGame }: Props) {
       </div>
 
       <p className="text-zinc-800 text-xs">⚡ powered by lightning</p>
+    </div>
+  );
+}
+
+function RoomRow({ room, onJoin }: { room: LobbyEntry; onJoin: () => void }) {
+  const ageSeconds = Math.floor(Date.now() / 1000) - room.created_at;
+  const age = ageSeconds < 60
+    ? `${ageSeconds}s ago`
+    : `${Math.floor(ageSeconds / 60)}m ago`;
+
+  return (
+    <div className="flex items-center justify-between bg-surface-2 border border-border rounded-lg px-3 py-2.5">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-zinc-400 font-mono text-xs tracking-wider">
+          {room.id.slice(0, 8)}…
+        </span>
+        <span className="text-zinc-600 text-xs">{age}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-bitcoin text-sm font-bold font-mono">
+          {room.bet_sats.toLocaleString()} <span className="text-zinc-600 font-normal text-xs">sats</span>
+        </span>
+        <button
+          onClick={onJoin}
+          className="px-3 py-1 bg-bitcoin text-black text-xs font-bold rounded hover:opacity-90 transition-opacity"
+        >
+          Join
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use dashmap::DashMap;
+use serde::Serialize;
 use tokio::sync::mpsc;
 use tokio::time;
 use uuid::Uuid;
@@ -12,6 +13,17 @@ use crate::protocol::{GameAction, ServerMsg};
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 pub type RoomId = Arc<str>;
+
+/// Metadata for a room that is still open (waiting for a second player).
+#[derive(Clone, Serialize)]
+pub struct LobbyEntry {
+    pub id: String,
+    pub bet_sats: u64,
+    /// Unix timestamp (seconds) when the room was created.
+    pub created_at: u64,
+}
+
+type OpenRooms = Arc<DashMap<Arc<str>, LobbyEntry>>;
 
 impl From<PlayerUpdate> for ServerMsg {
     fn from(u: PlayerUpdate) -> Self {
@@ -96,10 +108,11 @@ struct RoomActor {
     players: Vec<PlayerSlot>,
     game: Option<GameSession>,
     rx: mpsc::Receiver<RoomCmd>,
+    open: OpenRooms,
 }
 
 impl RoomActor {
-    fn new(id: RoomId, bet_sats: u64, rx: mpsc::Receiver<RoomCmd>) -> Self {
+    fn new(id: RoomId, bet_sats: u64, rx: mpsc::Receiver<RoomCmd>, open: OpenRooms) -> Self {
         Self {
             id,
             phase: RoomPhase::Waiting,
@@ -107,6 +120,7 @@ impl RoomActor {
             players: Vec::with_capacity(2),
             game: None,
             rx,
+            open,
         }
     }
 
@@ -146,6 +160,7 @@ impl RoomActor {
             }
         }
 
+        self.open.remove(&self.id); // ensure removal even if we exited early
         tracing::info!(room = %self.id, "actor stopped");
     }
 
@@ -164,6 +179,7 @@ impl RoomActor {
         tracing::info!(room = %self.id, player = %player_id, players = self.players.len(), "player joined");
 
         if self.players.len() == 2 {
+            self.open.remove(&self.id); // no longer open for joiners
             self.game = Some(GameSession::new());
             self.send_to(0, ServerMsg::PlayerJoined).await;
             self.broadcast(ServerMsg::GameStart { countdown: 3 }).await;
@@ -296,12 +312,14 @@ impl RoomActor {
 
 pub struct RoomRegistry {
     rooms: DashMap<Arc<str>, RoomHandle>,
+    open: OpenRooms,
 }
 
 impl RoomRegistry {
     pub fn new() -> Self {
         Self {
             rooms: DashMap::new(),
+            open: Arc::new(DashMap::new()),
         }
     }
 
@@ -309,7 +327,21 @@ impl RoomRegistry {
         let id: RoomId = Uuid::new_v4().to_string().into();
         let (cmd_tx, cmd_rx) = mpsc::channel(32);
 
-        let actor = RoomActor::new(id.clone(), bet_sats, cmd_rx);
+        // Register in the open lobby before spawning.
+        let created_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        self.open.insert(
+            id.clone(),
+            LobbyEntry {
+                id: id.to_string(),
+                bet_sats,
+                created_at,
+            },
+        );
+
+        let actor = RoomActor::new(id.clone(), bet_sats, cmd_rx, Arc::clone(&self.open));
         tokio::spawn(actor.run());
 
         let handle = RoomHandle {
@@ -322,5 +354,10 @@ impl RoomRegistry {
 
     pub fn get(&self, room_id: &str) -> Option<RoomHandle> {
         self.rooms.get(room_id).map(|r| r.clone())
+    }
+
+    /// Returns all rooms currently waiting for a second player.
+    pub fn list_open(&self) -> Vec<LobbyEntry> {
+        self.open.iter().map(|e| e.value().clone()).collect()
     }
 }
