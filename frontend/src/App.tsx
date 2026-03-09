@@ -4,6 +4,7 @@ import { LobbyScreen } from './screens/LobbyScreen';
 import { GameScreen } from './screens/GameScreen';
 import { LightningGraph } from './components/LightningGraph';
 import { TetrominoBackground } from './components/TetrominoBackground';
+import { GlitchOverlay } from './components/GlitchOverlay';
 
 type View = 'lobby' | 'game';
 
@@ -14,6 +15,7 @@ export default function App() {
     <>
       {view === 'lobby' && <LightningGraph />}
       {view === 'lobby' && <TetrominoBackground />}
+      {view === 'lobby' && <GlitchOverlay />}
       <div className="relative" style={{ zIndex: 1 }}>
         <NavBar />
 
