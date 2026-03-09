@@ -31,7 +31,7 @@ echo -e "${CYAN}${BOLD}[frontend]${RESET} installing deps..."
 cd "$ROOT/frontend" && npm install --silent 2>&1 | prefix_lines "$CYAN" "frontend"
 
 echo ""
-echo -e "  ${ORANGE}${BOLD}backend${RESET}  → http://localhost:3000"
+echo -e "  ${ORANGE}${BOLD}backend${RESET}  → http://localhost:8080"
 echo -e "  ${CYAN}${BOLD}frontend${RESET} → http://localhost:5173"
 echo ""
 
