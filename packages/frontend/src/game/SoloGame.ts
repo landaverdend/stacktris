@@ -1,14 +1,10 @@
-import { GameState, GameWithBag, createGame } from '@stacktris/shared';
-
-type OnStateChange = (state: GameState) => void;
+import { GameState, GameWithBag, createGame, applyGravity, applyInput, gravityTickMs, InputAction } from '@stacktris/shared';
 
 export class SoloGame {
   private game: GameWithBag;
-  private rafId: number | null = null;
-  private onStateChange: OnStateChange;
+  private lastGravityMs: number = 0;
 
-  constructor(onStateChange: OnStateChange) {
-    this.onStateChange = onStateChange;
+  constructor() {
     this.game = createGame();
   }
 
@@ -16,24 +12,24 @@ export class SoloGame {
     return this.game.state;
   }
 
-  start(): void {
+  reset(): void {
     this.game = createGame();
-    this.onStateChange(this.game.state);
-    this.startLoop();
+    this.lastGravityMs = 0;
   }
 
-  stop(): void {
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+  tick(now: number): void {
+    if (this.game.state.isGameOver) return;
+    if (this.lastGravityMs === 0) this.lastGravityMs = now;
+
+    const interval = gravityTickMs(this.game.state.level);
+    if (now - this.lastGravityMs >= interval) {
+      this.game = applyGravity(this.game);
+      this.lastGravityMs = now;
     }
   }
 
-  private startLoop(): void {
-    const loop = () => {
-      // Game loop tick — gravity, lock delay, etc. will be added here
-      this.rafId = requestAnimationFrame(loop);
-    };
-    this.rafId = requestAnimationFrame(loop);
+  input(action: InputAction): void {
+    if (this.game.state.isGameOver) return;
+    this.game = applyInput(this.game, action);
   }
 }
