@@ -15,7 +15,7 @@ export default function App() {
   return (
     <>
       {view === 'lobby' && <LightningGraph />}
-      {view === 'lobby' && <TetrominoBackground />}
+      <TetrominoBackground />
       {view === 'lobby' && <GlitchOverlay />}
       {view === 'lobby' && <GenesisBlock />}
       <div className="relative" style={{ zIndex: 1 }}>

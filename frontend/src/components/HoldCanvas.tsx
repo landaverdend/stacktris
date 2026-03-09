@@ -16,7 +16,7 @@ export function HoldCanvas({ holdPiece, dimmed }: Props) {
 
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-zinc-600 text-xs tracking-widest uppercase font-mono">Hold</p>
+      <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">HOLD <span className="opacity-50">// 保留</span></p>
       <canvas
         ref={canvasRef}
         width={HOLD_WIDTH}

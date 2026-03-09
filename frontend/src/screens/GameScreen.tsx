@@ -167,42 +167,85 @@ export function GameScreen({ onExitToLobby }: Props) {
 
       {/* ── Playing ── */}
       {gameStatus.status === 'playing' && (
-        <div className="relative flex items-start justify-center w-full pt-4">
-          {/* Your board + hold (left) + queue (right) */}
-          <div className="flex items-start gap-3">
-            <HoldCanvas
-              holdPiece={gameStatus.your.hold_piece}
-              dimmed={gameStatus.your.hold_used}
-            />
-            <div className="flex items-end gap-1">
-              <GarbageMeter pendingGarbage={gameStatus.your.pending_garbage} />
-              <div className="flex flex-col gap-2">
-                <BoardCanvas
-                  board={gameStatus.your.board}
-                  activePiece={gameStatus.your.current_piece}
-                  label="You"
-                />
-                <div className="flex justify-between text-nerv-dim text-[10px] font-mono tracking-widest px-1">
-                  <span>{gameStatus.your.score.toLocaleString()} <span className="opacity-50">PTS</span></span>
-                  <span>LV <span className="text-bitcoin">{gameStatus.your.level}</span></span>
-                </div>
-              </div>
-            </div>
-            <QueueCanvas nextPieces={gameStatus.your.next_pieces} />
+        <div className="relative flex flex-col items-center w-full pt-2 gap-2">
+
+          {/* ── Top NERV status strip ── */}
+          <div className="flex items-center gap-5 text-[8px] font-mono tracking-[0.28em] select-none">
+            <span className="text-nerv-dim/50">// COMBAT ACTIVE</span>
+            <span className="text-nerv-dim/30">◈ NERV HQ</span>
+            <span className="text-nerv-dim/40">MAGI SYNC: NOMINAL</span>
+            {gameStatus.your.pending_garbage > 0 ? (
+              <span className="text-alert/80 animate-pulse font-bold">
+                ⚠ INCOMING ATK: {gameStatus.your.pending_garbage}L
+              </span>
+            ) : (
+              <span className="text-magi/40">AT FIELD: NOMINAL</span>
+            )}
           </div>
 
-          {/* Opponent board — small, top-right */}
-          <div className="absolute top-0 right-6 flex flex-col gap-1">
-            <BoardCanvas
-              board={gameStatus.opponent.board}
-              label="Opponent"
-              scale={0.4}
-            />
-            <div className="flex justify-between text-nerv-dim text-[9px] font-mono tracking-widest px-0.5">
-              <span>{gameStatus.opponent.score.toLocaleString()}</span>
-              <span>LV {gameStatus.opponent.level}</span>
+          {/* ── Main arena ── */}
+          <div className="relative flex items-start justify-center w-full">
+
+            {/* Player side */}
+            <div className="flex items-start gap-3">
+              <HoldCanvas
+                holdPiece={gameStatus.your.hold_piece}
+                dimmed={gameStatus.your.hold_used}
+              />
+              <div className="flex items-end gap-1">
+                <GarbageMeter pendingGarbage={gameStatus.your.pending_garbage} />
+                <div className="flex flex-col gap-1.5">
+                  <BoardCanvas
+                    board={gameStatus.your.board}
+                    activePiece={gameStatus.your.current_piece}
+                    label="OPERATIVE // あなた"
+                  />
+                  {/* Score readout */}
+                  <div className="nerv-frame flex justify-between items-center px-2 py-1.5">
+                    <div className="flex flex-col gap-0">
+                      <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">SCORE</span>
+                      <span className="text-bitcoin font-mono font-bold text-sm leading-none">
+                        {gameStatus.your.score.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="w-px h-5 bg-border" />
+                    <div className="flex flex-col gap-0 items-end">
+                      <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">LEVEL</span>
+                      <span className="text-bitcoin font-mono font-bold text-sm leading-none">
+                        {gameStatus.your.level}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <QueueCanvas nextPieces={gameStatus.your.next_pieces} />
             </div>
+
+            {/* Opponent mini panel — top-right */}
+            <div className="absolute top-0 right-4 flex flex-col gap-1">
+              <p className="text-nerv-dim/50 text-[8px] font-mono tracking-[0.3em]">// HOSTILE UNIT</p>
+              <div className="nerv-frame p-0.5">
+                <BoardCanvas
+                  board={gameStatus.opponent.board}
+                  label="ADVERSARY"
+                  scale={0.4}
+                />
+              </div>
+              <div className="flex justify-between text-nerv-dim/50 text-[8px] font-mono tracking-widest px-0.5">
+                <span>{gameStatus.opponent.score.toLocaleString()}</span>
+                <span>LV {gameStatus.opponent.level}</span>
+              </div>
+            </div>
+
           </div>
+
+          {/* ── Bottom status strip ── */}
+          <div className="flex items-center gap-5 text-[8px] font-mono tracking-[0.22em] text-nerv-dim/30 select-none">
+            <span>第3新東京市 // GEO-FRONT</span>
+            <span>EVANGELION UNIT-01</span>
+            <span className="text-bitcoin/20">⚡ LN-BATTLE PROTOCOL</span>
+          </div>
+
         </div>
       )}
 

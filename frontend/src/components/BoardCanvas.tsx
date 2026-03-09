@@ -39,7 +39,7 @@ export function BoardCanvas({ board, activePiece = null, dimmed = false, label, 
 
   return (
     <div className="flex flex-col items-center gap-1 font-mono" style={{ width: CANVAS_WIDTH * scale }}>
-      {label && <p className="text-zinc-500 text-xs tracking-widest uppercase">{label}</p>}
+      {label && <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">{label}</p>}
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}

@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { CANVAS_HEIGHT } from '../render/board';
 
-const METER_WIDTH = 10;
+const METER_WIDTH = 6;
 const MAX_ROWS = 20;
-// Red for urgent, orange for moderate, yellow for low
-const COLOR_HIGH = '#ef4444';
+// NERV threat palette: amber → orange → alert red
+const COLOR_HIGH = '#cc2200';
 const COLOR_MID = '#f97316';
-const COLOR_LOW = '#eab308';
-const BG_COLOR = '#1a1a1a';
+const COLOR_LOW = '#f7931a';
+const BG_COLOR = '#0a0a0a';
 
 interface Props {
   pendingGarbage: number;

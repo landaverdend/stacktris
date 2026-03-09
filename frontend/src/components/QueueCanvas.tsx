@@ -15,7 +15,7 @@ export function QueueCanvas({ nextPieces }: Props) {
 
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-zinc-600 text-xs tracking-widest uppercase font-mono">Next</p>
+      <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">NEXT <span className="opacity-50">// 次</span></p>
       <canvas
         ref={canvasRef}
         width={QUEUE_WIDTH}
