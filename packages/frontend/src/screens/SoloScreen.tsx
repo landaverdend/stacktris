@@ -3,7 +3,7 @@ import { ActivePiece, visibleBoard, VISIBLE_ROW_START, InputAction } from '@stac
 import { SoloGame } from '../game/SoloGame';
 import { PieceSnapshot } from '../types';
 import { renderBoard, CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
-import { renderQueue, QUEUE_WIDTH, QUEUE_HEIGHT } from '../render/queue';
+import { renderQueue, renderHold, QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
 
 interface Props {
   onExit: () => void;
@@ -42,6 +42,7 @@ export function SoloScreen({ onExit }: Props) {
   const gameRef = useRef<SoloGame>(new SoloGame());
   const boardCanvasRef = useRef<HTMLCanvasElement>(null);
   const queueCanvasRef = useRef<HTMLCanvasElement>(null);
+  const holdCanvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const prevLinesRef = useRef<number>(0);
   const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 0 });
@@ -66,6 +67,10 @@ export function SoloScreen({ onExit }: Props) {
       // Queue
       const queueCtx = queueCanvasRef.current?.getContext('2d');
       if (queueCtx) renderQueue(queueCtx, state.queue);
+
+      // Hold
+      const holdCtx = holdCanvasRef.current?.getContext('2d');
+      if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
 
       // Stats — only update React state when something meaningful changes
       if (state.lines !== prevLinesRef.current) {
@@ -106,6 +111,10 @@ export function SoloScreen({ onExit }: Props) {
       </div>
 
       <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-1 pt-1">
+          <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">HOLD <span className="opacity-50">// ホールド</span></p>
+          <canvas ref={holdCanvasRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block" />
+        </div>
         <canvas
           ref={boardCanvasRef}
           width={CANVAS_WIDTH}

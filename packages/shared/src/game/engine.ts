@@ -78,6 +78,7 @@ function lockAndSpawn(game: GameWithBag): GameWithBag {
       board,
       activePiece,
       queue,
+      holdUsed: false,
       lines: state.lines + linesCleared,
       isGameOver: activePiece === null,
     },
