@@ -1,11 +1,11 @@
-import { GameState, GameWithBag, createGame, applyGravity, applyInput, gravityTickMs, InputAction } from '@stacktris/shared';
+import { GameState, GameWithBag, createGame, applyGravity, applyInput, gravityTickMs, levelFromLines, InputAction } from '@stacktris/shared';
 
 export class SoloGame {
   private game: GameWithBag;
   private lastGravityMs: number = 0;
 
   constructor() {
-    this.game = createGame();
+    this.game = createGame({ levelStrategy: levelFromLines });
   }
 
   get state(): GameState {
@@ -13,7 +13,7 @@ export class SoloGame {
   }
 
   reset(): void {
-    this.game = createGame();
+    this.game = createGame({ levelStrategy: levelFromLines });
     this.lastGravityMs = 0;
   }
 

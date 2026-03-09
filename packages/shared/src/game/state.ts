@@ -16,12 +16,18 @@ export interface GameState {
   isGameOver: boolean;
 }
 
+export interface GameConfig {
+  /** Called after each lock to derive the new level from total lines cleared. Omit to leave level unchanged (server-controlled). */
+  levelStrategy?: (lines: number) => number;
+}
+
 export interface GameWithBag {
   state: GameState;
   bag: PieceBag;
+  config: GameConfig;
 }
 
-export function createGame(): GameWithBag {
+export function createGame(config: GameConfig = {}): GameWithBag {
   const bag = new PieceBag();
   const board = emptyBoard();
 
@@ -47,5 +53,5 @@ export function createGame(): GameWithBag {
     isGameOver: activePiece === null,
   };
 
-  return { state, bag };
+  return { state, bag, config };
 }

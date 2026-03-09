@@ -5,18 +5,18 @@ export type InputAction = 'move_left' | 'move_right' | 'rotate_cw' | 'rotate_ccw
 
 /** One gravity tick: move piece down one row, or lock it if grounded. */
 export function applyGravity(game: GameWithBag): GameWithBag {
-  const { state, bag } = game;
+  const { state, bag, config } = game;
   if (!state.activePiece || state.isGameOver) return game;
 
   const moved = tryMoveDown(state.board, state.activePiece);
-  if (moved) return { bag, state: { ...state, activePiece: moved } };
+  if (moved) return { bag, config, state: { ...state, activePiece: moved } };
 
   return lockAndSpawn(game);
 }
 
 /** Apply a player input action. Returns unchanged game if move is invalid. */
 export function applyInput(game: GameWithBag, action: InputAction): GameWithBag {
-  const { state, bag } = game;
+  const { state, bag, config } = game;
   if (!state.activePiece || state.isGameOver) return game;
 
   const piece = state.activePiece;
@@ -29,7 +29,7 @@ export function applyInput(game: GameWithBag, action: InputAction): GameWithBag 
     case 'soft_drop':  return applyMove(game, tryMoveDown(state.board, piece));
     case 'hard_drop': {
       const landed = sonicDrop(state.board, piece);
-      return lockAndSpawn({ bag, state: { ...state, activePiece: landed } });
+      return lockAndSpawn({ bag, config, state: { ...state, activePiece: landed } });
     }
     case 'hold': {
       if (state.holdUsed) return game;
@@ -38,10 +38,11 @@ export function applyInput(game: GameWithBag, action: InputAction): GameWithBag 
       const queue = state.holdPiece ? [...state.queue] : [...state.queue.slice(1), bag.next()];
       const activePiece = spawnPiece(state.board, incoming);
 
-      if (!activePiece) return { bag, state: { ...state, isGameOver: true } };
+      if (!activePiece) return { bag, config, state: { ...state, isGameOver: true } };
 
       return {
         bag,
+        config,
         state: { ...state, activePiece, queue, holdPiece: piece.kind, holdUsed: true },
       };
     }
@@ -52,11 +53,11 @@ export function applyInput(game: GameWithBag, action: InputAction): GameWithBag 
 
 function applyMove(game: GameWithBag, moved: ReturnType<typeof tryMoveLeft>): GameWithBag {
   if (!moved) return game;
-  return { bag: game.bag, state: { ...game.state, activePiece: moved } };
+  return { bag: game.bag, config: game.config, state: { ...game.state, activePiece: moved } };
 }
 
 function lockAndSpawn(game: GameWithBag): GameWithBag {
-  const { state, bag } = game;
+  const { state, bag, config } = game;
   if (!state.activePiece) return game;
 
   // Stamp piece onto a fresh board copy
@@ -70,16 +71,20 @@ function lockAndSpawn(game: GameWithBag): GameWithBag {
   queue.push(bag.next());
 
   const activePiece = spawnPiece(board, nextKind);
+  const newLines = state.lines + linesCleared;
+  const level = config.levelStrategy ? config.levelStrategy(newLines) : state.level;
 
   return {
     bag,
+    config,
     state: {
       ...state,
       board,
       activePiece,
       queue,
       holdUsed: false,
-      lines: state.lines + linesCleared,
+      lines: newLines,
+      level,
       isGameOver: activePiece === null,
     },
   };

@@ -101,9 +101,15 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece | null {
 
 // ── Gravity ───────────────────────────────────────────────────────────────────
 
-/** Returns the gravity tick interval in ms for a given level. Single source of truth. */
+/** Returns the level (1-based) for a given total lines cleared. Every 10 lines = +1 level. */
+export function levelFromLines(lines: number): number {
+  return Math.min(Math.floor(lines / 10) + 1, 20);
+}
+
+/** Returns the gravity tick interval in ms for a given level (Marathon formula). */
 export function gravityTickMs(level: number): number {
-  const ms = Math.pow(0.8 - level * 0.007, level) * 1000;
+  const l = level - 1;
+  const ms = Math.pow(0.8 - l * 0.007, l) * 1000;
   return Math.max(ms, 33);
 }
 
