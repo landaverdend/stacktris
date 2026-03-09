@@ -49,7 +49,8 @@ async fn main() {
         .layer(cors)
         .with_state(state);
 
-    let addr = "0.0.0.0:3000";
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let addr = format!("0.0.0.0:{}", port);
     tracing::info!("listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
