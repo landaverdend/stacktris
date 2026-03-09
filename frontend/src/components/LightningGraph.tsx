@@ -10,6 +10,9 @@ interface GNode extends d3Force.SimulationNodeDatum {
   opacity: number;
   targetOpacity: number;
   dying: boolean;
+  deathKanji: string | null;   // shown when dying begins
+  deathFlash: number;          // 0..1, drives the red flash
+  deathTextY: number;          // floats upward
 }
 
 interface GLink extends d3Force.SimulationLinkDatum<GNode> {
@@ -30,7 +33,7 @@ interface Pulse {
 const TARGET_NODES = 35;
 const MAX_LINKS_PER_NODE = 3;
 const ADD_INTERVAL = 3000;
-const DIE_INTERVAL = 4200;
+const DIE_INTERVAL = 4000;
 const PULSE_INTERVAL = 80;   // ms between spawns
 const PULSE_BURST = 3;    // pulses per spawn
 
@@ -45,6 +48,7 @@ function hex(len: number) {
 }
 
 const LABELS = ['稲妻', '電力', '閃光', '速度', '接続', '経路', '取引', '決済', '秘密', '信頼'];
+const DEATH_KANJI = ['切断', 'オフライン', '消滅', '停止', 'エラー', '終了', '失敗', '崩壊'];
 
 function makeLabel() {
   return Math.random() > 0.5 ? LABELS[Math.floor(Math.random() * LABELS.length)] : hex(6);
@@ -93,6 +97,9 @@ export function LightningGraph() {
         opacity: 0,
         targetOpacity: 0.3 + Math.random() * 0.5,
         dying: false,
+        deathKanji: null,
+        deathFlash: 0,
+        deathTextY: 0,
         x: W * 0.05 + Math.random() * W * 0.9,
         y: H * 0.05 + Math.random() * H * 0.9,
       };
@@ -112,7 +119,11 @@ export function LightningGraph() {
     function killRandomNode() {
       const live = nodes.filter(n => !n.dying);
       if (live.length <= 6) return;
-      live[Math.floor(Math.random() * live.length)].dying = true;
+      const victim = live[Math.floor(Math.random() * live.length)];
+      victim.dying = true;
+      victim.deathKanji = DEATH_KANJI[Math.floor(Math.random() * DEATH_KANJI.length)];
+      victim.deathFlash = 1;
+      victim.deathTextY = victim.y ?? 0;
     }
 
     // ── Simulation ─────────────────────────────────────────────────────────────
@@ -122,7 +133,7 @@ export function LightningGraph() {
         .force('link', d3Force.forceLink<GNode, GLink>([])
           .id(d => d.id).distance(160).strength(0.2))
         .force('charge', d3Force.forceManyBody().strength(-320))
-        .force('center', d3Force.forceCenter(W / 2, H / 2).strength(0.02))
+        .force('center', d3Force.forceCenter(W * 0.3, H / 2).strength(0.02))
         .force('collision', d3Force.forceCollide<GNode>(d => d.r + 32))
         .alphaDecay(0.015)
         .velocityDecay(0.7)
@@ -143,8 +154,15 @@ export function LightningGraph() {
       // Fade / cleanup
       const toRemove = new Set<GNode>();
       for (const n of nodes) {
-        if (n.dying) { n.opacity -= 0.004; if (n.opacity <= 0) toRemove.add(n); }
-        else n.opacity += (n.targetOpacity - n.opacity) * 0.03;
+        if (n.dying) {
+          // Flash for first ~40% of death, then fade
+          if (n.deathFlash > 0) n.deathFlash -= 0.025;
+          n.deathTextY -= 0.4;  // float upward
+          if (n.deathFlash <= 0) { n.opacity -= 0.006; }
+          if (n.opacity <= 0) toRemove.add(n);
+        } else {
+          n.opacity += (n.targetOpacity - n.opacity) * 0.03;
+        }
       }
       if (toRemove.size) {
         nodes = nodes.filter(n => !toRemove.has(n));
@@ -218,36 +236,61 @@ export function LightningGraph() {
       }
 
       // ── Draw nodes ──────────────────────────────────────────────────────────
+      const COL_RED = [220, 30, 30] as const;
+
       for (const n of nodes) {
         if (n.x == null || n.y == null) continue;
         const op = Math.max(0, Math.min(1, n.opacity));
 
-        // Outer hex ring — cyan
+        const isDying = n.dying && n.deathFlash > 0;
+        // Alternate between red and near-white for a strobe effect
+        const flashStrobe = isDying && Math.floor(now / 60) % 2 === 0;
+        const nodeCol = isDying ? (flashStrobe ? [255, 80, 80] as const : COL_RED) : COL_NODE;
+        const ringCol = isDying ? COL_RED : COL_PULSE;
+
+        // Outer hex ring
         hexPath(n.x, n.y, n.r + 4);
-        ctx.strokeStyle = rgba(COL_PULSE, op * 0.3);
-        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = rgba(ringCol, isDying ? n.deathFlash * 0.8 : op * 0.3);
+        ctx.lineWidth = isDying ? 1.5 : 0.8;
         ctx.stroke();
 
-        // Core hex — amber
+        // Core hex
         hexPath(n.x, n.y, n.r);
-        ctx.fillStyle = rgba(COL_NODE, op * 0.12);
+        ctx.fillStyle = rgba(nodeCol, isDying ? n.deathFlash * 0.25 : op * 0.12);
         ctx.fill();
-        ctx.strokeStyle = rgba(COL_NODE, op * 0.9);
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = rgba(nodeCol, isDying ? n.deathFlash * 0.95 : op * 0.9);
+        ctx.lineWidth = isDying ? 2 : 1.2;
         ctx.stroke();
 
         // Centre dot
         ctx.beginPath();
         ctx.arc(n.x, n.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(COL_NODE, op);
+        ctx.fillStyle = rgba(nodeCol, isDying ? n.deathFlash : op);
         ctx.fill();
 
-        // Label
-        const isKanji = /[^\x00-\x7F]/.test(n.label);
-        ctx.font = `${Math.round(n.r * 0.7)}px "Share Tech Mono", monospace`;
-        ctx.fillStyle = isKanji ? rgba(COL_PULSE, op * 0.6) : rgba(COL_NODE, op * 0.5);
-        ctx.textAlign = 'center';
-        ctx.fillText(n.label, n.x, n.y - n.r - 6);
+        // Normal label (hidden while dying)
+        if (!n.dying) {
+          const isKanji = /[^\x00-\x7F]/.test(n.label);
+          ctx.font = `${Math.round(n.r * 0.7)}px "Share Tech Mono", monospace`;
+          ctx.fillStyle = isKanji ? rgba(COL_PULSE, op * 0.6) : rgba(COL_NODE, op * 0.5);
+          ctx.textAlign = 'center';
+          ctx.fillText(n.label, n.x, n.y - n.r - 6);
+        }
+
+        // Death kanji — floats upward, red, fades with deathFlash
+        if (n.dying && n.deathKanji) {
+          const textOp = Math.max(0, n.deathFlash);
+          const textY = n.deathTextY - n.r - 8;
+          ctx.font = `bold ${Math.round(n.r * 1.1)}px "Noto Sans JP", sans-serif`;
+          ctx.fillStyle = rgba(COL_RED, textOp);
+          ctx.textAlign = 'center';
+          ctx.fillText(n.deathKanji, n.x, textY);
+
+          // "OFFLINE" beneath in mono
+          ctx.font = `${Math.round(n.r * 0.6)}px "Share Tech Mono", monospace`;
+          ctx.fillStyle = rgba(COL_RED, textOp * 0.6);
+          ctx.fillText('// OFFLINE', n.x, textY + n.r * 1.2);
+        }
       }
     }
 
@@ -256,7 +299,7 @@ export function LightningGraph() {
     function resize() {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
-      if (sim) sim.force('center', d3Force.forceCenter(W / 2, H / 2).strength(0.02));
+      if (sim) sim.force('center', d3Force.forceCenter(W * 0.3, H / 2).strength(0.02));
     }
 
     resize();

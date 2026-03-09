@@ -1,21 +1,38 @@
 import { useEffect, useRef } from 'react';
 
-// ── Tetromino shapes defined as arrays of [x, y, z] unit-block positions ──────
-const SHAPES: [number, number, number][][] = [
-  // I
-  [[-1.5, 0, 0], [-0.5, 0, 0], [0.5, 0, 0], [1.5, 0, 0]],
-  // O
-  [[-0.5, -0.5, 0], [0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0]],
-  // T
-  [[-1, 0, 0], [0, 0, 0], [1, 0, 0], [0, -1, 0]],
-  // S
-  [[0, 0, 0], [1, 0, 0], [-1, 1, 0], [0, 1, 0]],
-  // Z
-  [[-1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]],
-  // J
-  [[-1, 0, 0], [0, 0, 0], [1, 0, 0], [1, -1, 0]],
-  // L
-  [[-1, 0, 0], [0, 0, 0], [1, 0, 0], [-1, -1, 0]],
+// ── Tetromino shapes + EVA color palette ──────────────────────────────────────
+// Colors drawn from Neon Genesis Evangelion's visual language:
+//   Unit-00 blue, Unit-01 purple+green, Unit-02 red, NERV amber,
+//   AT Field acid-green, MAGI teal, Lance of Longinus rust
+const PIECES: { shape: [number, number, number][]; r: number; g: number; b: number }[] = [
+  { // I — Unit-00 icy blue
+    shape: [[-1.5, 0, 0], [-0.5, 0, 0], [0.5, 0, 0], [1.5, 0, 0]],
+    r: 56, g: 182, b: 255,
+  },
+  { // O — NERV amber/gold
+    shape: [[-0.5, -0.5, 0], [0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0]],
+    r: 247, g: 147, b: 26,
+  },
+  { // T — Unit-01 violet
+    shape: [[-1, 0, 0], [0, 0, 0], [1, 0, 0], [0, -1, 0]],
+    r: 168, g: 85, b: 247,
+  },
+  { // S — AT Field acid green
+    shape: [[0, 0, 0], [1, 0, 0], [-1, 1, 0], [0, 1, 0]],
+    r: 74, g: 222, b: 128,
+  },
+  { // Z — Unit-02 blood red
+    shape: [[-1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]],
+    r: 220, g: 38, b: 38,
+  },
+  { // J — MAGI terminal teal
+    shape: [[-1, 0, 0], [0, 0, 0], [1, 0, 0], [1, -1, 0]],
+    r: 6, g: 182, b: 212,
+  },
+  { // L — Lance of Longinus rust/copper
+    shape: [[-1, 0, 0], [0, 0, 0], [1, 0, 0], [-1, -1, 0]],
+    r: 194, g: 65, b: 12,
+  },
 ];
 
 // Cube vertices (unit cube centered at origin)
@@ -60,18 +77,17 @@ function project(v: Vec3, fov: number, ox: number, oy: number, scale: number): [
 
 interface Piece {
   shape: Vec3[];
-  x: number;       // screen x anchor
-  y: number;       // screen y anchor
+  r: number; g: number; b: number;
+  x: number; y: number;
   scale: number;
-  rx: number; ry: number; rz: number;     // current rotation angles
-  vx: number; vy: number; vz: number;     // rotation velocities
+  rx: number; ry: number; rz: number;
+  vx: number; vy: number; vz: number;
   opacity: number;
   fadeDir: number;
   fadeSpeed: number;
 }
 
 function makePiece(w: number, h: number, rng: () => number): Piece {
-  // Place along the four border bands
   const band = Math.floor(rng() * 4);
   const margin = 80;
   let px: number, py: number;
@@ -80,10 +96,16 @@ function makePiece(w: number, h: number, rng: () => number): Piece {
   else if (band === 2) { px = rng() * margin; py = rng() * h; }
   else { px = w - rng() * margin; py = rng() * h; }
 
-  const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
+  const pieceIdx = Math.floor(rng() * PIECES.length);
+  const piece = PIECES[pieceIdx];
+  // ~1 in 5 gets its EVA color; the rest default to NERV amber
+  const colored = rng() < 0.2;
 
   return {
-    shape: shape as Vec3[],
+    shape: piece.shape as Vec3[],
+    r: colored ? piece.r : 247,
+    g: colored ? piece.g : 147,
+    b: colored ? piece.b : 26,
     x: px, y: py,
     scale: 18 + rng() * 22,
     rx: rng() * Math.PI * 2,
@@ -144,7 +166,7 @@ export function TetrominoBackground() {
         if (p.opacity > 0.38) { p.opacity = 0.38; p.fadeDir = -1; }
         if (p.opacity < 0.03) { p.opacity = 0.03; p.fadeDir = 1; }
 
-        ctx.strokeStyle = `rgba(247,147,26,${p.opacity})`;
+        ctx.strokeStyle = `rgba(${p.r},${p.g},${p.b},${p.opacity})`;
         ctx.lineWidth = 0.8;
 
         // Draw each block of the tetromino
