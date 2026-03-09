@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { ActivePiece, visibleBoard, VISIBLE_ROW_START, InputAction } from '@stacktris/shared';
+import { useEffect, useRef, useState } from 'react';
+import { ActivePiece, visibleBoard, VISIBLE_ROW_START } from '@stacktris/shared';
 import { SoloGame } from '../game/SoloGame';
+import { InputHandler } from '../game/InputHandler';
 import { PieceSnapshot } from '../types';
 import { renderBoard, CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { renderQueue, renderHold, QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
@@ -25,54 +26,45 @@ function toSnapshot(piece: ActivePiece): PieceSnapshot {
   };
 }
 
-const KEY_MAP: Record<string, InputAction> = {
-  ArrowLeft: 'move_left',
-  ArrowRight: 'move_right',
-  ArrowDown: 'soft_drop',
-  ArrowUp: 'rotate_cw',
-  z: 'rotate_ccw',
-  Z: 'rotate_ccw',
-  ' ': 'hard_drop',
-  c: 'hold',
-  C: 'hold',
-  Shift: 'hold',
-};
-
 export function SoloScreen({ onExit }: Props) {
+
+  // I <3 Refs 
   const gameRef = useRef<SoloGame>(new SoloGame());
+  const inputRef = useRef<InputHandler>(new InputHandler(action => gameRef.current.input(action)));
+
   const boardCanvasRef = useRef<HTMLCanvasElement>(null);
   const queueCanvasRef = useRef<HTMLCanvasElement>(null);
   const holdCanvasRef = useRef<HTMLCanvasElement>(null);
+
   const rafRef = useRef<number>(0);
   const prevLinesRef = useRef<number>(0);
   const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 0 });
 
-  // RAF loop — draws directly to canvas, no React re-renders per frame
   useEffect(() => {
     const game = gameRef.current;
+    const input = inputRef.current;
     game.reset();
     prevLinesRef.current = 0;
 
+    input.attach();
+
     const loop = (now: number) => {
+      input.tick(now);
       game.tick(now);
       const state = game.state;
 
-      // Board
       const boardCtx = boardCanvasRef.current?.getContext('2d');
       if (boardCtx) {
         const piece = state.activePiece ? toSnapshot(state.activePiece) : null;
         renderBoard(boardCtx, visibleBoard(state.board), piece);
       }
 
-      // Queue
       const queueCtx = queueCanvasRef.current?.getContext('2d');
       if (queueCtx) renderQueue(queueCtx, state.queue);
 
-      // Hold
       const holdCtx = holdCanvasRef.current?.getContext('2d');
       if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
 
-      // Stats — only update React state when something meaningful changes
       if (state.lines !== prevLinesRef.current) {
         prevLinesRef.current = state.lines;
         setStats({ score: state.score, lines: state.lines, level: state.level });
@@ -82,20 +74,11 @@ export function SoloScreen({ onExit }: Props) {
     };
 
     rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      input.detach();
+    };
   }, []);
-
-  const handleKey = useCallback((e: KeyboardEvent) => {
-    const action = KEY_MAP[e.key];
-    if (!action) return;
-    e.preventDefault();
-    gameRef.current.input(action);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [handleKey]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
