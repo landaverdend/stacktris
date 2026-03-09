@@ -2,7 +2,6 @@
 // Game-core logic will live here, importable by both frontend and backend
 
 export type PieceKind = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
-
 export type Board = number[][];
 
 export interface PieceSnapshot {
