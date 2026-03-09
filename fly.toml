@@ -4,7 +4,7 @@
 #
 
 app = 'stacktris'
-primary_region = 'ams'
+primary_region = 'gru'
 
 [build]
 
