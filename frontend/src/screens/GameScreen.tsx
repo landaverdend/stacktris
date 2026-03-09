@@ -118,23 +118,54 @@ export function GameScreen({ onExitToLobby }: Props) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 pt-10">
+
+      {/* ── Waiting ── */}
       {gameStatus.status === 'waiting_opponent' && (
-        <>
-          <p className="text-zinc-400 text-sm">Waiting for opponent...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="text-center flex flex-col gap-1">
+            <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
+              ネルフ  
+            </p>
+            <p className="text-bitcoin font-display font-bold text-xl tracking-[0.3em]">
+              AWAITING OPERATIVE
+            </p>
+            <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp mt-1">
+              対戦相手を待機中
+            </p>
+          </div>
+
           <RoomIdBadge roomId={gameStatus.roomId} />
-          <GhostBtn onClick={handleGoToLobby}>Cancel</GhostBtn>
-        </>
+
+          <div className="flex items-center gap-2">
+            <span className="text-bitcoin text-[10px] font-mono tracking-widest animate-pulse">◌</span>
+            <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">STANDBY</span>
+          </div>
+
+          <NervGhostBtn onClick={handleGoToLobby}>ABORT MISSION</NervGhostBtn>
+        </div>
       )}
 
+      {/* ── Countdown ── */}
       {gameStatus.status === 'countdown' && (
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-zinc-500 text-sm tracking-widest uppercase">Get Ready</p>
-          <p className="text-bitcoin font-bold" style={{ fontSize: '6rem', lineHeight: 1 }}>
-            {countdownDisplay}
+        <div className="flex flex-col items-center gap-6">
+          <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
+            // COMBAT SEQUENCE INITIATING
+          </p>
+          <div className="relative nerv-frame px-8 py-6">
+            <p
+              className="text-bitcoin font-display font-bold leading-none"
+              style={{ fontSize: '8rem' }}
+            >
+              {countdownDisplay}
+            </p>
+          </div>
+          <p className="text-nerv-dim text-[9px] font-jp tracking-widest">
+            準備完了 — MAGI SYNC COMPLETE
           </p>
         </div>
       )}
 
+      {/* ── Playing ── */}
       {gameStatus.status === 'playing' && (
         <div className="relative flex items-start justify-center w-full pt-4">
           {/* Your board + hold (left) + queue (right) */}
@@ -151,9 +182,9 @@ export function GameScreen({ onExitToLobby }: Props) {
                   activePiece={gameStatus.your.current_piece}
                   label="You"
                 />
-                <div className="flex justify-between text-zinc-600 text-xs font-mono px-1">
-                  <span>{gameStatus.your.score.toLocaleString()} pts</span>
-                  <span>Lv {gameStatus.your.level}</span>
+                <div className="flex justify-between text-nerv-dim text-[10px] font-mono tracking-widest px-1">
+                  <span>{gameStatus.your.score.toLocaleString()} <span className="opacity-50">PTS</span></span>
+                  <span>LV <span className="text-bitcoin">{gameStatus.your.level}</span></span>
                 </div>
               </div>
             </div>
@@ -167,25 +198,48 @@ export function GameScreen({ onExitToLobby }: Props) {
               label="Opponent"
               scale={0.4}
             />
-            <div className="flex justify-between text-zinc-700 text-xs font-mono px-0.5">
+            <div className="flex justify-between text-nerv-dim text-[9px] font-mono tracking-widest px-0.5">
               <span>{gameStatus.opponent.score.toLocaleString()}</span>
-              <span>Lv {gameStatus.opponent.level}</span>
+              <span>LV {gameStatus.opponent.level}</span>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Result ── */}
       {gameStatus.status === 'result' && (
-        <>
-          <p className="text-4xl">{gameStatus.youWon ? '🏆' : '💀'}</p>
-          <p className="text-bitcoin text-2xl font-bold">
-            {gameStatus.youWon ? 'You Win' : 'You Lose'}
-          </p>
-          <p className="text-zinc-600 text-sm">
-            You: {gameStatus.yourScore.toLocaleString()} pts · Opponent: {gameStatus.opponentScore.toLocaleString()} pts
-          </p>
-          <OrangeBtn onClick={handleGoToLobby}>Play Again</OrangeBtn>
-        </>
+        <div className="flex flex-col items-center gap-6">
+          <div className="text-center flex flex-col gap-1">
+            <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
+              // OPERATION COMPLETE
+            </p>
+            <p className={`font-display font-bold text-5xl tracking-[0.2em] ${gameStatus.youWon ? 'text-magi' : 'text-alert'}`}>
+              {gameStatus.youWon ? 'VICTORY' : 'DEFEAT'}
+            </p>
+            <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp mt-1">
+              {gameStatus.youWon ? '作戦成功' : '作戦失敗'}
+            </p>
+          </div>
+
+          <div className="w-full max-w-xs border border-border bg-surface nerv-frame p-4 flex flex-col gap-3">
+            <div className="flex justify-between items-center border-b border-border pb-2">
+              <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">OPERATIVE</span>
+              <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">ADVERSARY</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-bitcoin font-mono font-bold text-lg">{gameStatus.yourScore.toLocaleString()}</span>
+              <span className="text-nerv-dim text-[9px] font-mono tracking-widest">SCORE</span>
+              <span className="text-nerv-dim font-mono text-lg">{gameStatus.opponentScore.toLocaleString()}</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGoToLobby}
+            className="w-full max-w-xs py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors nerv-frame"
+          >
+            RETURN TO BASE
+          </button>
+        </div>
       )}
     </div>
   );
@@ -203,38 +257,27 @@ function RoomIdBadge({ roomId }: { roomId: string }) {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <p className="text-zinc-600 text-xs tracking-widest uppercase">Room ID</p>
-      <div className="flex items-center gap-2 bg-surface border border-border-hi rounded-lg px-4 py-2">
-        <span className="text-zinc-300 font-mono text-sm tracking-wider">{roomId}</span>
+      <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">SESSION ID</span>
+      <div className="flex items-center gap-3 border border-border-hi bg-surface px-4 py-2.5 nerv-frame">
+        <span className="text-bitcoin font-mono text-xs tracking-wider">{roomId}</span>
         <button
           onClick={copy}
-          className="text-zinc-600 hover:text-bitcoin transition-colors text-xs ml-2"
+          className="text-nerv-dim hover:text-bitcoin transition-colors text-[10px] font-display tracking-widest border-l border-border pl-3"
           title="Copy room ID"
         >
-          {copied ? '✓' : 'Copy'}
+          {copied ? 'COPIED' : 'COPY'}
         </button>
       </div>
-      <p className="text-zinc-700 text-xs">Share this with your opponent</p>
+      <span className="text-nerv-dim/50 text-[9px] font-jp">共有コード — SHARE WITH OPPONENT</span>
     </div>
   );
 }
 
-function GhostBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function NervGhostBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
-      className="mt-2 px-5 py-2 text-sm text-zinc-500 border border-border-hi rounded hover:text-zinc-300 hover:border-zinc-500 transition-colors"
-    >
-      {children}
-    </button>
-  );
-}
-
-function OrangeBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className="mt-2 px-8 py-3 bg-bitcoin text-black font-bold rounded hover:opacity-90 transition-opacity"
+      className="px-6 py-2.5 border border-border-hi text-nerv-dim font-display text-xs tracking-[0.2em] hover:border-alert hover:text-alert transition-colors"
     >
       {children}
     </button>

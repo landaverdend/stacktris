@@ -1,16 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bitcoin:    #f7931a;
-  --color-pit:        #0a0a0a;
-  --color-surface:    #111111;
-  --color-surface-2:  #1a1a1a;
-  --color-topbar:     #0d0d0d;
-  --color-border-dim: #1e1e1e;
-  --color-border:     #222222;
-  --color-border-hi:  #333333;
+  /* ── NERV color system ───────────────────────────────────────────────────── */
+  --color-bitcoin:    #f7931a;   /* NERV amber — primary accent */
+  --color-nerv-dim:   #7a4010;
+  --color-nerv-faint: #1f0d03;
+  --color-alert:      #cc2200;
+  --color-magi:       #00aa55;   /* MAGI green — online/active */
 
-  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Monaco, monospace;
+  --color-pit:        #050505;
+  --color-surface:    #0c0600;
+  --color-surface-2:  #140a00;
+  --color-topbar:     #060300;
+  --color-border-dim: #1c0d03;
+  --color-border:     #2e1606;
+  --color-border-hi:  #7a3a08;
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+  --font-display: 'Rajdhani', 'Arial Narrow', sans-serif;
+  --font-mono:    'Share Tech Mono', ui-monospace, monospace;
+  --font-jp:      'Noto Sans JP', sans-serif;
 }
 
 @layer base {
@@ -19,18 +28,79 @@
   }
 
   body {
-    background-color: #0a0a0a;
-    color: #e4e4e7; /* zinc-200 */
+    background-color: #050505;
+    color: #c8a882;
     font-family: var(--font-mono);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.07) 2px,
+      rgba(0, 0, 0, 0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
   }
 
   input[type='text'],
   input[type='number'] {
     color-scheme: dark;
+    font-family: var(--font-mono);
   }
 
   * {
     box-sizing: border-box;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+/* ── NERV utility classes ─────────────────────────────────────────────────── */
+@layer utilities {
+  /* Corner-bracket tactical frame */
+  .nerv-frame {
+    position: relative;
+  }
+  .nerv-frame::before,
+  .nerv-frame::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: #f7931a;
+    border-style: solid;
+    opacity: 0.5;
+  }
+  .nerv-frame::before {
+    top: -1px; left: -1px;
+    border-width: 1px 0 0 1px;
+  }
+  .nerv-frame::after {
+    bottom: -1px; right: -1px;
+    border-width: 0 1px 1px 0;
+  }
+
+  /* Hazard stripe background */
+  .nerv-hazard {
+    background: repeating-linear-gradient(
+      45deg,
+      #f7931a0d 0px, #f7931a0d 6px,
+      transparent 6px, transparent 12px
+    );
+  }
+
+  .font-display { font-family: var(--font-display); }
+  .font-jp      { font-family: var(--font-jp); }
 }
