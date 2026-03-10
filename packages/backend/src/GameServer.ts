@@ -1,10 +1,13 @@
 import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import { InputAction } from '@stacktris/shared';
 import { RoomManager, Room } from './RoomManager.js';
+import { GameSession } from './GameSession.js';
 
 export class GameServer {
   private wss: WebSocketServer;
   private manager = new RoomManager();
+  private sessions = new Map<string, GameSession>(); // room id → session
 
   constructor(server: Server) {
     this.wss = new WebSocketServer({ server, path: '/ws' });
@@ -43,9 +46,10 @@ export class GameServer {
     catch { return; }
 
     switch (msg.type) {
-      case 'create_room':  return this.handleCreateRoom(socket, msg);
-      case 'join_room':    return this.handleJoinRoom(socket, msg);
+      case 'create_room': return this.handleCreateRoom(socket, msg);
+      case 'join_room': return this.handleJoinRoom(socket, msg);
       case 'player_ready': return this.handlePlayerReady(socket, msg);
+      case 'game_action': return this.handleGameAction(socket, msg);
     }
   }
 
@@ -70,6 +74,13 @@ export class GameServer {
     this.broadcastReadyUpdate(room);
   }
 
+  private handleGameAction(socket: WebSocket, msg: Record<string, unknown>): void {
+    const room = this.manager.roomOf(socket);
+    if (!room) return;
+    const session = this.sessions.get(room.id);
+    session?.onInput(socket, msg.action as InputAction);
+  }
+
   private handlePlayerReady(socket: WebSocket, msg: Record<string, unknown>): void {
     const ready = Boolean(msg.ready);
     const result = this.manager.setReady(socket, ready);
@@ -80,6 +91,7 @@ export class GameServer {
 
     if (allReady) {
       this.manager.startRoom(room.id);
+      this.sessions.set(room.id, new GameSession(room.players));
       room.players.forEach(p =>
         this.send(p.socket, { type: 'game_start', countdown: 3 })
       );

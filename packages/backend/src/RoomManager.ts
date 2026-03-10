@@ -14,7 +14,7 @@ export type RoomStatus = 'waiting' | 'ready_check' | 'playing' | 'finished';
 export interface Room {
   id: string;
   betSats: number;
-  createdAt: number;  // unix seconds
+  createdAt: number;
   status: RoomStatus;
   players: [RoomPlayer] | [RoomPlayer, RoomPlayer];
 }

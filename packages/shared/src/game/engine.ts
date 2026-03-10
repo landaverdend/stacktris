@@ -39,9 +39,9 @@ export function applyInput(game: GameWithBag, action: InputAction, now: number):
   const piece = state.activePiece;
 
   switch (action) {
-    case 'move_left':  return applyMove(game, tryMoveLeft(state.board, piece), now);
+    case 'move_left': return applyMove(game, tryMoveLeft(state.board, piece), now);
     case 'move_right': return applyMove(game, tryMoveRight(state.board, piece), now);
-    case 'rotate_cw':  return applyMove(game, tryRotate(state.board, piece, true), now);
+    case 'rotate_cw': return applyMove(game, tryRotate(state.board, piece, true), now);
     case 'rotate_ccw': return applyMove(game, tryRotate(state.board, piece, false), now);
     case 'soft_drop': {
       // If already grounded (lock delay active), soft drop commits the lock immediately
