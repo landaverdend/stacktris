@@ -37,7 +37,15 @@ export class Room {
   }
 
   public onMessage(playerId: string, msg: ClientMsg) {
+    console.log(`[Room] onMessage: ${msg.type} from player ${playerId} in room ${this.id}`);
 
+    switch (msg.type) {
+      case 'ready_update':
+        this.onReadyUpdate(playerId, msg.ready)
+        break;
+    }
   }
 
+  private onReadyUpdate(playerId: string, ready: boolean) {
+  }
 }

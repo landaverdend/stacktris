@@ -22,6 +22,8 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
 
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
 
+  const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
     if (roomStatus.status !== 'countdown') { setCountdownDisplay(null); return; }
 
@@ -112,7 +114,8 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
           players={roomStatus.players}
           onToggleReady={() => {
             // send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
-            
+            send({ type: 'ready_update', ready: !isReady });
+            setIsReady(prev => !prev);
           }}
           onAbort={handleGoToLobby}
         />

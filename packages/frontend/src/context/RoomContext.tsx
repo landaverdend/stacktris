@@ -14,6 +14,7 @@ const RoomContext = createContext<RoomContextValue | null>(null);
 
 export function RoomProvider({ children }: { children: ReactNode }) {
   const ws = useWS();
+
   const connectionStatus = useConnectionStatus();
   const [roomStatus, setRoomStatus] = useState<RoomStatus>({ status: 'lobby' });
 

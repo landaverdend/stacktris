@@ -23,8 +23,6 @@ export class RoomRegistry {
   }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
-    console.log('[RoomManager] onMessage: ', msg);
-
     switch (msg.type) {
       case 'create_room':
         console.log('[RoomManager] create_room: ', msg);
@@ -38,8 +36,9 @@ export class RoomRegistry {
         console.log('[RoomManager] leave_room: ', msg);
         this.leaveRoom(playerId);
         break;
+
+      /// All other cases should be routed directly to the room.
       default:
-        const roomId = this.playerIdToRoom.get(playerId);
         const room = this.rooms.get(this.playerIdToRoom.get(playerId)!)
         if (room) {
           room.onMessage(playerId, msg);
