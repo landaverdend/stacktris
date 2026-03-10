@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
-import { ClientMsg, ServerMsg, SeededPieceBag } from '@stacktris/shared';
+import { ClientMsg, ServerMsg } from '@stacktris/shared';
 import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket';
 import { RoomStatus, ReadyPlayer } from '../types';
 
@@ -49,6 +49,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         break;
 
       case 'game_start': {
+        console.log('[RoomContext] game_start: ', msg);
         break;
       }
 
