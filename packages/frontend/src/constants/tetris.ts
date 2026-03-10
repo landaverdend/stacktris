@@ -1,4 +1,4 @@
-import { TetrominoType } from '../types';
+import { TetrominoType, Piece } from '../types';
 
 export const BOARD_WIDTH = 10;
 export const BOARD_HEIGHT = 20;
@@ -71,6 +71,14 @@ export const TETROMINOES: Record<TetrominoType, { shape: number[][][]; color: st
 };
 
 export const TETROMINO_TYPES: TetrominoType[] = ['I','O','T','S','Z','J','L'];
+
+export function colorForType(type: TetrominoType): string {
+  return TETROMINOES[type].color;
+}
+
+export function pieceShape(piece: Piece): number[][] {
+  return TETROMINOES[piece.type].shape[piece.rotation % 4];
+}
 
 export const POINTS_PER_LINE = [0, 100, 300, 500, 800];
 

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useGameClient } from '../hooks/useGameClient';
 
 const API_BASE = `${window.location.protocol}//${window.location.host}`;
 
@@ -23,17 +22,12 @@ const MENU = [
   { id: 'join', label: 'JOIN BY ID', jp: '参加' },
 ] as const;
 
-export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
-  const { state, client } = useGameClient();
+export function LobbyScreen({ onEnterGame: _onEnterGame, onEnterSolo }: Props) {
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
   const [expanded, setExpanded] = useState<MenuItem | null>(null);
   const [rooms, setRooms] = useState<LobbyEntry[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
-
-  useEffect(() => {
-    if (state.gameStatus.status !== 'lobby') onEnterGame();
-  }, [state.gameStatus.status, onEnterGame]);
 
   useEffect(() => {
     if (expanded !== 'battle') return;
@@ -105,7 +99,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
                         </div>
                       ) : (
                         rooms.map(r => (
-                          <RoomRow key={r.id} room={r} onJoin={() => client.joinRoom(r.id, r.bet_sats)} />
+                          <RoomRow key={r.id} room={r} onJoin={() => { /* TODO: send join_room via useWebSocket */ }} />
                         ))
                       )}
                     </div>
@@ -123,7 +117,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
                       </NervField>
-                      <NervButton onClick={() => client.createRoom(betSats)}>INITIALIZE SESSION</NervButton>
+                      <NervButton onClick={() => { /* TODO: send create_room via useWebSocket */ }}>INITIALIZE SESSION</NervButton>
                     </>
                   )}
 
@@ -148,7 +142,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
                       </NervField>
-                      <NervButton onClick={() => joinRoomId && client.joinRoom(joinRoomId, betSats)} disabled={!joinRoomId}>
+                      <NervButton onClick={() => { /* TODO: send join_room via useWebSocket */ }} disabled={!joinRoomId}>
                         CONNECT TO SESSION
                       </NervButton>
                     </>

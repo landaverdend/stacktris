@@ -65,6 +65,22 @@ export interface OpponentSnapshot {
   level: number;
 }
 
+// ── Game status / lobby state types ──────────────────────────────────────────
+
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+export interface ReadyPlayer {
+  index: 0 | 1;
+  ready: boolean;
+}
+
+export type GameStatus =
+  | { status: 'lobby' }
+  | { status: 'waiting_opponent'; roomId: string; myIndex: 0 | 1; players: ReadyPlayer[] }
+  | { status: 'countdown'; roomId: string; from: number }
+  | { status: 'playing'; roomId: string; your: PlayerSnapshot; opponent: OpponentSnapshot }
+  | { status: 'result'; youWon: boolean; yourScore: number; opponentScore: number };
+
 // ── WebSocket message types ────────────────────────────────────────────────────
 export type ClientMessage =
   | { type: 'join_room'; room_id: string; bet_sats: number }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useGameClient } from '../hooks/useGameClient';
+import { GameStatus } from '../types';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
 import { HoldCanvas } from '../components/HoldCanvas';
@@ -16,8 +16,10 @@ interface Props {
 }
 
 export function GameScreen({ onExitToLobby }: Props) {
-  const { state, client } = useGameClient();
-  const { gameStatus } = state;
+  // TODO: wire up game state once the game state layer is rebuilt
+  const [gameStatus] = useState<GameStatus>({ status: 'lobby' });
+  const sendAction = (_action: string) => {};
+  const setReady = (_ready: boolean) => {};
 
   // Refs so timer IDs are accessible inside event handlers without re-registering.
   const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,15 +57,15 @@ export function GameScreen({ onExitToLobby }: Props) {
       heldKey.current = null;
     };
 
-    const startDasArr = (action: { type: 'move_left' | 'move_right' }) => {
+    const startDasArr = (action: 'move_left' | 'move_right') => {
       clearDasArr();
-      heldKey.current = action.type;
+      heldKey.current = action;
       // Fire immediately, then start DAS countdown.
-      client.sendAction(action);
+      sendAction(action);
       dasTimer.current = setTimeout(() => {
         dasTimer.current = null;
         arrTimer.current = setInterval(() => {
-          client.sendAction(action);
+          sendAction(action);
         }, ARR_MS);
       }, DAS_MS);
     };
@@ -72,25 +74,25 @@ export function GameScreen({ onExitToLobby }: Props) {
       if (e.repeat) return; // browser repeat — we handle our own
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        startDasArr({ type: 'move_left' });
+        startDasArr('move_left');
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        startDasArr({ type: 'move_right' });
+        startDasArr('move_right');
       } else if (e.key === 'ArrowUp' || e.key === 'x') {
         e.preventDefault();
-        client.sendAction({ type: 'rotate_cw' });
+        sendAction('rotate_cw');
       } else if (e.key === 'z') {
         e.preventDefault();
-        client.sendAction({ type: 'rotate_ccw' });
+        sendAction('rotate_ccw');
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        client.sendAction({ type: 'soft_drop' });
+        sendAction('soft_drop');
       } else if (e.key === ' ') {
         e.preventDefault();
-        client.sendAction({ type: 'hard_drop' });
+        sendAction('hard_drop');
       } else if (e.key === 'c') {
         e.preventDefault();
-        client.sendAction({ type: 'hold' });
+        sendAction('hold');
       }
     };
 
@@ -110,10 +112,9 @@ export function GameScreen({ onExitToLobby }: Props) {
       window.removeEventListener('keyup', onKeyUp);
       clearDasArr();
     };
-  }, [gameStatus.status, client]);
+  }, [gameStatus.status, sendAction]);
 
   const handleGoToLobby = () => {
-    client.goToLobby();
     onExitToLobby();
   };
 
@@ -140,7 +141,7 @@ export function GameScreen({ onExitToLobby }: Props) {
             players={gameStatus.players}
             onToggleReady={() => {
               const myPlayer = gameStatus.players.find(p => p.index === gameStatus.myIndex);
-              client.setReady(!(myPlayer?.ready ?? false));
+              setReady(!(myPlayer?.ready ?? false));
             }}
             onAbort={handleGoToLobby}
           />
