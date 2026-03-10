@@ -1,9 +1,7 @@
-import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
-import { ClientMsg, ServerMsg } from '@stacktris/shared';
-import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket';
-import { RoomStatus, ReadyPlayer } from '../types';
-
-// ── Context type ─────────────────────────────────────────────────────────────
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import type { ClientMsg } from '@stacktris/shared';
+import { useWS, useConnectionStatus } from '../ws/WSContext';
+import type { ConnectionStatus, RoomStatus } from '../types';
 
 interface RoomContextValue {
   roomStatus: RoomStatus;
@@ -14,21 +12,31 @@ interface RoomContextValue {
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
-// ── Provider ─────────────────────────────────────────────────────────────────
-
 export function RoomProvider({ children }: { children: ReactNode }) {
+  const ws = useWS();
+  const connectionStatus = useConnectionStatus();
   const [roomStatus, setRoomStatus] = useState<RoomStatus>({ status: 'lobby' });
 
-  const handleMessage = useCallback((msg: ServerMsg) => {
-    console.log('[RoomContext] handleMessage: ', msg);
+  useEffect(() => {
+    const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {
+      setRoomStatus({ status: 'waiting_opponent', roomId: msg.room_id, myIndex: 0, players: [] });
+    };
+    const onRoomJoined = (msg: { type: 'room_joined'; room_id: string }) => {
+      setRoomStatus({ status: 'waiting_opponent', roomId: msg.room_id, myIndex: 1, players: [] });
+    };
 
-  }, []);
+    ws.on('room_created', onRoomCreated);
+    ws.on('room_joined', onRoomJoined);
 
-  const { status: connectionStatus, send } = useWebSocket(handleMessage);
 
-  const goToLobby = useCallback(() => {
-    setRoomStatus({ status: 'lobby' });
-  }, []);
+    return () => {
+      ws.off('room_created', onRoomCreated);
+      ws.off('room_joined', onRoomJoined);
+    };
+  }, [ws]);
+
+  const send = useCallback((msg: ClientMsg) => ws.send(msg), [ws]);
+  const goToLobby = useCallback(() => setRoomStatus({ status: 'lobby' }), []);
 
   return (
     <RoomContext.Provider value={{ roomStatus, connectionStatus, send, goToLobby }}>
@@ -36,8 +44,6 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     </RoomContext.Provider>
   );
 }
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useRoom(): RoomContextValue {
   const ctx = useContext(RoomContext);

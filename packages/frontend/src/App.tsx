@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { WSProvider } from './ws/WSContext';
 import { RoomProvider } from './context/RoomContext';
 import { NavBar } from './components/NavBar';
 import { LobbyScreen } from './screens/LobbyScreen';
@@ -15,6 +16,7 @@ export default function App() {
   const [view, setView] = useState<View>('lobby');
 
   return (
+    <WSProvider>
     <RoomProvider>
       {view === 'lobby' && <LightningGraph />}
       <TetrominoBackground />
@@ -36,5 +38,6 @@ export default function App() {
         )}
       </div>
     </RoomProvider>
+    </WSProvider>
   );
 }
