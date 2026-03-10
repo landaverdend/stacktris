@@ -1,6 +1,6 @@
 import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { RoomManager } from './RoomManager.js';
+import { RoomManager, Room } from './RoomManager.js';
 
 export class GameServer {
   private wss: WebSocketServer;
@@ -43,8 +43,9 @@ export class GameServer {
     catch { return; }
 
     switch (msg.type) {
-      case 'create_room': return this.handleCreateRoom(socket, msg);
-      case 'join_room': return this.handleJoinRoom(socket, msg);
+      case 'create_room':  return this.handleCreateRoom(socket, msg);
+      case 'join_room':    return this.handleJoinRoom(socket, msg);
+      case 'player_ready': return this.handlePlayerReady(socket, msg);
     }
   }
 
@@ -61,12 +62,38 @@ export class GameServer {
       this.send(socket, { type: 'error', message: 'Room not available' });
       return;
     }
+    // Tell each player their index
     room.players.forEach(p =>
       this.send(p.socket, { type: 'room_joined', room_id: room.id, player_index: p.index })
     );
+    // Broadcast initial ready state (both not ready)
+    this.broadcastReadyUpdate(room);
+  }
+
+  private handlePlayerReady(socket: WebSocket, msg: Record<string, unknown>): void {
+    const ready = Boolean(msg.ready);
+    const result = this.manager.setReady(socket, ready);
+    if (!result) return;
+
+    const { room, allReady } = result;
+    this.broadcastReadyUpdate(room);
+
+    if (allReady) {
+      this.manager.startRoom(room.id);
+      room.players.forEach(p =>
+        this.send(p.socket, { type: 'game_start', countdown: 3 })
+      );
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+
+  private broadcastReadyUpdate(room: Room): void {
+    const players = room.players.map(p => ({ index: p.index, ready: p.ready }));
+    room.players.forEach(p =>
+      this.send(p.socket, { type: 'ready_update', players })
+    );
+  }
 
   private send(socket: WebSocket, msg: object): void {
     if (socket.readyState === WebSocket.OPEN) {

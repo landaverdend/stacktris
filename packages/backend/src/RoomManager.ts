@@ -6,9 +6,10 @@ import { randomUUID } from 'crypto';
 export interface RoomPlayer {
   socket: WebSocket;
   index: 0 | 1;
+  ready: boolean;
 }
 
-export type RoomStatus = 'waiting' | 'playing' | 'finished';
+export type RoomStatus = 'waiting' | 'ready_check' | 'playing' | 'finished';
 
 export interface Room {
   id: string;
@@ -30,7 +31,7 @@ export class RoomManager {
       betSats,
       createdAt: Math.floor(Date.now() / 1000),
       status: 'waiting',
-      players: [{ socket, index: 0 }],
+      players: [{ socket, index: 0, ready: false }],
     };
     this.rooms.set(room.id, room);
     this.socketRoom.set(socket, room.id);
@@ -42,10 +43,32 @@ export class RoomManager {
     const room = this.rooms.get(roomId);
     if (!room || room.status !== 'waiting' || room.players.length >= 2) return null;
 
-    (room.players as RoomPlayer[]).push({ socket, index: 1 });
-    (room as { status: RoomStatus }).status = 'playing';
+    (room.players as RoomPlayer[]).push({ socket, index: 1, ready: false });
+    (room as { status: RoomStatus }).status = 'ready_check';
     this.socketRoom.set(socket, room.id);
     return room;
+  }
+
+  /**
+   * Mark a player's ready state. Returns the room and whether all players are
+   * now ready. Returns null if the room isn't in ready_check status.
+   */
+  setReady(socket: WebSocket, ready: boolean): { room: Room; allReady: boolean } | null {
+    const room = this.roomOf(socket);
+    if (!room || (room.status !== 'waiting' && room.status !== 'ready_check')) return null;
+
+    const player = room.players.find(p => p.socket === socket);
+    if (!player) return null;
+
+    player.ready = ready;
+    const allReady = room.players.length === 2 && room.players.every(p => p.ready);
+    return { room, allReady };
+  }
+
+  /** Transition a room from ready_check to playing. */
+  startRoom(roomId: string): void {
+    const room = this.rooms.get(roomId);
+    if (room) (room as { status: RoomStatus }).status = 'playing';
   }
 
   /** Returns the room and the leaving player, if found. */

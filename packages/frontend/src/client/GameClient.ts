@@ -1,12 +1,17 @@
-import { ClientMessage, GameAction, OpponentSnapshot, PlayerSnapshot, ServerMessage } from '../types';
+import { ClientMsg, OpponentSnapshot, PlayerSnapshot, ServerMsg, InputAction } from '@stacktris/shared';
 
 // ── State types ───────────────────────────────────────────────────────────────
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+export interface ReadyPlayer {
+  index: 0 | 1;
+  ready: boolean;
+}
+
 export type GameStatus =
   | { status: 'lobby' }
-  | { status: 'waiting_opponent'; roomId: string }
+  | { status: 'waiting_opponent'; roomId: string; myIndex: 0 | 1; players: ReadyPlayer[] }
   | { status: 'countdown'; roomId: string; from: number }
   | { status: 'playing'; roomId: string; your: PlayerSnapshot; opponent: OpponentSnapshot }
   | { status: 'result'; youWon: boolean; yourScore: number; opponentScore: number };
@@ -84,9 +89,9 @@ export class GameClient {
   // ── Inbound message handling ────────────────────────────────────────────────
 
   private onMessage(event: MessageEvent): void {
-    let msg: ServerMessage;
+    let msg: ServerMsg;
     try {
-      msg = JSON.parse(event.data as string) as ServerMessage;
+      msg = JSON.parse(event.data as string) as ServerMsg;
     } catch {
       console.error('[GameClient] Failed to parse message:', event.data);
       return;
@@ -94,16 +99,37 @@ export class GameClient {
 
     switch (msg.type) {
       case 'room_created':
-        this.setStatus({ status: 'waiting_opponent', roomId: msg.room_id });
+        this.setStatus({
+          status: 'waiting_opponent',
+          roomId: msg.room_id,
+          myIndex: 0,
+          players: [{ index: 0, ready: false }],
+        });
         break;
 
-      case 'room_joined':
-        this.setStatus({ status: 'waiting_opponent', roomId: msg.room_id });
+      case 'room_joined': {
+        const s = this.state.gameStatus;
+        const existingPlayers = s.status === 'waiting_opponent' ? s.players : [];
+        this.setStatus({
+          status: 'waiting_opponent',
+          roomId: msg.room_id,
+          myIndex: msg.player_index,
+          players: existingPlayers,
+        });
         break;
+      }
 
       case 'player_joined':
-        // Second player joined — stay on waiting_opponent
+        // Superseded by ready_update — no action needed
         break;
+
+      case 'ready_update': {
+        const s = this.state.gameStatus;
+        if (s.status === 'waiting_opponent') {
+          this.setStatus({ ...s, players: msg.players });
+        }
+        break;
+      }
 
       case 'game_start': {
         const s = this.state.gameStatus;
@@ -123,7 +149,6 @@ export class GameClient {
       case 'piece_moved': {
         const s = this.state.gameStatus;
         if (s.status !== 'playing') break;
-        // Only the active piece positions changed — board is untouched.
         this.setStatus({
           ...s,
           your: { ...s.your, current_piece: msg.your_piece },
@@ -179,7 +204,7 @@ export class GameClient {
 
   // ── Outbound actions ────────────────────────────────────────────────────────
 
-  private send(msg: ClientMessage): void {
+  private send(msg: ClientMsg): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
     } else {
@@ -195,9 +220,11 @@ export class GameClient {
     this.send({ type: 'join_room', room_id: roomId, bet_sats: betSats });
   }
 
-  sendAction(action: GameAction): void {
-    // Apply prediction immediately so input feels instant, then let the server
-    // authoritative response (piece_moved / game_state) snap to truth.
+  setReady(ready: boolean): void {
+    this.send({ type: 'player_ready', ready });
+  }
+
+  sendAction(action: InputAction): void {
     const s = this.state.gameStatus;
     if (s.status === 'playing' && s.your.current_piece) {
       // const predicted = predictMove(s.your.board, s.your.current_piece, action);

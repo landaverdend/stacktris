@@ -121,28 +121,16 @@ export function GameScreen({ onExitToLobby }: Props) {
 
       {/* ── Waiting ── */}
       {gameStatus.status === 'waiting_opponent' && (
-        <div className="flex flex-col items-center gap-6">
-          <div className="text-center flex flex-col gap-1">
-            <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
-              ネルフ  
-            </p>
-            <p className="text-bitcoin font-display font-bold text-xl tracking-[0.3em]">
-              AWAITING OPERATIVE
-            </p>
-            <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp mt-1">
-              対戦相手を待機中
-            </p>
-          </div>
-
-          <RoomIdBadge roomId={gameStatus.roomId} />
-
-          <div className="flex items-center gap-2">
-            <span className="text-bitcoin text-[10px] font-mono tracking-widest animate-pulse">◌</span>
-            <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">STANDBY</span>
-          </div>
-
-          <NervGhostBtn onClick={handleGoToLobby}>ABORT MISSION</NervGhostBtn>
-        </div>
+        <MissionStaging
+          roomId={gameStatus.roomId}
+          myIndex={gameStatus.myIndex}
+          players={gameStatus.players}
+          onToggleReady={() => {
+            const myPlayer = gameStatus.players.find(p => p.index === gameStatus.myIndex);
+            client.setReady(!(myPlayer?.ready ?? false));
+          }}
+          onAbort={handleGoToLobby}
+        />
       )}
 
       {/* ── Countdown ── */}
@@ -284,6 +272,76 @@ export function GameScreen({ onExitToLobby }: Props) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── MissionStaging ─────────────────────────────────────────────────────────────
+
+interface MissionStagingProps {
+  roomId: string;
+  myIndex: 0 | 1;
+  players: { index: 0 | 1; ready: boolean }[];
+  onToggleReady: () => void;
+  onAbort: () => void;
+}
+
+function MissionStaging({ roomId, myIndex, players, onToggleReady, onAbort }: MissionStagingProps) {
+  const myPlayer = players.find(p => p.index === myIndex);
+  const amReady = myPlayer?.ready ?? false;
+
+  return (
+    <div className="flex flex-col items-center gap-8 w-full max-w-sm">
+      {/* Header */}
+      <div className="text-center flex flex-col gap-2">
+        <p className="text-nerv-dim text-xs tracking-[0.4em] font-mono">ネルフ</p>
+        <p className="text-bitcoin font-display font-bold text-3xl tracking-[0.3em]">MISSION STAGING</p>
+        <p className="text-nerv-dim text-xs tracking-[0.3em] font-jp mt-1">作戦準備中</p>
+      </div>
+
+      <RoomIdBadge roomId={roomId} />
+
+      {/* Player roster */}
+      <div className="w-full flex flex-col gap-3">
+        <p className="text-nerv-dim/60 text-xs font-mono tracking-[0.4em]">// OPERATIVES</p>
+        {([0, 1] as const).map(idx => {
+          const player = players.find(p => p.index === idx);
+          const isMe = idx === myIndex;
+          return (
+            <div key={idx} className="nerv-frame px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">UNIT-0{idx + 1}</span>
+                {isMe && (
+                  <span className="text-bitcoin/60 text-xs font-mono tracking-widest border-l border-border pl-3">
+                    YOU
+                  </span>
+                )}
+              </div>
+              {!player ? (
+                <span className="text-nerv-dim/30 text-sm font-mono tracking-widest animate-pulse">◌ AWAITING</span>
+              ) : player.ready ? (
+                <span className="text-magi text-sm font-mono tracking-widest font-bold">■ READY</span>
+              ) : (
+                <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">◌ STANDBY</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ready toggle */}
+      <button
+        onClick={onToggleReady}
+        className={`w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors
+          ${amReady
+            ? 'border-magi text-magi hover:bg-magi hover:text-black'
+            : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'
+          }`}
+      >
+        {amReady ? '■ READY — CLICK TO CANCEL' : '◌ CONFIRM READY'}
+      </button>
+
+      <NervGhostBtn onClick={onAbort}>ABORT MISSION</NervGhostBtn>
     </div>
   );
 }
