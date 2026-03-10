@@ -5,47 +5,33 @@ import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
 import { HoldCanvas } from '../components/HoldCanvas';
 import { GarbageMeter } from '../components/GarbageMeter';
+import { PieceSnapshot } from '../types';
 
-// Delayed Auto Shift: how long (ms) to hold a key before auto-repeat begins.
 const DAS_MS = 150;
-const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
-// Auto Repeat Rate: interval (ms) between repeated moves once DAS fires.
 const ARR_MS = 33;
+const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
+const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
+const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 
-// Placeholder snap used until useGameState is wired up.
-const YOUR_STUB = { board: EMPTY_BOARD, current_piece: null, next_pieces: [] as string[], hold_piece: null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
-const OPP_STUB  = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
-
-interface Props {
-  onExitToLobby: () => void;
-}
+interface Props { onExitToLobby: () => void; }
 
 export function GameScreen({ onExitToLobby }: Props) {
   const { roomStatus, send, goToLobby } = useRoom();
 
-  // Refs so timer IDs are accessible inside event handlers without re-registering.
   const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const arrTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const heldKey = useRef<string | null>(null);
 
-  // Countdown tick: counts down from `from` to 0 (or "GO!").
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
 
   useEffect(() => {
-    if (roomStatus.status !== 'countdown') {
-      setCountdownDisplay(null);
-      return;
-    }
+    if (roomStatus.status !== 'countdown') { setCountdownDisplay(null); return; }
     let n = roomStatus.from;
     setCountdownDisplay(n);
     const iv = setInterval(() => {
       n -= 1;
-      if (n > 0) {
-        setCountdownDisplay(n);
-      } else {
-        setCountdownDisplay('GO!');
-        clearInterval(iv);
-      }
+      if (n > 0) { setCountdownDisplay(n); }
+      else { setCountdownDisplay('GO!'); clearInterval(iv); }
     }, 1000);
     return () => clearInterval(iv);
   }, [roomStatus.status, roomStatus.status === 'countdown' ? roomStatus.from : 0]);
@@ -58,259 +44,126 @@ export function GameScreen({ onExitToLobby }: Props) {
     if (roomStatus.status !== 'playing') return;
 
     const clearDasArr = () => {
-      if (dasTimer.current !== null) { clearTimeout(dasTimer.current); dasTimer.current = null; }
-      if (arrTimer.current !== null) { clearInterval(arrTimer.current); arrTimer.current = null; }
+      if (dasTimer.current) { clearTimeout(dasTimer.current); dasTimer.current = null; }
+      if (arrTimer.current) { clearInterval(arrTimer.current); arrTimer.current = null; }
       heldKey.current = null;
     };
 
     const startDasArr = (action: 'move_left' | 'move_right') => {
       clearDasArr();
       heldKey.current = action;
-      // Fire immediately, then start DAS countdown.
       sendAction(action);
       dasTimer.current = setTimeout(() => {
         dasTimer.current = null;
-        arrTimer.current = setInterval(() => {
-          sendAction(action);
-        }, ARR_MS);
+        arrTimer.current = setInterval(() => sendAction(action), ARR_MS);
       }, DAS_MS);
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return; // browser repeat — we handle our own
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        startDasArr('move_left');
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        startDasArr('move_right');
-      } else if (e.key === 'ArrowUp' || e.key === 'x') {
-        e.preventDefault();
-        sendAction('rotate_cw');
-      } else if (e.key === 'z') {
-        e.preventDefault();
-        sendAction('rotate_ccw');
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        sendAction('soft_drop');
-      } else if (e.key === ' ') {
-        e.preventDefault();
-        sendAction('hard_drop');
-      } else if (e.key === 'c') {
-        e.preventDefault();
-        sendAction('hold');
-      }
+      if (e.repeat) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); startDasArr('move_left'); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); startDasArr('move_right'); }
+      else if (e.key === 'ArrowUp' || e.key === 'x') { e.preventDefault(); sendAction('rotate_cw'); }
+      else if (e.key === 'z') { e.preventDefault(); sendAction('rotate_ccw'); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); sendAction('soft_drop'); }
+      else if (e.key === ' ') { e.preventDefault(); sendAction('hard_drop'); }
+      else if (e.key === 'c') { e.preventDefault(); sendAction('hold'); }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      if (
-        (e.key === 'ArrowLeft' && heldKey.current === 'move_left') ||
-        (e.key === 'ArrowRight' && heldKey.current === 'move_right')
-      ) {
-        clearDasArr();
-      }
+      if ((e.key === 'ArrowLeft' && heldKey.current === 'move_left') ||
+        (e.key === 'ArrowRight' && heldKey.current === 'move_right')) clearDasArr();
     };
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      clearDasArr();
-    };
+    return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); clearDasArr(); };
   }, [roomStatus.status, sendAction]);
 
-  const handleGoToLobby = () => {
-    goToLobby();
-    onExitToLobby();
-  };
+  const handleGoToLobby = () => { goToLobby(); onExitToLobby(); };
 
-  // TODO: replace with useGameState() when built
-  const your = YOUR_STUB;
-  const opp  = OPP_STUB;
+  const your = STUB;
+  const opp = OPP_STUB;
+
+  const isWaiting = roomStatus.status === 'waiting_opponent';
+  const isCountdown = roomStatus.status === 'countdown';
+  const isPlaying = roomStatus.status === 'playing';
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4 pt-10">
+    <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
 
-      {/* ── Waiting ── */}
-      {roomStatus.status === 'waiting_opponent' && (
-        <div className="flex items-start justify-center gap-10 w-full">
-          {/* Idle arena */}
-          <div className="flex items-start gap-3 opacity-40">
-            <HoldCanvas holdPiece={null} dimmed />
-            <div className="flex items-end gap-1">
-              <GarbageMeter pendingGarbage={0} />
-              <BoardCanvas board={EMPTY_BOARD} activePiece={null} label="OPERATIVE // あなた" />
-            </div>
-            <QueueCanvas nextPieces={[]} />
-          </div>
-
-          {/* Ready-up panel */}
-          <MissionStaging
-            roomId={roomStatus.roomId}
-            myIndex={roomStatus.myIndex}
-            players={roomStatus.players}
-            onToggleReady={() => {
-              const myPlayer = roomStatus.players.find(p => p.index === roomStatus.myIndex);
-              send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
-            }}
-            onAbort={handleGoToLobby}
-          />
-        </div>
-      )}
-
-      {/* ── Countdown ── */}
-      {roomStatus.status === 'countdown' && (
-        <div className="flex items-start gap-3">
-          <HoldCanvas holdPiece={null} dimmed />
-          <div className="flex items-end gap-1">
-            <GarbageMeter pendingGarbage={0} />
+      {/* ── Arena — always mounted, same position ── */}
+      <div className={`flex items-start gap-3 ${isWaiting ? 'opacity-40' : ''}`}>
+        <HoldCanvas holdPiece={isPlaying ? your.hold_piece : null} dimmed={isPlaying && your.hold_used} />
+        <div className="flex items-end gap-1">
+          <GarbageMeter pendingGarbage={isPlaying ? your.pending_garbage : 0} />
+          <div className="flex flex-col gap-1.5">
             <div className="relative">
-              <BoardCanvas board={EMPTY_BOARD} activePiece={null} label="OPERATIVE // あなた" />
-              {/* Countdown overlay */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-                <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">
-                  // COMBAT SEQUENCE INITIATING
-                </p>
-                <p
-                  className="text-bitcoin font-display font-bold leading-none"
-                  style={{ fontSize: '7rem' }}
-                >
-                  {countdownDisplay}
-                </p>
-                <p className="text-nerv-dim text-[8px] font-jp tracking-widest">
-                  準備完了 — MAGI SYNC COMPLETE
-                </p>
-              </div>
-            </div>
-          </div>
-          <QueueCanvas nextPieces={[]} />
-        </div>
-      )}
-
-      {/* ── Playing ── */}
-      {roomStatus.status === 'playing' && (
-        <div className="relative flex flex-col items-center w-full pt-2 gap-2">
-
-          {/* ── Top NERV status strip ── */}
-          <div className="flex items-center gap-5 text-[8px] font-mono tracking-[0.28em] select-none">
-            <span className="text-nerv-dim/50">// COMBAT ACTIVE</span>
-            <span className="text-nerv-dim/30">◈ NERV HQ</span>
-            <span className="text-nerv-dim/40">MAGI SYNC: NOMINAL</span>
-            {your.pending_garbage > 0 ? (
-              <span className="text-alert/80 animate-pulse font-bold">
-                ⚠ INCOMING ATK: {your.pending_garbage}L
-              </span>
-            ) : (
-              <span className="text-magi/40">AT FIELD: NOMINAL</span>
-            )}
-          </div>
-
-          {/* ── Main arena ── */}
-          <div className="relative flex items-start justify-center w-full">
-
-            {/* Player side */}
-            <div className="flex items-start gap-3">
-              <HoldCanvas
-                holdPiece={your.hold_piece}
-                dimmed={your.hold_used}
+              <BoardCanvas
+                board={isPlaying ? your.board : EMPTY_BOARD}
+                activePiece={isPlaying ? your.current_piece : null}
+                label="OPERATIVE // あなた"
               />
-              <div className="flex items-end gap-1">
-                <GarbageMeter pendingGarbage={your.pending_garbage} />
-                <div className="flex flex-col gap-1.5">
-                  <BoardCanvas
-                    board={your.board}
-                    activePiece={your.current_piece}
-                    label="OPERATIVE // あなた"
-                  />
-                  {/* Score readout */}
-                  <div className="nerv-frame flex justify-between items-center px-2 py-1.5">
-                    <div className="flex flex-col gap-0">
-                      <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">SCORE</span>
-                      <span className="text-bitcoin font-mono font-bold text-sm leading-none">
-                        {your.score.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-px h-5 bg-border" />
-                    <div className="flex flex-col gap-0 items-end">
-                      <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">LEVEL</span>
-                      <span className="text-bitcoin font-mono font-bold text-sm leading-none">
-                        {your.level}
-                      </span>
-                    </div>
-                  </div>
+              {isCountdown && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+                  <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE INITIATING</p>
+                  <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
+                    {countdownDisplay}
+                  </p>
+                  <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — MAGI SYNC COMPLETE</p>
+                </div>
+              )}
+            </div>
+            {isPlaying && (
+              <div className="nerv-frame flex justify-between items-center px-2 py-1.5">
+                <div className="flex flex-col gap-0">
+                  <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">SCORE</span>
+                  <span className="text-bitcoin font-mono font-bold text-sm leading-none">{your.score.toLocaleString()}</span>
+                </div>
+                <div className="w-px h-5 bg-border" />
+                <div className="flex flex-col gap-0 items-end">
+                  <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">LEVEL</span>
+                  <span className="text-bitcoin font-mono font-bold text-sm leading-none">{your.level}</span>
                 </div>
               </div>
-              <QueueCanvas nextPieces={your.next_pieces} />
-            </div>
-
-            {/* Opponent mini panel — top-right */}
-            <div className="absolute top-0 right-4 flex flex-col gap-1">
-              <p className="text-nerv-dim/50 text-[8px] font-mono tracking-[0.3em]">// HOSTILE UNIT</p>
-              <div className="nerv-frame p-0.5">
-                <BoardCanvas
-                  board={opp.board}
-                  label="ADVERSARY"
-                  scale={0.4}
-                />
-              </div>
-              <div className="flex justify-between text-nerv-dim/50 text-[8px] font-mono tracking-widest px-0.5">
-                <span>{opp.score.toLocaleString()}</span>
-                <span>LV {opp.level}</span>
-              </div>
-            </div>
-
+            )}
           </div>
+        </div>
+        <QueueCanvas nextPieces={isPlaying ? your.next_pieces : []} />
+      </div>
 
-          {/* ── Bottom status strip ── */}
-          <div className="flex items-center gap-5 text-[8px] font-mono tracking-[0.22em] text-nerv-dim/30 select-none">
-            <span>第3新東京市 // GEO-FRONT</span>
-            <span className="text-bitcoin/20">LN-BATTLE PROTOCOL</span>
+      {/* ── Right panel — MissionStaging or opponent mini board ── */}
+      {isWaiting && (
+        <MissionStaging
+          roomId={roomStatus.roomId}
+          myIndex={roomStatus.myIndex}
+          players={roomStatus.players}
+          onToggleReady={() => {
+            const myPlayer = roomStatus.players.find(p => p.index === roomStatus.myIndex);
+            send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
+          }}
+          onAbort={handleGoToLobby}
+        />
+      )}
+
+      {isPlaying && (
+        <div className="flex flex-col gap-1 pt-6">
+          <p className="text-nerv-dim/50 text-[8px] font-mono tracking-[0.3em]">// HOSTILE UNIT</p>
+          <div className="nerv-frame p-0.5">
+            <BoardCanvas board={opp.board} label="ADVERSARY" scale={0.4} />
           </div>
-
+          <div className="flex justify-between text-nerv-dim/50 text-[8px] font-mono tracking-widest px-0.5">
+            <span>{opp.score.toLocaleString()}</span>
+            <span>LV {opp.level}</span>
+          </div>
         </div>
       )}
 
-      {/* ── Result ── */}
-      {roomStatus.status === 'result' && (
-        <div className="flex flex-col items-center gap-6">
-          <div className="text-center flex flex-col gap-1">
-            <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
-              // OPERATION COMPLETE
-            </p>
-            <p className={`font-display font-bold text-5xl tracking-[0.2em] ${roomStatus.youWon ? 'text-magi' : 'text-alert'}`}>
-              {roomStatus.youWon ? 'VICTORY' : 'DEFEAT'}
-            </p>
-            <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp mt-1">
-              {roomStatus.youWon ? '作戦成功' : '作戦失敗'}
-            </p>
-          </div>
-
-          <div className="w-full max-w-xs border border-border bg-surface nerv-frame p-4 flex flex-col gap-3">
-            <div className="flex justify-between items-center border-b border-border pb-2">
-              <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">OPERATIVE</span>
-              <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">ADVERSARY</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-bitcoin font-mono font-bold text-lg">{roomStatus.yourScore.toLocaleString()}</span>
-              <span className="text-nerv-dim text-[9px] font-mono tracking-widest">SCORE</span>
-              <span className="text-nerv-dim font-mono text-lg">{roomStatus.opponentScore.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleGoToLobby}
-            className="w-full max-w-xs py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors nerv-frame"
-          >
-            RETURN TO BASE
-          </button>
-        </div>
-      )}
     </div>
   );
 }
 
-// ── MissionStaging ─────────────────────────────────────────────────────────────
+// ── MissionStaging ────────────────────────────────────────────────────────────
 
 interface MissionStagingProps {
   roomId: string;
@@ -325,8 +178,7 @@ function MissionStaging({ roomId, myIndex, players, onToggleReady, onAbort }: Mi
   const amReady = myPlayer?.ready ?? false;
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full max-w-sm">
-      {/* Header */}
+    <div className="flex flex-col items-center gap-8 w-full max-w-sm pt-2">
       <div className="text-center flex flex-col gap-2">
         <p className="text-nerv-dim text-xs tracking-[0.4em] font-mono">ネルフ</p>
         <p className="text-bitcoin font-display font-bold text-3xl tracking-[0.3em]">MISSION STAGING</p>
@@ -335,7 +187,6 @@ function MissionStaging({ roomId, myIndex, players, onToggleReady, onAbort }: Mi
 
       <RoomIdBadge roomId={roomId} />
 
-      {/* Player roster */}
       <div className="w-full flex flex-col gap-3">
         <p className="text-nerv-dim/60 text-xs font-mono tracking-[0.4em]">// OPERATIVES</p>
         {([0, 1] as const).map(idx => {
@@ -345,76 +196,51 @@ function MissionStaging({ roomId, myIndex, players, onToggleReady, onAbort }: Mi
             <div key={idx} className="nerv-frame px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">UNIT-0{idx + 1}</span>
-                {isMe && (
-                  <span className="text-bitcoin/60 text-xs font-mono tracking-widest border-l border-border pl-3">
-                    YOU
-                  </span>
-                )}
+                {isMe && <span className="text-bitcoin/60 text-xs font-mono tracking-widest border-l border-border pl-3">YOU</span>}
               </div>
-              {!player ? (
-                <span className="text-nerv-dim/30 text-sm font-mono tracking-widest animate-pulse">◌ AWAITING</span>
-              ) : player.ready ? (
-                <span className="text-magi text-sm font-mono tracking-widest font-bold">■ READY</span>
-              ) : (
-                <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">◌ STANDBY</span>
-              )}
+              {!player
+                ? <span className="text-nerv-dim/30 text-sm font-mono tracking-widest animate-pulse">◌ AWAITING</span>
+                : player.ready
+                  ? <span className="text-magi text-sm font-mono tracking-widest font-bold">■ READY</span>
+                  : <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">◌ STANDBY</span>
+              }
             </div>
           );
         })}
       </div>
 
-      {/* Ready toggle */}
       <button
         onClick={onToggleReady}
         className={`w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors
-          ${amReady
-            ? 'border-magi text-magi hover:bg-magi hover:text-black'
-            : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'
-          }`}
+          ${amReady ? 'border-magi text-magi hover:bg-magi hover:text-black' : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'}`}
       >
         {amReady ? '■ READY — CLICK TO CANCEL' : '◌ CONFIRM READY'}
       </button>
 
-      <NervGhostBtn onClick={onAbort}>ABORT MISSION</NervGhostBtn>
+      <button
+        onClick={onAbort}
+        className="px-6 py-2.5 border border-border-hi text-nerv-dim font-display text-xs tracking-[0.2em] hover:border-alert hover:text-alert transition-colors"
+      >
+        ABORT MISSION
+      </button>
     </div>
   );
 }
 
 function RoomIdBadge({ roomId }: { roomId: string }) {
   const [copied, setCopied] = useState(false);
-
-  const copy = () => {
-    navigator.clipboard.writeText(roomId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
+  const copy = () => { navigator.clipboard.writeText(roomId).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
 
   return (
     <div className="flex flex-col items-center gap-2">
       <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">SESSION ID</span>
       <div className="flex items-center gap-3 border border-border-hi bg-surface px-4 py-2.5 nerv-frame">
         <span className="text-bitcoin font-mono text-xs tracking-wider">{roomId}</span>
-        <button
-          onClick={copy}
-          className="text-nerv-dim hover:text-bitcoin transition-colors text-[10px] font-display tracking-widest border-l border-border pl-3"
-          title="Copy room ID"
-        >
+        <button onClick={copy} className="text-nerv-dim hover:text-bitcoin transition-colors text-[10px] font-display tracking-widest border-l border-border pl-3" title="Copy room ID">
           {copied ? 'COPIED' : 'COPY'}
         </button>
       </div>
       <span className="text-nerv-dim/50 text-[9px] font-jp">共有コード — SHARE WITH OPPONENT</span>
     </div>
-  );
-}
-
-function NervGhostBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-6 py-2.5 border border-border-hi text-nerv-dim font-display text-xs tracking-[0.2em] hover:border-alert hover:text-alert transition-colors"
-    >
-      {children}
-    </button>
   );
 }
