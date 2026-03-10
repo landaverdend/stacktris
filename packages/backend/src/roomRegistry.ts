@@ -15,6 +15,8 @@ export class RoomRegistry {
   constructor() {
   }
 
+  get roomCount() { return this.rooms.size; }
+  roomForPlayer(playerId: string) { return this.playerIdToRoom.get(playerId); }
 
   public onConnect(playerId: string, sendFn: SendFn) {
     this.playerIdToSendFn.set(playerId, sendFn);
@@ -55,6 +57,7 @@ export class RoomRegistry {
     const room = this.rooms.get(roomId);
     if (room) {
       room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
+      this.playerIdToRoom.set(playerId, roomId);
     }
   }
 
@@ -64,6 +67,10 @@ export class RoomRegistry {
       const room = this.rooms.get(roomId);
       room?.removePlayer(playerId);
       this.playerIdToRoom.delete(playerId);
+
+      if (room?.isEmpty) {
+        this.rooms.delete(roomId);
+      }
     }
   }
 }

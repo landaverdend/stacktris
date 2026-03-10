@@ -14,7 +14,13 @@ export class Room {
     this.id = id;
   }
 
+  get playerCount() { return this.players.size; }
+  get isFull() { return this.players.size >= 2; }
+  get isEmpty() { return this.players.size === 0; }
+
   addPlayer(playerId: string, sendFn: SendFn) {
+    if (this.isFull) throw new Error(`Room ${this.id} is already full`);
+
     console.log(`[Room] added player ${playerId} to room ${this.id}`);
     this.players.set(playerId, { playerId, sendFn });
   }
