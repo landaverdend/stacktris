@@ -7,6 +7,7 @@ import { GarbageMeter } from '../components/GarbageMeter';
 
 // Delayed Auto Shift: how long (ms) to hold a key before auto-repeat begins.
 const DAS_MS = 150;
+const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 // Auto Repeat Rate: interval (ms) between repeated moves once DAS fires.
 const ARR_MS = 33;
 
@@ -121,35 +122,57 @@ export function GameScreen({ onExitToLobby }: Props) {
 
       {/* ── Waiting ── */}
       {gameStatus.status === 'waiting_opponent' && (
-        <MissionStaging
-          roomId={gameStatus.roomId}
-          myIndex={gameStatus.myIndex}
-          players={gameStatus.players}
-          onToggleReady={() => {
-            const myPlayer = gameStatus.players.find(p => p.index === gameStatus.myIndex);
-            client.setReady(!(myPlayer?.ready ?? false));
-          }}
-          onAbort={handleGoToLobby}
-        />
+        <div className="flex items-start justify-center gap-10 w-full">
+          {/* Idle arena */}
+          <div className="flex items-start gap-3 opacity-40">
+            <HoldCanvas holdPiece={null} dimmed />
+            <div className="flex items-end gap-1">
+              <GarbageMeter pendingGarbage={0} />
+              <BoardCanvas board={EMPTY_BOARD} activePiece={null} label="OPERATIVE // あなた" />
+            </div>
+            <QueueCanvas nextPieces={[]} />
+          </div>
+
+          {/* Ready-up panel */}
+          <MissionStaging
+            roomId={gameStatus.roomId}
+            myIndex={gameStatus.myIndex}
+            players={gameStatus.players}
+            onToggleReady={() => {
+              const myPlayer = gameStatus.players.find(p => p.index === gameStatus.myIndex);
+              client.setReady(!(myPlayer?.ready ?? false));
+            }}
+            onAbort={handleGoToLobby}
+          />
+        </div>
       )}
 
       {/* ── Countdown ── */}
       {gameStatus.status === 'countdown' && (
-        <div className="flex flex-col items-center gap-6">
-          <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
-            // COMBAT SEQUENCE INITIATING
-          </p>
-          <div className="relative nerv-frame px-8 py-6">
-            <p
-              className="text-bitcoin font-display font-bold leading-none"
-              style={{ fontSize: '8rem' }}
-            >
-              {countdownDisplay}
-            </p>
+        <div className="flex items-start gap-3">
+          <HoldCanvas holdPiece={null} dimmed />
+          <div className="flex items-end gap-1">
+            <GarbageMeter pendingGarbage={0} />
+            <div className="relative">
+              <BoardCanvas board={EMPTY_BOARD} activePiece={null} label="OPERATIVE // あなた" />
+              {/* Countdown overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+                <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">
+                  // COMBAT SEQUENCE INITIATING
+                </p>
+                <p
+                  className="text-bitcoin font-display font-bold leading-none"
+                  style={{ fontSize: '7rem' }}
+                >
+                  {countdownDisplay}
+                </p>
+                <p className="text-nerv-dim text-[8px] font-jp tracking-widest">
+                  準備完了 — MAGI SYNC COMPLETE
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-nerv-dim text-[9px] font-jp tracking-widest">
-            準備完了 — MAGI SYNC COMPLETE
-          </p>
+          <QueueCanvas nextPieces={[]} />
         </div>
       )}
 
@@ -231,7 +254,7 @@ export function GameScreen({ onExitToLobby }: Props) {
           <div className="flex items-center gap-5 text-[8px] font-mono tracking-[0.22em] text-nerv-dim/30 select-none">
             <span>第3新東京市 // GEO-FRONT</span>
             <span>EVANGELION UNIT-01</span>
-            <span className="text-bitcoin/20">⚡ LN-BATTLE PROTOCOL</span>
+            <span className="text-bitcoin/20">LN-BATTLE PROTOCOL</span>
           </div>
 
         </div>
