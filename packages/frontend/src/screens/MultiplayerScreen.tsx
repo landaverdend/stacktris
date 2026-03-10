@@ -15,7 +15,7 @@ const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, l
 
 interface Props { onExitToLobby: () => void; }
 
-export function GameScreen({ onExitToLobby }: Props) {
+export function MultiplayerScreen({ onExitToLobby }: Props) {
   const { roomStatus, send, goToLobby } = useRoom();
 
   const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
