@@ -22,7 +22,7 @@ function getOrConnect(): void {
   if (socket) return;
   setStatus('connecting');
   socket = new WebSocket(WS_URL);
-  socket.onopen  = () => setStatus('connected');
+  socket.onopen = () => setStatus('connected');
   socket.onclose = () => { socket = null; setStatus('disconnected'); };
   socket.onerror = () => setStatus('error');
   socket.onmessage = (e: MessageEvent) => {

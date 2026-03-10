@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { GameStatus } from '../types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { InputAction } from '@stacktris/shared';
+import { useRoom } from '../context/RoomContext';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
 import { HoldCanvas } from '../components/HoldCanvas';
@@ -11,15 +12,16 @@ const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 // Auto Repeat Rate: interval (ms) between repeated moves once DAS fires.
 const ARR_MS = 33;
 
+// Placeholder snap used until useGameState is wired up.
+const YOUR_STUB = { board: EMPTY_BOARD, current_piece: null, next_pieces: [] as string[], hold_piece: null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
+const OPP_STUB  = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
+
 interface Props {
   onExitToLobby: () => void;
 }
 
 export function GameScreen({ onExitToLobby }: Props) {
-  // TODO: wire up game state once the game state layer is rebuilt
-  const [gameStatus] = useState<GameStatus>({ status: 'lobby' });
-  const sendAction = (_action: string) => {};
-  const setReady = (_ready: boolean) => {};
+  const { roomStatus, send, goToLobby } = useRoom();
 
   // Refs so timer IDs are accessible inside event handlers without re-registering.
   const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,11 +32,11 @@ export function GameScreen({ onExitToLobby }: Props) {
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
 
   useEffect(() => {
-    if (gameStatus.status !== 'countdown') {
+    if (roomStatus.status !== 'countdown') {
       setCountdownDisplay(null);
       return;
     }
-    let n = gameStatus.from;
+    let n = roomStatus.from;
     setCountdownDisplay(n);
     const iv = setInterval(() => {
       n -= 1;
@@ -46,10 +48,14 @@ export function GameScreen({ onExitToLobby }: Props) {
       }
     }, 1000);
     return () => clearInterval(iv);
-  }, [gameStatus.status, gameStatus.status === 'countdown' ? gameStatus.from : 0]);
+  }, [roomStatus.status, roomStatus.status === 'countdown' ? roomStatus.from : 0]);
+
+  const sendAction = useCallback((action: InputAction) => {
+    send({ type: 'game_action', action });
+  }, [send]);
 
   useEffect(() => {
-    if (gameStatus.status !== 'playing') return;
+    if (roomStatus.status !== 'playing') return;
 
     const clearDasArr = () => {
       if (dasTimer.current !== null) { clearTimeout(dasTimer.current); dasTimer.current = null; }
@@ -112,17 +118,22 @@ export function GameScreen({ onExitToLobby }: Props) {
       window.removeEventListener('keyup', onKeyUp);
       clearDasArr();
     };
-  }, [gameStatus.status, sendAction]);
+  }, [roomStatus.status, sendAction]);
 
   const handleGoToLobby = () => {
+    goToLobby();
     onExitToLobby();
   };
+
+  // TODO: replace with useGameState() when built
+  const your = YOUR_STUB;
+  const opp  = OPP_STUB;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-4 pt-10">
 
       {/* ── Waiting ── */}
-      {gameStatus.status === 'waiting_opponent' && (
+      {roomStatus.status === 'waiting_opponent' && (
         <div className="flex items-start justify-center gap-10 w-full">
           {/* Idle arena */}
           <div className="flex items-start gap-3 opacity-40">
@@ -136,12 +147,12 @@ export function GameScreen({ onExitToLobby }: Props) {
 
           {/* Ready-up panel */}
           <MissionStaging
-            roomId={gameStatus.roomId}
-            myIndex={gameStatus.myIndex}
-            players={gameStatus.players}
+            roomId={roomStatus.roomId}
+            myIndex={roomStatus.myIndex}
+            players={roomStatus.players}
             onToggleReady={() => {
-              const myPlayer = gameStatus.players.find(p => p.index === gameStatus.myIndex);
-              setReady(!(myPlayer?.ready ?? false));
+              const myPlayer = roomStatus.players.find(p => p.index === roomStatus.myIndex);
+              send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
             }}
             onAbort={handleGoToLobby}
           />
@@ -149,7 +160,7 @@ export function GameScreen({ onExitToLobby }: Props) {
       )}
 
       {/* ── Countdown ── */}
-      {gameStatus.status === 'countdown' && (
+      {roomStatus.status === 'countdown' && (
         <div className="flex items-start gap-3">
           <HoldCanvas holdPiece={null} dimmed />
           <div className="flex items-end gap-1">
@@ -178,7 +189,7 @@ export function GameScreen({ onExitToLobby }: Props) {
       )}
 
       {/* ── Playing ── */}
-      {gameStatus.status === 'playing' && (
+      {roomStatus.status === 'playing' && (
         <div className="relative flex flex-col items-center w-full pt-2 gap-2">
 
           {/* ── Top NERV status strip ── */}
@@ -186,9 +197,9 @@ export function GameScreen({ onExitToLobby }: Props) {
             <span className="text-nerv-dim/50">// COMBAT ACTIVE</span>
             <span className="text-nerv-dim/30">◈ NERV HQ</span>
             <span className="text-nerv-dim/40">MAGI SYNC: NOMINAL</span>
-            {gameStatus.your.pending_garbage > 0 ? (
+            {your.pending_garbage > 0 ? (
               <span className="text-alert/80 animate-pulse font-bold">
-                ⚠ INCOMING ATK: {gameStatus.your.pending_garbage}L
+                ⚠ INCOMING ATK: {your.pending_garbage}L
               </span>
             ) : (
               <span className="text-magi/40">AT FIELD: NOMINAL</span>
@@ -201,15 +212,15 @@ export function GameScreen({ onExitToLobby }: Props) {
             {/* Player side */}
             <div className="flex items-start gap-3">
               <HoldCanvas
-                holdPiece={gameStatus.your.hold_piece}
-                dimmed={gameStatus.your.hold_used}
+                holdPiece={your.hold_piece}
+                dimmed={your.hold_used}
               />
               <div className="flex items-end gap-1">
-                <GarbageMeter pendingGarbage={gameStatus.your.pending_garbage} />
+                <GarbageMeter pendingGarbage={your.pending_garbage} />
                 <div className="flex flex-col gap-1.5">
                   <BoardCanvas
-                    board={gameStatus.your.board}
-                    activePiece={gameStatus.your.current_piece}
+                    board={your.board}
+                    activePiece={your.current_piece}
                     label="OPERATIVE // あなた"
                   />
                   {/* Score readout */}
@@ -217,20 +228,20 @@ export function GameScreen({ onExitToLobby }: Props) {
                     <div className="flex flex-col gap-0">
                       <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">SCORE</span>
                       <span className="text-bitcoin font-mono font-bold text-sm leading-none">
-                        {gameStatus.your.score.toLocaleString()}
+                        {your.score.toLocaleString()}
                       </span>
                     </div>
                     <div className="w-px h-5 bg-border" />
                     <div className="flex flex-col gap-0 items-end">
                       <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">LEVEL</span>
                       <span className="text-bitcoin font-mono font-bold text-sm leading-none">
-                        {gameStatus.your.level}
+                        {your.level}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
-              <QueueCanvas nextPieces={gameStatus.your.next_pieces} />
+              <QueueCanvas nextPieces={your.next_pieces} />
             </div>
 
             {/* Opponent mini panel — top-right */}
@@ -238,14 +249,14 @@ export function GameScreen({ onExitToLobby }: Props) {
               <p className="text-nerv-dim/50 text-[8px] font-mono tracking-[0.3em]">// HOSTILE UNIT</p>
               <div className="nerv-frame p-0.5">
                 <BoardCanvas
-                  board={gameStatus.opponent.board}
+                  board={opp.board}
                   label="ADVERSARY"
                   scale={0.4}
                 />
               </div>
               <div className="flex justify-between text-nerv-dim/50 text-[8px] font-mono tracking-widest px-0.5">
-                <span>{gameStatus.opponent.score.toLocaleString()}</span>
-                <span>LV {gameStatus.opponent.level}</span>
+                <span>{opp.score.toLocaleString()}</span>
+                <span>LV {opp.level}</span>
               </div>
             </div>
 
@@ -254,7 +265,6 @@ export function GameScreen({ onExitToLobby }: Props) {
           {/* ── Bottom status strip ── */}
           <div className="flex items-center gap-5 text-[8px] font-mono tracking-[0.22em] text-nerv-dim/30 select-none">
             <span>第3新東京市 // GEO-FRONT</span>
-            <span>EVANGELION UNIT-01</span>
             <span className="text-bitcoin/20">LN-BATTLE PROTOCOL</span>
           </div>
 
@@ -262,17 +272,17 @@ export function GameScreen({ onExitToLobby }: Props) {
       )}
 
       {/* ── Result ── */}
-      {gameStatus.status === 'result' && (
+      {roomStatus.status === 'result' && (
         <div className="flex flex-col items-center gap-6">
           <div className="text-center flex flex-col gap-1">
             <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">
               // OPERATION COMPLETE
             </p>
-            <p className={`font-display font-bold text-5xl tracking-[0.2em] ${gameStatus.youWon ? 'text-magi' : 'text-alert'}`}>
-              {gameStatus.youWon ? 'VICTORY' : 'DEFEAT'}
+            <p className={`font-display font-bold text-5xl tracking-[0.2em] ${roomStatus.youWon ? 'text-magi' : 'text-alert'}`}>
+              {roomStatus.youWon ? 'VICTORY' : 'DEFEAT'}
             </p>
             <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp mt-1">
-              {gameStatus.youWon ? '作戦成功' : '作戦失敗'}
+              {roomStatus.youWon ? '作戦成功' : '作戦失敗'}
             </p>
           </div>
 
@@ -282,9 +292,9 @@ export function GameScreen({ onExitToLobby }: Props) {
               <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">ADVERSARY</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-bitcoin font-mono font-bold text-lg">{gameStatus.yourScore.toLocaleString()}</span>
+              <span className="text-bitcoin font-mono font-bold text-lg">{roomStatus.yourScore.toLocaleString()}</span>
               <span className="text-nerv-dim text-[9px] font-mono tracking-widest">SCORE</span>
-              <span className="text-nerv-dim font-mono text-lg">{gameStatus.opponentScore.toLocaleString()}</span>
+              <span className="text-nerv-dim font-mono text-lg">{roomStatus.opponentScore.toLocaleString()}</span>
             </div>
           </div>
 

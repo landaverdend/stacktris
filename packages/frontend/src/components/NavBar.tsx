@@ -1,8 +1,9 @@
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useRoom } from '../context/RoomContext';
 
 export function NavBar() {
-  const { status: connection } = useWebSocket();
+  const { connectionStatus: connection, roomStatus } = useRoom();
 
+  const currentRoomId = 'roomId' in roomStatus ? roomStatus.roomId : null;
 
   return (
     <div className="fixed top-0 inset-x-0 h-10 bg-topbar border-b border-border flex items-center justify-between px-4 z-50">
@@ -16,8 +17,16 @@ export function NavBar() {
         </span>
       </div>
 
-      {/* Center: room ID — TODO: wire up once game state layer is rebuilt */}
-      <span />
+      {/* Center: room ID */}
+      {currentRoomId ? (
+        <button
+          className="text-nerv-dim hover:text-bitcoin font-mono text-[10px] px-2 py-0.5 border border-border rounded tracking-widest transition-colors"
+          title="Click to copy room ID"
+          onClick={() => navigator.clipboard.writeText(currentRoomId)}
+        >
+          RM:{currentRoomId.slice(0, 8).toUpperCase()}
+        </button>
+      ) : <span />}
 
       {/* Right: connection */}
       <span className={`text-[10px] tracking-widest font-mono ${

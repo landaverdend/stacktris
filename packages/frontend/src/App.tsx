@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RoomProvider } from './context/RoomContext';
 import { NavBar } from './components/NavBar';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GameScreen } from './screens/GameScreen';
@@ -14,7 +15,7 @@ export default function App() {
   const [view, setView] = useState<View>('lobby');
 
   return (
-    <>
+    <RoomProvider>
       {view === 'lobby' && <LightningGraph />}
       <TetrominoBackground />
       {view === 'lobby' && <GlitchOverlay />}
@@ -34,6 +35,6 @@ export default function App() {
           <SoloScreen onExit={() => setView('lobby')} />
         )}
       </div>
-    </>
+    </RoomProvider>
   );
 }

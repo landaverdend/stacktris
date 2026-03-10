@@ -81,6 +81,14 @@ export type GameStatus =
   | { status: 'playing'; roomId: string; your: PlayerSnapshot; opponent: OpponentSnapshot }
   | { status: 'result'; youWon: boolean; yourScore: number; opponentScore: number };
 
+/** Room lifecycle status — like GameStatus but without per-tick snapshot data. */
+export type RoomStatus =
+  | { status: 'lobby' }
+  | { status: 'waiting_opponent'; roomId: string; myIndex: 0 | 1; players: ReadyPlayer[] }
+  | { status: 'countdown'; roomId: string; from: number }
+  | { status: 'playing'; roomId: string }
+  | { status: 'result'; youWon: boolean; yourScore: number; opponentScore: number };
+
 // ── WebSocket message types ────────────────────────────────────────────────────
 export type ClientMessage =
   | { type: 'join_room'; room_id: string; bet_sats: number }
