@@ -107,30 +107,7 @@ export function kickOffsets(kind: PieceKind, fromRotation: number, cw: boolean):
   return (cw ? JLSTZ_CW : JLSTZ_CCW)[i];
 }
 
-// ── 7-bag RNG ─────────────────────────────────────────────────────────────────
-
-function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-export class PieceBag {
-  private bag: PieceKind[] = [];
-
-  next(): PieceKind {
-    if (this.bag.length === 0) this.refill();
-    return this.bag.pop()!;
-  }
-
-  private refill(): void {
-    this.bag = shuffle([...ALL_PIECES]);
-  }
-}
-
-// ── Seeded 7-bag (Mulberry32 PRNG) ───────────────────────────────────────────
+// ── 7-bag RNG (Mulberry32 PRNG) ───────────────────────────────────────────────
 
 function mulberry32(seed: number): () => number {
   return function () {

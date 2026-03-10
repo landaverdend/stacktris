@@ -1,4 +1,4 @@
-import { ActivePiece, PieceBag, PieceKind } from './pieces.js';
+import { ActivePiece, PieceKind, SeededPieceBag } from './pieces.js';
 import { Board, emptyBoard, spawnPiece } from './board.js';
 
 export const QUEUE_SIZE = 5;
@@ -29,12 +29,12 @@ export interface GameConfig {
 
 export interface GameWithBag {
   state: GameState;
-  bag: PieceBag;
+  bag: SeededPieceBag;
   config: GameConfig;
 }
 
-export function createGame(config: GameConfig = {}): GameWithBag {
-  const bag = new PieceBag();
+export function createGame(config: GameConfig = {}, seed?: number): GameWithBag {
+  const bag = new SeededPieceBag(seed ?? Math.floor(Math.random() * 2 ** 32));
   const board = emptyBoard();
 
   // Fill initial queue
