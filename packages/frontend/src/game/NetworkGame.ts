@@ -10,8 +10,8 @@ export class NetworkGame {
   private lastGravityMs: number = 0;
   private send: SendFn;
 
-  constructor(seed: number, send: SendFn) {
-    this.game = createGame({ levelStrategy: levelFromLines, seed });
+  constructor(_seed: number, send: SendFn) {
+    this.game = createGame({ levelStrategy: levelFromLines });
     this.send = send;
   }
 

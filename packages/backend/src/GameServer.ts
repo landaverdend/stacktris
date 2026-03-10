@@ -90,10 +90,11 @@ export class GameServer {
     this.broadcastReadyUpdate(room);
 
     if (allReady) {
+      const seed = Math.floor(Math.random() * 2 ** 32);
       this.manager.startRoom(room.id);
       this.sessions.set(room.id, new GameSession(room.players));
       room.players.forEach(p =>
-        this.send(p.socket, { type: 'game_start', countdown: 3 })
+        this.send(p.socket, { type: 'game_start', countdown: 3, seed })
       );
     }
   }

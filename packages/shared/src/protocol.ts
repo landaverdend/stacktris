@@ -47,7 +47,7 @@ export type ServerMsg =
   | { type: 'room_created';   room_id: string }
   | { type: 'room_joined';    room_id: string; player_index: 0 | 1 }
   | { type: 'player_joined' }
-  | { type: 'game_start';     countdown: number }
+  | { type: 'game_start';     countdown: number; seed: number }
   | { type: 'game_state';     your: PlayerSnapshot; opponent: OpponentSnapshot }
   | { type: 'piece_moved';    your_piece: PieceSnapshot | null }
   | { type: 'hold_update';    hold_piece: string; your_piece: PieceSnapshot | null; next_pieces: string[] }

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
-import { ClientMsg, ServerMsg } from '@stacktris/shared';
+import { ClientMsg, ServerMsg, SeededPieceBag } from '@stacktris/shared';
 import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket';
 import { RoomStatus, ReadyPlayer } from '../types';
 
@@ -46,12 +46,16 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         });
         break;
 
-      case 'game_start':
+      case 'game_start': {
+        const bag = new SeededPieceBag(msg.seed);
+        const queue = Array.from({ length: 14 }, () => bag.next());
+        console.log('[game_start] seed=%d  queue:', msg.seed, queue);
         setRoomStatus(prev => {
           if (prev.status !== 'waiting_opponent') return prev;
           return { status: 'countdown', roomId: prev.roomId, from: msg.countdown };
         });
         break;
+      }
 
       case 'game_state':
         setRoomStatus(prev => {
