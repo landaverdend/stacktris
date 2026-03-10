@@ -1,52 +1,50 @@
-import { visibleBoard, VISIBLE_ROW_START } from '@stacktris/shared';
-import { SoloGame } from './SoloGame';
-import { InputHandler } from './InputHandler';
-import { renderBoard } from '../render/board';
-import { renderQueue, renderHold } from '../render/queue';
+import { VISIBLE_ROW_START, visibleBoard } from "@stacktris/shared";
+import { Canvases, Stats } from "./SoloGameSession";
+import { InputHandler } from "./InputHandler";
+import { MultiplayerGame } from "./MultiplayerGame";
+import { renderBoard } from "../render/board";
+import { renderHold, renderQueue } from "../render/queue";
 
-export interface Stats {
-  score: number;
-  lines: number;
-  level: number;
-}
 
-export interface Canvases {
-  board: HTMLCanvasElement;
-  queue: HTMLCanvasElement;
-  hold: HTMLCanvasElement;
-}
 
-export class SoloGameSession {
-  private game = new SoloGame();
+export class MultiplayerGameSession {
+
+  private game: MultiplayerGame;
+
   private input: InputHandler;
-  private rafId = 0;
-  private prevLines = 0;
   private onStats: (s: Stats) => void;
+  private rafId = 0;
 
-  constructor(onStats: (s: Stats) => void) {
+  constructor(onStats: (s: Stats) => void, seed: number) {
+
     this.onStats = onStats;
-    this.input = new InputHandler(action => this.game.input(action, performance.now()));
+    this.game = new MultiplayerGame(seed, () => { })
+
+    this.input = new InputHandler(action => {
+      console.log('[MultiplayerGameSession] input: ', action);
+      this.game.input(action, performance.now())
+    })
+
   }
 
-  start(canvases: Canvases): void {
+  // Pass the canvases to render game state to.
+  start(canvases: Canvases) {
     this.game.reset();
-    this.prevLines = 0;
-    this.input.attach();
 
     const loop = (now: number) => {
       this.input.tick(now);
       this.game.tick(now);
       this.render(canvases, now);
       this.rafId = requestAnimationFrame(loop);
-    };
+    }
 
-    this.rafId = requestAnimationFrame(loop);
   }
 
-  stop(): void {
+  stop() {
     cancelAnimationFrame(this.rafId);
     this.input.detach();
   }
+
 
   private render(canvases: Canvases, now: number): void {
     const state = this.game.state;
@@ -70,9 +68,9 @@ export class SoloGameSession {
     const holdCtx = canvases.hold.getContext('2d');
     if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
 
-    if (state.lines !== this.prevLines) {
-      this.prevLines = state.lines;
-      this.onStats({ score: state.score, lines: state.lines, level: state.level });
-    }
+    // if (state.lines !== this.prevLines) {
+    //   this.prevLines = state.lines;
+    //   this.onStats({ score: state.score, lines: state.lines, level: state.level });
+    // }
   }
-}
+} 

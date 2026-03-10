@@ -10,7 +10,7 @@ interface Props {
 export function SoloScreen({ onExit }: Props) {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
-  const holdRef  = useRef<HTMLCanvasElement>(null);
+  const holdRef = useRef<HTMLCanvasElement>(null);
 
   const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 0 });
 

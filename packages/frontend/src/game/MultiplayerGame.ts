@@ -5,9 +5,10 @@ import {
 
 type SendFn = (action: InputAction) => void;
 
-export class NetworkGame {
+export class MultiplayerGame {
   private game: GameWithBag;
   private lastGravityMs: number = 0;
+
   private send: SendFn;
 
   constructor(_seed: number, send: SendFn) {
@@ -32,14 +33,22 @@ export class NetworkGame {
     }
   }
 
+
+  // TODO: add sequence number and buffer to inputs...
   input(action: InputAction, now: number): void {
     if (this.game.state.isGameOver) return;
     this.game = applyInput(this.game, action, now);
     this.send(action); // broadcast to server
   }
 
-  // Server correction — snap local state to server truth.
-  correct(patch: Partial<GameState>): void {
-    this.game = { ...this.game, state: { ...this.game.state, ...patch } };
+
+  reset(): void {
+    this.game = createGame({ levelStrategy: levelFromLines });
+    this.lastGravityMs = 0;
   }
+
+  // // Server correction — snap local state to server truth.
+  // correct(patch: Partial<GameState>): void {
+  //   this.game = { ...this.game, state: { ...this.game.state, ...patch } };
+  // }
 }

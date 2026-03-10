@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { InputAction } from '@stacktris/shared';
+import { useEffect, useRef, useState } from 'react';
 import { useRoom } from '../context/RoomContext';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
 import { HoldCanvas } from '../components/HoldCanvas';
 import { GarbageMeter } from '../components/GarbageMeter';
 import { PieceSnapshot } from '../types';
+import { MultiplayerGameSession } from '../game/MultiplayerGameSession';
 
-const DAS_MS = 150;
-const ARR_MS = 33;
 const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
@@ -18,67 +16,41 @@ interface Props { onExitToLobby: () => void; }
 export function MultiplayerScreen({ onExitToLobby }: Props) {
   const { roomStatus, send, goToLobby } = useRoom();
 
-  const dasTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const arrTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const heldKey = useRef<string | null>(null);
+  const boardRef = useRef<HTMLCanvasElement>(null);
+  const queueRef = useRef<HTMLCanvasElement>(null);
+  const holdRef = useRef<HTMLCanvasElement>(null);
 
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
 
   useEffect(() => {
     if (roomStatus.status !== 'countdown') { setCountdownDisplay(null); return; }
+
     let n = roomStatus.from;
     setCountdownDisplay(n);
+
     const iv = setInterval(() => {
       n -= 1;
       if (n > 0) { setCountdownDisplay(n); }
       else { setCountdownDisplay('GO!'); clearInterval(iv); }
     }, 1000);
+
+
     return () => clearInterval(iv);
-  }, [roomStatus.status, roomStatus.status === 'countdown' ? roomStatus.from : 0]);
+  }, [roomStatus.status]);
 
-  const sendAction = useCallback((action: InputAction) => {
-    send({ type: 'game_action', action });
-  }, [send]);
 
+  // Start the game session when we enter the playing state.
   useEffect(() => {
-    if (roomStatus.status !== 'playing') return;
+    let session: MultiplayerGameSession | null = null;
+    console.log('[MultiplayerScreen] roomStatus.status: ', roomStatus.status);
+    if (roomStatus.status === 'countdown') {
+      session = new MultiplayerGameSession(() => { }, 1)
+      session.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! })
+    }
+    return () => { session?.stop(); }
 
-    const clearDasArr = () => {
-      if (dasTimer.current) { clearTimeout(dasTimer.current); dasTimer.current = null; }
-      if (arrTimer.current) { clearInterval(arrTimer.current); arrTimer.current = null; }
-      heldKey.current = null;
-    };
+  }, [roomStatus.status])
 
-    const startDasArr = (action: 'move_left' | 'move_right') => {
-      clearDasArr();
-      heldKey.current = action;
-      sendAction(action);
-      dasTimer.current = setTimeout(() => {
-        dasTimer.current = null;
-        arrTimer.current = setInterval(() => sendAction(action), ARR_MS);
-      }, DAS_MS);
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.repeat) return;
-      if (e.key === 'ArrowLeft') { e.preventDefault(); startDasArr('move_left'); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); startDasArr('move_right'); }
-      else if (e.key === 'ArrowUp' || e.key === 'x') { e.preventDefault(); sendAction('rotate_cw'); }
-      else if (e.key === 'z') { e.preventDefault(); sendAction('rotate_ccw'); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); sendAction('soft_drop'); }
-      else if (e.key === ' ') { e.preventDefault(); sendAction('hard_drop'); }
-      else if (e.key === 'c') { e.preventDefault(); sendAction('hold'); }
-    };
-
-    const onKeyUp = (e: KeyboardEvent) => {
-      if ((e.key === 'ArrowLeft' && heldKey.current === 'move_left') ||
-        (e.key === 'ArrowRight' && heldKey.current === 'move_right')) clearDasArr();
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); clearDasArr(); };
-  }, [roomStatus.status, sendAction]);
 
   const handleGoToLobby = () => { goToLobby(); onExitToLobby(); };
 

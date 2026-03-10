@@ -69,6 +69,7 @@ export class RoomManager {
   startRoom(roomId: string): void {
     const room = this.rooms.get(roomId);
     if (room) (room as { status: RoomStatus }).status = 'playing';
+
   }
 
   /** Returns the room and the leaving player, if found. */

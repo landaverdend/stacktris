@@ -20,6 +20,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const [roomStatus, setRoomStatus] = useState<RoomStatus>({ status: 'lobby' });
 
   const handleMessage = useCallback((msg: ServerMsg) => {
+    console.log('[RoomContext] handleMessage: ', msg);
+
     switch (msg.type) {
       case 'room_created':
         setRoomStatus({
@@ -47,27 +49,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         break;
 
       case 'game_start': {
-        const bag = new SeededPieceBag(msg.seed);
-        const queue = Array.from({ length: 14 }, () => bag.next());
-        console.log('[game_start] seed=%d  queue:', msg.seed, queue);
-        setRoomStatus(prev => {
-          if (prev.status !== 'waiting_opponent') return prev;
-          return { status: 'countdown', roomId: prev.roomId, from: msg.countdown };
-        });
         break;
       }
-
-      case 'game_state':
-        setRoomStatus(prev => {
-          const roomId =
-            prev.status === 'countdown' ||
-            prev.status === 'playing' ||
-            prev.status === 'waiting_opponent'
-              ? prev.roomId
-              : '';
-          return { status: 'playing', roomId };
-        });
-        break;
 
       case 'game_over':
         setRoomStatus({
