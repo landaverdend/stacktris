@@ -111,8 +111,8 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
           myIndex={roomStatus.myIndex}
           players={roomStatus.players}
           onToggleReady={() => {
-            const myPlayer = roomStatus.players.find(p => p.index === roomStatus.myIndex);
-            send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
+            // send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
+            
           }}
           onAbort={handleGoToLobby}
         />

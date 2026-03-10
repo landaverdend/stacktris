@@ -36,23 +36,19 @@ export interface OpponentSnapshot {
 // ── Client → Server ───────────────────────────────────────────────────────────
 
 export type ClientMsg =
+  // Room Operations
   | { type: 'create_room'; bet_sats: number }
-  | { type: 'join_room';   room_id: string; bet_sats: number }
-  | { type: 'player_ready'; ready: boolean }
-  | { type: 'game_action'; action: InputAction };
+  | { type: 'join_room'; room_id: string; bet_sats: number }
+  | { type: 'leave_room'; room_id: string }
+  | { type: 'ready_update'; ready: boolean };
 
 // ── Server → Client ───────────────────────────────────────────────────────────
 
 export type ServerMsg =
-  | { type: 'room_created';   room_id: string }
-  | { type: 'room_joined';    room_id: string; player_index: 0 | 1 }
-  | { type: 'player_joined' }
-  | { type: 'game_start';     countdown: number; seed: number }
-  | { type: 'game_state';     your: PlayerSnapshot; opponent: OpponentSnapshot }
-  | { type: 'piece_moved';    your_piece: PieceSnapshot | null }
-  | { type: 'hold_update';    hold_piece: string; your_piece: PieceSnapshot | null; next_pieces: string[] }
-  | { type: 'score_update';   score: number; lines: number; level: number; combo: number }
-  | { type: 'game_over';      winner_id: string; you_won: boolean; your_score: number; opponent_score: number }
-  | { type: 'ready_update';   players: { index: 0 | 1; ready: boolean }[] }
-  | { type: 'opponent_disconnected' }
-  | { type: 'error';          message: string };
+  // Room Operations
+  | { type: 'room_created'; room_id: string }
+  | { type: 'room_joined'; room_id: string; }
+  | { type: 'error'; message: string };
+
+
+export type RoomStatus = ""

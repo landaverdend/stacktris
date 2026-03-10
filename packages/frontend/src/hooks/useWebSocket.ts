@@ -44,7 +44,6 @@ export function send(msg: ClientMsg): void {
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useWebSocket(onMessage?: (msg: ServerMsg) => void): {
   status: ConnectionStatus;
   send: typeof send;

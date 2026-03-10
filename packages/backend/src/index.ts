@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer } from 'http';
-import { WSServer } from './WSServer.js';
+import { WSServer } from './wsServer.js';
 import { RoomRegistry } from './roomRegistry.js';
 
 const app = express();

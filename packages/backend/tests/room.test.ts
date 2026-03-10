@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Room } from '../src/room.js';
+import { MAX_PLAYERS, Room } from '../src/room.js';
 import type { SendFn } from '../src/WSServer.js';
 
 const makeSend = (): SendFn => vi.fn();
@@ -19,10 +19,13 @@ describe('Room', () => {
     expect(room.playerCount).toBe(0);
   });
 
-  it('does not exceed 2 players', () => {
+  it('does not exceed MAX_PLAYERS players', () => {
     const room = new Room('room-1');
-    room.addPlayer('player-1', makeSend());
-    room.addPlayer('player-2', makeSend());
+
+    for (let i = 0; i < MAX_PLAYERS; i++) {
+      room.addPlayer(`player-${i}`, makeSend());
+    }
+
     expect(() => room.addPlayer('player-3', makeSend())).toThrow();
   });
 

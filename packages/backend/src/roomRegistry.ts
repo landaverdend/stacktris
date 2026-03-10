@@ -1,6 +1,6 @@
 import { ClientMsg, ServerMsg } from "@stacktris/shared";
 import { Room } from "./room.js";
-import { SendFn } from "./WSServer.js";
+import { SendFn } from "./wsServer.js";
 
 
 export class RoomRegistry {
@@ -34,10 +34,16 @@ export class RoomRegistry {
         console.log('[RoomManager] join_room: ', msg);
         this.joinRoom(playerId, msg.room_id);
         break;
+      case 'leave_room':
+        console.log('[RoomManager] leave_room: ', msg);
+        this.leaveRoom(playerId);
+        break;
       default:
         const roomId = this.playerIdToRoom.get(playerId);
         const room = this.rooms.get(this.playerIdToRoom.get(playerId)!)
-        console.log('[RoomManager] onMessage: ', room);
+        if (room) {
+          room.onMessage(playerId, msg);
+        }
         break;
     }
 
@@ -50,6 +56,9 @@ export class RoomRegistry {
     this.rooms.set(roomId, room);
     room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
     this.playerIdToRoom.set(playerId, roomId);
+
+    // Ping back to the player with the room status and id.
+    this.playerIdToSendFn.get(playerId)!({ type: 'room_created', room_id: roomId });
   }
 
 
@@ -58,6 +67,15 @@ export class RoomRegistry {
     if (room) {
       room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
       this.playerIdToRoom.set(playerId, roomId);
+    }
+  }
+
+  private leaveRoom(playerId: string) {
+    const roomId = this.playerIdToRoom.get(playerId);
+    if (roomId) {
+      const room = this.rooms.get(roomId);
+      room?.removePlayer(playerId);
+      this.playerIdToRoom.delete(playerId);
     }
   }
 

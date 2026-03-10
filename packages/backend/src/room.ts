@@ -1,9 +1,13 @@
-import { SendFn } from "./WSServer.js";
+import { ClientMsg } from "@stacktris/shared";
+import { SendFn } from "./wsServer.js";
 
 interface PlayerSlot {
   playerId: string;
   sendFn: SendFn; // Closure reference to the send function for this player.
 }
+
+export const MAX_PLAYERS = 2;
+
 
 export class Room {
   private id: string;
@@ -15,19 +19,25 @@ export class Room {
   }
 
   get playerCount() { return this.players.size; }
-  get isFull() { return this.players.size >= 2; }
+
+  get isFull() { return this.players.size >= MAX_PLAYERS; }
+
   get isEmpty() { return this.players.size === 0; }
 
-  addPlayer(playerId: string, sendFn: SendFn) {
+  public addPlayer(playerId: string, sendFn: SendFn) {
     if (this.isFull) throw new Error(`Room ${this.id} is already full`);
 
     console.log(`[Room] added player ${playerId} to room ${this.id}`);
     this.players.set(playerId, { playerId, sendFn });
   }
 
-  removePlayer(playerId: string) {
+  public removePlayer(playerId: string) {
     console.log(`[Room] removed player ${playerId} from room ${this.id}`);
     this.players.delete(playerId);
+  }
+
+  public onMessage(playerId: string, msg: ClientMsg) {
+
   }
 
 }
