@@ -18,9 +18,14 @@ export function useWS(): WSClient {
   return ctx;
 }
 
-export function useConnectionStatus(): ConnectionStatus {
-  const ws = useWS();
-  const [status, setStatus] = useState<ConnectionStatus>(ws.getStatus());
-  useEffect(() => ws.onStatus(setStatus), [ws]);
-  return status;
+export function useConnection(): { status: ConnectionStatus; playerId: string | null } {
+  const [status, setStatus] = useState<ConnectionStatus>(client.getStatus());
+  const [playerId, setPlayerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    client.on('welcome', msg => setPlayerId(msg.player_id));
+    return client.onStatus(setStatus);
+  }, []);
+
+  return { status, playerId };
 }

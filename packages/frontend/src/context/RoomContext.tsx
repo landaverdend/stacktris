@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import type { RoomState } from '@stacktris/shared';
-import { useWS, useConnectionStatus } from '../ws/WSContext';
-import type { ConnectionStatus, } from '../types';
+import { useWS, useConnection } from '../ws/WSContext';
+import type { ConnectionStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 interface RoomContextValue {
@@ -11,6 +11,7 @@ interface RoomContextValue {
   leaveRoom: () => void;
   createRoom: (amountBet: number) => void;
   joinRoom: (roomId: string) => void;
+  readyUpdate: (readyState: boolean) => void;
 }
 
 const RoomContext = createContext<RoomContextValue | null>(null);
@@ -20,7 +21,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   const ws = useWS();
 
-  const connectionStatus = useConnectionStatus();
+  const { status: connectionStatus } = useConnection();
 
   const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '', status: 'waiting' });
 
@@ -54,7 +55,9 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   const leaveRoom = useCallback(() => { ws.send({ type: 'leave_room', room_id: roomState.roomId }) }, [ws])
 
-  return <RoomContext.Provider value={{ connectionStatus, roomState, leaveRoom, createRoom, joinRoom }}>{children}</RoomContext.Provider>;
+  const readyUpdate = useCallback((readyState: boolean) => { ws.send({ type: 'ready_update', ready: readyState }) }, [ws])
+
+  return <RoomContext.Provider value={{ connectionStatus, roomState, leaveRoom, createRoom, joinRoom, readyUpdate }}>{children}</RoomContext.Provider>;
 }
 
 export function useRoom(): RoomContextValue {

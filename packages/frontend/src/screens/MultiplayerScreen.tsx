@@ -8,6 +8,7 @@ import { GarbageMeter } from '../components/GarbageMeter';
 import { PieceSnapshot } from '../types';
 import { MultiplayerGameSession } from '../game/MultiplayerGameSession';
 import { RoomState } from '@stacktris/shared';
+import { cn } from '../lib/utils';
 
 const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
@@ -97,10 +98,20 @@ export function MultiplayerScreen() {
 interface PlayerLobbyProps {
 }
 function PlayerLobby({ }: PlayerLobbyProps) {
-  const { roomState, leaveRoom } = useRoom();
+  const { roomState, leaveRoom, readyUpdate } = useRoom();
 
-
+  const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
+
+  const handleLeave = () => {
+    leaveRoom();
+    navigate('/')
+  }
+
+  const handleReady = () => {
+    setIsReady(prev => !prev);
+    readyUpdate(isReady);
+  }
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-sm pt-2">
@@ -117,18 +128,20 @@ function PlayerLobby({ }: PlayerLobbyProps) {
       </div>
 
       <button
-        onClick={() => { }}
-        className={`w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors
-          ${isReady ? 'border-magi text-magi hover:bg-magi hover:text-black' : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'}`}
+        onClick={handleReady}
+        className={cn(
+          'w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors',
+          isReady ? 'border-magi text-magi hover:bg-magi hover:text-black' : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'
+        )}
       >
         {isReady ? '■ READY — CLICK TO CANCEL' : '◌ CONFIRM READY'}
       </button>
 
       <button
-        onClick={() => { leaveRoom() }}
-        className="px-6 py-2.5 border border-border-hi text-nerv-dim font-display text-xs tracking-[0.2em] hover:border-alert hover:text-alert transition-colors"
+        onClick={handleLeave}
+        className="px-6 py-2.5 border border-border-hi text-nerv-dim font-display text-xs tracking-[0.2em] hover:border-alert hover:text-alert transition-colors cursor-pointer"
       >
-        ABORT MISSION
+        ABORT
       </button>
     </div>
   );

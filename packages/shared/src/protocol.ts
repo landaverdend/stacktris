@@ -64,6 +64,7 @@ export interface RoomState {
 
 // ── Server → Client ───────────────────────────────────────────────────────────
 export type ServerMsg =
+  | { type: 'welcome'; player_id: string }
   // Room Operations
   | { type: 'room_created'; room_id: string }
   | { type: 'room_joined'; room_id: string; }

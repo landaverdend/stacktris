@@ -20,6 +20,7 @@ export class RoomRegistry {
 
   public onConnect(playerId: string, sendFn: SendFn) {
     this.playerIdToSendFn.set(playerId, sendFn);
+    sendFn({ type: 'welcome', player_id: playerId });
   }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
