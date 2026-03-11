@@ -105,7 +105,7 @@ export class RoomRegistry {
   }
 
   public listRooms(): RoomInfo[] {
-    return Array.from(this.rooms.values()).map(room => room.roomInfo);
+    return Array.from(this.rooms.values()).filter(room => room.status === 'waiting').map(room => room.roomInfo);
   }
 
 }

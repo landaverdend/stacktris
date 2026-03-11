@@ -86,6 +86,28 @@ describe('RoomRegistry', () => {
   });
 
 
+  describe('listRooms', () => {
+    it('returns waiting rooms', () => {
+      connect(registry, 'p1');
+      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      expect(registry.listRooms()).toHaveLength(1);
+    });
+
+    it('does not return rooms that are in progress', () => {
+      vi.useFakeTimers();
+      connect(registry, 'p1');
+      connect(registry, 'p2');
+      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      const roomId = registry.roomForPlayer('p1')!;
+      registry.onMessage('p2', { type: 'join_room', room_id: roomId });
+      registry.onMessage('p1', { type: 'ready_update', ready: true });
+      registry.onMessage('p2', { type: 'ready_update', ready: true });
+      vi.runAllTimers();
+      expect(registry.listRooms()).toHaveLength(0);
+      vi.useRealTimers();
+    });
+  });
+
   describe('onDisconnect', () => {
     it('removes the player from the registry', () => {
       connect(registry, 'p1');
