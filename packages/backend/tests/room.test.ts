@@ -45,6 +45,36 @@ describe('Room', () => {
     expect(room.isEmpty).toBe(false);
   });
 
+  describe('addPlayer', () => {
+    it('throws if the room is in countdown', () => {
+      vi.useFakeTimers();
+      const room = new Room('room-1', 1000);
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
+
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: true });
+
+      expect(room.status).toBe('countdown');
+      expect(() => room.addPlayer('player-3', makeSend())).toThrow();
+      vi.useRealTimers();
+    });
+
+    it('throws if the room is in playing', () => {
+      vi.useFakeTimers();
+      const room = new Room('room-1', 1000);
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
+
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: true });
+      vi.runAllTimers();
+      expect(room.status).toBe('playing');
+      expect(() => room.addPlayer('player-3', makeSend())).toThrow();
+      vi.useRealTimers();
+    });
+  });
+
   describe('ready state', () => {
     it('advances to countdown state when all players are ready', () => {
       const room = new Room('room-1', 1000);
@@ -112,4 +142,7 @@ describe('Room', () => {
       expect(room.status).toBe('waiting'); // timer was cleared, should not flip to playing
     });
   });
+
+
+
 });

@@ -45,6 +45,7 @@ export class Room {
 
   public addPlayer(playerId: string, sendFn: SendFn) {
     if (this.isFull) throw new Error(`Room ${this.id} is already full`);
+    if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
     console.log(`[Room] added player ${playerId} to room ${this.id}`);
     this.players.set(playerId, { playerId, sendFn, ready: false });

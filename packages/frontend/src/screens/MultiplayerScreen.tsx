@@ -115,6 +115,7 @@ function PlayerLobby({ }: PlayerLobbyProps) {
         {roomState.players.map(p => <PlayerRow key={p.playerId} player={p} isYou={p.playerId === playerId} />)}
       </div>
 
+
       <button
         onClick={handleReady}
         className={cn(
