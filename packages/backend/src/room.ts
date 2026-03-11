@@ -17,12 +17,13 @@ export class Room {
   private betSats: number;
   private players: Map<string, PlayerSlot> = new Map();
 
-  private status: RoomStatus = "waiting";
+  status: RoomStatus = "waiting";
 
   constructor(id: string, betSats: number) {
     this.id = id;
     this.betSats = betSats;
   }
+
 
   get playerCount() { return this.players.size; }
 
@@ -71,7 +72,10 @@ export class Room {
       player.ready = ready;
     }
 
-    console.log(`[Room] onReadyUpdate: ${playerId} is now ${ready} in room ${this.id}`);
+    if (this.checkAllReady()) {
+      this.status = 'countdown'
+    }
+
     // broadcast updated ready state to all players.
     this.broadcastRoomStateUpdate();
   }
@@ -83,6 +87,11 @@ export class Room {
     this.players.forEach(player => {
       player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status } });
     });
+  }
+
+  // Check if all players are ready AND there are at least 2.
+  private checkAllReady() {
+    return this.playerCount >= 2 && Array.from(this.players.values()).every(p => p.ready);
   }
 
   private tickInterval() {

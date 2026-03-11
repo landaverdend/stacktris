@@ -44,4 +44,29 @@ describe('Room', () => {
     room.addPlayer('player-1', makeSend());
     expect(room.isEmpty).toBe(false);
   });
+
+
+  it('advances to countdown state when all players are ready', () => {
+    const room = new Room('room-1', 1000);
+
+    room.addPlayer('player-1', makeSend());
+    room.addPlayer('player-2', makeSend());
+
+    room.onMessage('player-1', { type: 'ready_update', ready: true });
+    room.onMessage('player-2', { type: 'ready_update', ready: true });
+
+    expect(room.status).toBe('countdown');
+  })
+
+  it('does not advance to countdown state when not all players are ready', () => {
+    const room = new Room('room-1', 1000);
+    room.addPlayer('player-1', makeSend());
+    room.addPlayer('player-2', makeSend());
+
+    room.onMessage('player-1', { type: 'ready_update', ready: true });
+    room.onMessage('player-2', { type: 'ready_update', ready: false });
+    expect(room.status).toBe('waiting');
+  })
+
+
 });

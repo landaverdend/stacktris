@@ -69,7 +69,7 @@ export function MultiplayerScreen() {
             )} */}
           </div>
         </div>
-        {/* <QueueCanvas nextPieces={isPlaying ? your.next_pieces : []} /> */}
+        <QueueCanvas nextPieces={roomState.status === 'playing' ? your.next_pieces : []} />
       </div>
 
       {/* ── Right panel — MissionStaging or opponent mini board ── */}
