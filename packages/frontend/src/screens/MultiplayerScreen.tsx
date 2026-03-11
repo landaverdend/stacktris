@@ -25,7 +25,10 @@ export function MultiplayerScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
 
-  const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
+
+  useEffect(() => {
+    console.log('status changed to ', status);
+  }, [status]);
 
   const your = STUB;
 
@@ -73,7 +76,7 @@ export function MultiplayerScreen() {
       </div>
 
       {/* ── Right panel — MissionStaging or opponent mini board ── */}
-      {status === 'waiting' && (
+      {(status === 'waiting' || status === 'countdown') && (
         <PlayerLobby />
       )}
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, } from 'vitest';
 import { MAX_PLAYERS, Room } from '../src/room.js';
 import type { SendFn } from '../src/wsServer.js';
 
@@ -45,28 +45,71 @@ describe('Room', () => {
     expect(room.isEmpty).toBe(false);
   });
 
+  describe('ready state', () => {
+    it('advances to countdown state when all players are ready', () => {
+      const room = new Room('room-1', 1000);
 
-  it('advances to countdown state when all players are ready', () => {
-    const room = new Room('room-1', 1000);
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
 
-    room.addPlayer('player-1', makeSend());
-    room.addPlayer('player-2', makeSend());
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: true });
 
-    room.onMessage('player-1', { type: 'ready_update', ready: true });
-    room.onMessage('player-2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown');
+    })
 
-    expect(room.status).toBe('countdown');
-  })
+    it('does not advance to countdown state when not all players are ready', () => {
+      const room = new Room('room-1', 1000);
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
 
-  it('does not advance to countdown state when not all players are ready', () => {
-    const room = new Room('room-1', 1000);
-    room.addPlayer('player-1', makeSend());
-    room.addPlayer('player-2', makeSend());
-
-    room.onMessage('player-1', { type: 'ready_update', ready: true });
-    room.onMessage('player-2', { type: 'ready_update', ready: false });
-    expect(room.status).toBe('waiting');
-  })
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: false });
+      expect(room.status).toBe('waiting');
+    });
+  });
 
 
+  describe('countdown', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('transitions to playing after countdown expires', () => {
+      const room = new Room('room-1', 1000);
+
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
+
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown');
+      vi.runAllTimers();
+      expect(room.status).toBe('playing');
+    });
+
+    it('cancels countdown when a player disconnects', () => {
+      const room = new Room('room-1', 1000);
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown');
+      room.removePlayer('player-1');
+      vi.runAllTimers();
+      expect(room.status).toBe('waiting');
+    });
+
+    it('cancels countdown and returns to waiting when a player unreadies', () => {
+      const room = new Room('room-1', 1000);
+      room.addPlayer('player-1', makeSend());
+      room.addPlayer('player-2', makeSend());
+      room.onMessage('player-1', { type: 'ready_update', ready: true });
+      room.onMessage('player-2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown');
+      room.onMessage('player-1', { type: 'ready_update', ready: false });
+      expect(room.status).toBe('waiting');
+      vi.runAllTimers();
+      expect(room.status).toBe('waiting'); // timer was cleared, should not flip to playing
+    });
+  });
 });

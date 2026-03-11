@@ -18,6 +18,9 @@ export class Room {
   private players: Map<string, PlayerSlot> = new Map();
 
   status: RoomStatus = "waiting";
+  private countdownTimer: NodeJS.Timeout | null = null;
+  private readonly COUNTDOWN_DURATION = 3000;
+
 
   constructor(id: string, betSats: number) {
     this.id = id;
@@ -53,6 +56,8 @@ export class Room {
     console.log(`[Room] removed player ${playerId} from room ${this.id}`);
     this.players.delete(playerId);
 
+    if (this.status === 'countdown') this.cancelCountdown();
+
     this.broadcastRoomStateUpdate();
   }
 
@@ -73,7 +78,11 @@ export class Room {
     }
 
     if (this.checkAllReady()) {
-      this.status = 'countdown'
+      this.startCountdown();
+    }
+    // Somebody unreadied... 
+    else if (this.status === 'countdown') {
+      this.cancelCountdown();
     }
 
     // broadcast updated ready state to all players.
@@ -89,12 +98,28 @@ export class Room {
     });
   }
 
+
   // Check if all players are ready AND there are at least 2.
   private checkAllReady() {
     return this.playerCount >= 2 && Array.from(this.players.values()).every(p => p.ready);
   }
 
-  private tickInterval() {
+  private startCountdown() {
+    this.status = 'countdown'
+
+    this.countdownTimer = setTimeout(() => {
+      this.status = 'playing';
+
+      this.broadcastRoomStateUpdate();
+      // start game here?
+    }, this.COUNTDOWN_DURATION);
+
+  }
+
+  private cancelCountdown() {
+    if (this.countdownTimer) clearTimeout(this.countdownTimer)
+    this.countdownTimer = null;
+    this.status = 'waiting';
   }
 
 }

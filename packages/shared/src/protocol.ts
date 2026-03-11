@@ -70,4 +70,8 @@ export type ServerMsg =
   | { type: 'room_joined'; room_id: string; }
   | { type: 'room_state_update'; roomState: RoomState }
 
+  // Game Ops
+
+
+
   | { type: 'error'; message: string };
