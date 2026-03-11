@@ -7,7 +7,7 @@ import { HoldCanvas } from '../components/HoldCanvas';
 import { GarbageMeter } from '../components/GarbageMeter';
 import { PieceSnapshot } from '../types';
 import { MultiplayerGameSession } from '../game/MultiplayerGameSession';
-import { PlayerInfo } from '@stacktris/shared';
+import { PlayerInfo, COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { cn } from '../lib/utils';
 import { useConnection } from '../ws/WSContext';
 
@@ -26,10 +26,6 @@ export function MultiplayerScreen() {
   const holdRef = useRef<HTMLCanvasElement>(null);
 
 
-  useEffect(() => {
-    console.log('status changed to ', status);
-  }, [status]);
-
   const your = STUB;
 
   return (
@@ -47,15 +43,9 @@ export function MultiplayerScreen() {
                 activePiece={your.current_piece}
                 label="OPERATIVE // あなた"
               />
-              {/* {isCountdown && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-                  <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE INITIATING</p>
-                  <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
-                    {countdownDisplay}
-                  </p>
-                  <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — MAGI SYNC COMPLETE</p>
-                </div>
-              )} */}
+              {status === 'countdown' && (
+                <CountdownOverlay />
+              )}
             </div>
             {/* {isPlaying && (
               <div className="nerv-frame flex justify-between items-center px-2 py-1.5">
@@ -171,4 +161,25 @@ function RoomIdBadge({ roomId }: { roomId: string }) {
       <span className="text-nerv-dim/50 text-[9px] font-jp">共有コード — SHARE WITH OPPONENT</span>
     </div>
   );
+}
+
+
+function CountdownOverlay() {
+  const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!'>(COUNTDOWN_SECONDS);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdownDisplay(prev => typeof prev === 'number' && prev > 1 ? prev - 1 : 'GO!');
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+    <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE INITIATING</p>
+    <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
+      {countdownDisplay}
+    </p>
+    <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — MAGI SYNC COMPLETE</p>
+  </div>
+
 }

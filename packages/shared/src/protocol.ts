@@ -1,4 +1,6 @@
 
+export const COUNTDOWN_SECONDS = 3;
+
 export interface RoomInfo {
   roomId: string;
   playerCount: number;

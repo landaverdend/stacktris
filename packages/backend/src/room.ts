@@ -1,4 +1,4 @@
-import { ClientMsg, PlayerInfo, RoomInfo, RoomStatus } from "@stacktris/shared";
+import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus } from "@stacktris/shared";
 import { SendFn } from "./wsServer.js";
 
 interface PlayerSlot {
@@ -19,7 +19,7 @@ export class Room {
 
   status: RoomStatus = "waiting";
   private countdownTimer: NodeJS.Timeout | null = null;
-  private readonly COUNTDOWN_DURATION = 3000;
+  private readonly COUNTDOWN_DURATION = COUNTDOWN_SECONDS * 1000;
 
 
   constructor(id: string, betSats: number) {
