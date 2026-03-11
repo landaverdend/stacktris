@@ -1,42 +1,37 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import type { ClientMsg, RoomState } from '@stacktris/shared';
 import { useWS, useConnectionStatus } from '../ws/WSContext';
-import type { ConnectionStatus, RoomStatus } from '../types';
+import type { ConnectionStatus, } from '../types';
 
 interface RoomContextValue {
-  roomStatus: RoomStatus;
   connectionStatus: ConnectionStatus;
+  roomState: RoomState;
   send: (msg: ClientMsg) => void;
-  goToLobby: () => void;
+  resetRoom: () => void;
 }
 
-
-
 const RoomContext = createContext<RoomContextValue | null>(null);
+
 export function RoomProvider({ children }: { children: ReactNode }) {
   const ws = useWS();
 
   const connectionStatus = useConnectionStatus();
-  const [roomStatus, setRoomStatus] = useState<RoomStatus>({ status: 'lobby' });
 
-
-  const [roomState, setRoomState] = useState<RoomState>({ players: [] });
-
+  const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '' });
 
   useEffect(() => {
     const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {
-      setRoomStatus({ status: 'waiting_opponent', roomId: msg.room_id, myIndex: 0, players: [] });
+      console.log('onRoomCreated: ', msg);
     };
 
     const onRoomJoined = (msg: { type: 'room_joined'; room_id: string }) => {
-      setRoomStatus({ status: 'waiting_opponent', roomId: msg.room_id, myIndex: 1, players: [] });
+      console.log('onRoomJoined: ', msg);
     };
 
     const onRoomStateUpdate = (msg: { type: 'room_state_update'; roomState: RoomState }) => {
       console.log('[RoomContext] onRoomStateUpdate: ', msg.roomState);
       setRoomState(msg.roomState);
     };
-
 
     ws.on('room_created', onRoomCreated);
     ws.on('room_joined', onRoomJoined);
@@ -45,18 +40,14 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     return () => {
       ws.off('room_created', onRoomCreated);
       ws.off('room_joined', onRoomJoined);
-      ws.off('room_state_update', onRoomStateUpdate)
+      ws.off('room_state_update', onRoomStateUpdate);
     };
   }, [ws]);
 
   const send = useCallback((msg: ClientMsg) => ws.send(msg), [ws]);
-  const goToLobby = useCallback(() => setRoomStatus({ status: 'lobby' }), []);
+  const resetRoom = useCallback(() => { }, []);
 
-  return (
-    <RoomContext.Provider value={{ roomStatus, connectionStatus, send, goToLobby }}>
-      {children}
-    </RoomContext.Provider>
-  );
+  return <RoomContext.Provider value={{ connectionStatus, roomState, send, resetRoom }}>{children}</RoomContext.Provider>;
 }
 
 export function useRoom(): RoomContextValue {

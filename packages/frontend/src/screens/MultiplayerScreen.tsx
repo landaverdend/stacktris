@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
@@ -11,10 +12,9 @@ const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 
-interface Props { onExitToLobby: () => void; }
-
-export function MultiplayerScreen({ onExitToLobby }: Props) {
-  const { roomStatus, send, goToLobby } = useRoom();
+export function MultiplayerScreen() {
+  const navigate = useNavigate();
+  const { roomState, send, resetRoom } = useRoom();
 
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
@@ -24,61 +24,28 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
 
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    if (roomStatus.status !== 'countdown') { setCountdownDisplay(null); return; }
 
-    let n = roomStatus.from;
-    setCountdownDisplay(n);
-
-    const iv = setInterval(() => {
-      n -= 1;
-      if (n > 0) { setCountdownDisplay(n); }
-      else { setCountdownDisplay('GO!'); clearInterval(iv); }
-    }, 1000);
-
-
-    return () => clearInterval(iv);
-  }, [roomStatus.status]);
-
-
-  // Start the game session when we enter the playing state.
-  useEffect(() => {
-    let session: MultiplayerGameSession | null = null;
-    console.log('[MultiplayerScreen] roomStatus.status: ', roomStatus.status);
-    if (roomStatus.status === 'countdown') {
-      session = new MultiplayerGameSession(() => { }, 1)
-      session.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! })
-    }
-    return () => { session?.stop(); }
-
-  }, [roomStatus.status])
-
-
-  const handleGoToLobby = () => { goToLobby(); onExitToLobby(); };
+  const handleGoToLobby = () => { resetRoom(); navigate('/'); };
 
   const your = STUB;
   const opp = OPP_STUB;
-
-  const isWaiting = roomStatus.status === 'waiting_opponent';
-  const isCountdown = roomStatus.status === 'countdown';
-  const isPlaying = roomStatus.status === 'playing';
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
 
       {/* ── Arena — always mounted, same position ── */}
-      <div className={`flex items-start gap-3 ${isWaiting ? 'opacity-40' : ''}`}>
-        <HoldCanvas holdPiece={isPlaying ? your.hold_piece : null} dimmed={isPlaying && your.hold_used} />
+      <div className="flex items-start gap-3">
+        <HoldCanvas holdPiece={your.hold_piece} dimmed={your.hold_used} />
         <div className="flex items-end gap-1">
-          <GarbageMeter pendingGarbage={isPlaying ? your.pending_garbage : 0} />
+          <GarbageMeter pendingGarbage={your.pending_garbage} />
           <div className="flex flex-col gap-1.5">
             <div className="relative">
               <BoardCanvas
-                board={isPlaying ? your.board : EMPTY_BOARD}
-                activePiece={isPlaying ? your.current_piece : null}
+                board={your.board}
+                activePiece={your.current_piece}
                 label="OPERATIVE // あなた"
               />
-              {isCountdown && (
+              {/* {isCountdown && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
                   <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE INITIATING</p>
                   <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
@@ -86,9 +53,9 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
                   </p>
                   <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — MAGI SYNC COMPLETE</p>
                 </div>
-              )}
+              )} */}
             </div>
-            {isPlaying && (
+            {/* {isPlaying && (
               <div className="nerv-frame flex justify-between items-center px-2 py-1.5">
                 <div className="flex flex-col gap-0">
                   <span className="text-nerv-dim/60 text-[8px] font-mono tracking-[0.3em]">SCORE</span>
@@ -100,14 +67,14 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
                   <span className="text-bitcoin font-mono font-bold text-sm leading-none">{your.level}</span>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
-        <QueueCanvas nextPieces={isPlaying ? your.next_pieces : []} />
+        {/* <QueueCanvas nextPieces={isPlaying ? your.next_pieces : []} /> */}
       </div>
 
       {/* ── Right panel — MissionStaging or opponent mini board ── */}
-      {isWaiting && (
+      {/* {isWaiting && (
         <MissionStaging
           roomId={roomStatus.roomId}
           myIndex={roomStatus.myIndex}
@@ -132,7 +99,7 @@ export function MultiplayerScreen({ onExitToLobby }: Props) {
             <span>LV {opp.level}</span>
           </div>
         </div>
-      )}
+      )} */}
 
     </div>
   );

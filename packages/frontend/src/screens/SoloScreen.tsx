@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SoloGameSession, Stats } from '../game/SoloGameSession';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
 
-interface Props {
-  onExit: () => void;
-}
+export function SoloScreen() {
+  const navigate = useNavigate();
 
-export function SoloScreen({ onExit }: Props) {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
@@ -24,7 +23,7 @@ export function SoloScreen({ onExit }: Props) {
     <div className="flex flex-col items-center justify-center min-h-screen gap-4">
 
       <div className="flex items-center gap-6">
-        <button onClick={onExit} className="text-nerv-dim text-xs tracking-widest font-display hover:text-bitcoin transition-colors">
+        <button onClick={() => navigate('/')} className="text-nerv-dim text-xs tracking-widest font-display hover:text-bitcoin transition-colors">
           ← EXIT
         </button>
         <span className="font-display text-bitcoin tracking-[0.3em] text-sm">SOLO MODE</span>

@@ -78,8 +78,10 @@ export function renderBoard(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+
+const PIECES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 function pieceColorIndex(kind: string): number {
-  return ['I', 'O', 'T', 'S', 'Z', 'J', 'L'].indexOf(kind) + 1;
+  return PIECES.indexOf(kind) + 1;
 }
 
 /**

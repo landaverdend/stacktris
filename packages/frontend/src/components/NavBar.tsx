@@ -1,9 +1,9 @@
 import { useRoom } from '../context/RoomContext';
 
 export function NavBar() {
-  const { connectionStatus: connection, roomStatus } = useRoom();
+  const { connectionStatus, roomState } = useRoom();
 
-  const currentRoomId = 'roomId' in roomStatus ? roomStatus.roomId : null;
+  const { roomId } = roomState
 
   return (
     <div className="fixed top-0 inset-x-0 h-10 bg-topbar border-b border-border flex items-center justify-between px-4 z-50">
@@ -18,25 +18,24 @@ export function NavBar() {
       </div>
 
       {/* Center: room ID */}
-      {currentRoomId ? (
+      {roomId ? (
         <button
           className="text-nerv-dim hover:text-bitcoin font-mono text-[10px] px-2 py-0.5 border border-border rounded tracking-widest transition-colors"
           title="Click to copy room ID"
-          onClick={() => navigator.clipboard.writeText(currentRoomId)}
+          onClick={() => navigator.clipboard.writeText(roomId)}
         >
-          RM:{currentRoomId.slice(0, 8).toUpperCase()}
+          RM:{roomId.slice(0, 8).toUpperCase()}
         </button>
       ) : <span />}
 
       {/* Right: connection */}
-      <span className={`text-[10px] tracking-widest font-mono ${
-        connection === 'connected'  ? 'text-magi' :
-        connection === 'connecting' ? 'text-yellow-500' :
-                                      'text-alert'
-      }`}>
-        {connection === 'connected'  ? '● ONLINE' :
-         connection === 'connecting' ? '◌ SYNC...' :
-                                       '○ OFFLINE'}
+      <span className={`text-[10px] tracking-widest font-mono ${connectionStatus === 'connected' ? 'text-magi' :
+        connectionStatus === 'connecting' ? 'text-yellow-500' :
+          'text-alert'
+        }`}>
+        {connectionStatus === 'connected' ? '● ONLINE' :
+          connectionStatus === 'connecting' ? '◌ SYNC...' :
+            '○ OFFLINE'}
       </span>
     </div>
   );

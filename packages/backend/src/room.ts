@@ -81,7 +81,7 @@ export class Room {
       .map(p => ({ playerId: p.playerId, ready: p.ready }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray } });
+      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id } });
     });
   }
 

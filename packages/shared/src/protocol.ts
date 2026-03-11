@@ -55,6 +55,7 @@ export interface PlayerInfo {
 }
 
 export interface RoomState {
+  roomId: string;
   players: PlayerInfo[];
 }
 

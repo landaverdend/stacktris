@@ -1,38 +1,33 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
 import { RoomInfo } from '@stacktris/shared';
+import { GenesisBlock } from '../components/GenesisBlock';
+import { GlitchOverlay } from '../components/GlitchOverlay';
+import { LightningGraph } from '../components/LightningGraph';
 
 const API_BASE = `${window.location.protocol}//${window.location.host}`;
-
-
-interface Props {
-  onEnterGame: () => void;
-  onEnterSolo: () => void;
-}
 
 type MenuItem = 'battle' | 'create' | 'join';
 
 const MENU = [
   { id: 'solo', label: 'SOLO MODE', jp: 'ソロプレイ' },
-  { id: 'battle', label: 'BATTLE ARENA', jp: 'バトル' },
+  { id: 'battle', label: 'MULTIPLAYER', jp: 'バトル' },
   { id: 'create', label: 'CREATE MATCH', jp: '作成' },
-  { id: 'join', label: 'JOIN BY ID', jp: '参加' },
+  { id: 'join', label: 'JOIN ROOM', jp: '参加' },
 ] as const;
 
-export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
-  const { roomStatus, send } = useRoom();
+export function LobbyScreen() {
+  const navigate = useNavigate();
+  const { roomState, send } = useRoom();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
 
   const [expanded, setExpanded] = useState<MenuItem | null>(null);
 
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
-
   const [loadingRooms, setLoadingRooms] = useState(false);
 
-  useEffect(() => {
-    if (roomStatus.status !== 'lobby') onEnterGame();
-  }, [roomStatus.status, onEnterGame]);
 
   useEffect(() => {
     if (expanded !== 'battle') return;
@@ -50,12 +45,16 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
   }, [expanded]);
 
   function handleItem(id: (typeof MENU)[number]['id']) {
-    if (id === 'solo') { onEnterSolo(); return; }
+    if (id === 'solo') { navigate('/solo'); return; }
+
     setExpanded(prev => prev === id ? null : id as MenuItem);
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-10 px-4">
+      <LightningGraph />
+      <GlitchOverlay />
+      <GenesisBlock />
 
       {/* Title */}
       <div className="text-center flex flex-col gap-1">
@@ -117,7 +116,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
                           type="number"
                           className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
                           value={betSats}
-                          min={1}
+                          min={5}
                           onChange={e => setBetSats(Number(e.target.value))}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
