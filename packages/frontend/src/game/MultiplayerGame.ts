@@ -47,8 +47,4 @@ export class MultiplayerGame {
     this.lastGravityMs = 0;
   }
 
-  // // Server correction — snap local state to server truth.
-  // correct(patch: Partial<GameState>): void {
-  //   this.game = { ...this.game, state: { ...this.game.state, ...patch } };
-  // }
 }

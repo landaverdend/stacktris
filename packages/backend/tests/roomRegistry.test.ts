@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RoomRegistry } from '../src/roomRegistry.js';
-import type { SendFn } from '../src/WSServer.js';
+import type { SendFn } from '../src/wsServer.js';
 
 const makeSend = (): SendFn => vi.fn();
 
@@ -38,7 +38,7 @@ describe('RoomRegistry', () => {
       registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
 
       const roomId = registry.roomForPlayer('p1')!;
-      registry.onMessage('p2', { type: 'join_room', room_id: roomId, bet_sats: 0 });
+      registry.onMessage('p2', { type: 'join_room', room_id: roomId });
 
       expect(registry.roomForPlayer('p2')).toBe(roomId);
     });
@@ -46,7 +46,7 @@ describe('RoomRegistry', () => {
     it('joining a nonexistent room is a no-op', () => {
       connect(registry, 'p1');
       expect(() =>
-        registry.onMessage('p1', { type: 'join_room', room_id: 'does-not-exist', bet_sats: 0 })
+        registry.onMessage('p1', { type: 'join_room', room_id: 'does-not-exist' })
       ).not.toThrow();
     });
   });
