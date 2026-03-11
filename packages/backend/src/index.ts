@@ -8,12 +8,10 @@ const PORT = process.env.PORT ?? 8080;
 
 app.use(express.json());
 
-
 const roomRegistry = new RoomRegistry();
 
 const server = createServer(app);
 const wss = new WSServer(server, roomRegistry);
-
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

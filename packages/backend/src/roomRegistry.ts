@@ -1,6 +1,6 @@
-import { ClientMsg, RoomInfo, ServerMsg } from "@stacktris/shared";
+import { ClientMsg, RoomInfo } from "@stacktris/shared";
 import { Room } from "./room.js";
-import { SendFn } from "./wsServer.js";
+import { SendFn } from "./types.js";
 
 
 export class RoomRegistry {

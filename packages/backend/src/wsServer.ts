@@ -8,7 +8,6 @@ export interface PlayerSocket extends WebSocket {
   playerId: string;
 }
 
-export type SendFn = (msg: ServerMsg) => void;
 
 export class WSServer {
   private wss: WebSocketServer;
