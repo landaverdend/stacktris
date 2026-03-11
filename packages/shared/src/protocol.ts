@@ -1,6 +1,10 @@
-import { InputAction } from './game/engine.js';
 
-// ── Wire snapshot types ───────────────────────────────────────────────────────
+export interface RoomInfo {
+  roomId: string;
+  playerCount: number;
+  betSats: number;
+  createdAt: number;
+}
 
 /** Active piece position sent over the wire. */
 export interface PieceSnapshot {
@@ -38,16 +42,29 @@ export interface OpponentSnapshot {
 export type ClientMsg =
   // Room Operations
   | { type: 'create_room'; bet_sats: number }
-  | { type: 'join_room'; room_id: string; bet_sats: number }
+  | { type: 'join_room'; room_id: string; }
   | { type: 'leave_room'; room_id: string }
   | { type: 'ready_update'; ready: boolean };
 
-// ── Server → Client ───────────────────────────────────────────────────────────
 
+
+export interface PlayerInfo {
+  playerId: string;
+  ready: boolean;
+
+}
+
+export interface RoomState {
+  players: PlayerInfo[];
+}
+
+// ── Server → Client ───────────────────────────────────────────────────────────
 export type ServerMsg =
   // Room Operations
   | { type: 'room_created'; room_id: string }
   | { type: 'room_joined'; room_id: string; }
+  | { type: 'room_state_update'; roomState: RoomState }
+
   | { type: 'error'; message: string };
 
 

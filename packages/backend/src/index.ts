@@ -20,6 +20,8 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/rooms', (_req, res) => {
+  const rooms = roomRegistry.listRooms();
+  res.json(rooms);
 });
 
 server.listen(PORT, () => {

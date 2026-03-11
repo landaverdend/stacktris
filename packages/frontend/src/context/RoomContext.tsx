@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
-import type { ClientMsg } from '@stacktris/shared';
+import type { ClientMsg, RoomState } from '@stacktris/shared';
 import { useWS, useConnectionStatus } from '../ws/WSContext';
 import type { ConnectionStatus, RoomStatus } from '../types';
 
@@ -10,29 +10,42 @@ interface RoomContextValue {
   goToLobby: () => void;
 }
 
-const RoomContext = createContext<RoomContextValue | null>(null);
 
+
+const RoomContext = createContext<RoomContextValue | null>(null);
 export function RoomProvider({ children }: { children: ReactNode }) {
   const ws = useWS();
 
   const connectionStatus = useConnectionStatus();
   const [roomStatus, setRoomStatus] = useState<RoomStatus>({ status: 'lobby' });
 
+
+  const [roomState, setRoomState] = useState<RoomState>({ players: [] });
+
+
   useEffect(() => {
     const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {
       setRoomStatus({ status: 'waiting_opponent', roomId: msg.room_id, myIndex: 0, players: [] });
     };
+
     const onRoomJoined = (msg: { type: 'room_joined'; room_id: string }) => {
       setRoomStatus({ status: 'waiting_opponent', roomId: msg.room_id, myIndex: 1, players: [] });
     };
 
+    const onRoomStateUpdate = (msg: { type: 'room_state_update'; roomState: RoomState }) => {
+      console.log('[RoomContext] onRoomStateUpdate: ', msg.roomState);
+      setRoomState(msg.roomState);
+    };
+
+
     ws.on('room_created', onRoomCreated);
     ws.on('room_joined', onRoomJoined);
-
+    ws.on('room_state_update', onRoomStateUpdate);
 
     return () => {
       ws.off('room_created', onRoomCreated);
       ws.off('room_joined', onRoomJoined);
+      ws.off('room_state_update', onRoomStateUpdate)
     };
   }, [ws]);
 

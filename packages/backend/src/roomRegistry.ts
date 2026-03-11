@@ -1,4 +1,4 @@
-import { ClientMsg, ServerMsg } from "@stacktris/shared";
+import { ClientMsg, RoomInfo, ServerMsg } from "@stacktris/shared";
 import { Room } from "./room.js";
 import { SendFn } from "./wsServer.js";
 
@@ -26,7 +26,7 @@ export class RoomRegistry {
     switch (msg.type) {
       case 'create_room':
         console.log('[RoomManager] create_room: ', msg);
-        this.createRoom(playerId);
+        this.createRoom(playerId, msg.bet_sats);
         break;
       case 'join_room':
         console.log('[RoomManager] join_room: ', msg);
@@ -48,9 +48,9 @@ export class RoomRegistry {
 
   }
 
-  private createRoom(playerId: string): void {
+  private createRoom(playerId: string, betSats: number): void {
     const roomId = crypto.randomUUID();
-    const room = new Room(roomId);
+    const room = new Room(roomId, betSats);
 
     this.rooms.set(roomId, room);
     room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
@@ -62,10 +62,16 @@ export class RoomRegistry {
 
 
   private joinRoom(playerId: string, roomId: string): void {
-    const room = this.rooms.get(roomId);
-    if (room) {
-      room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
-      this.playerIdToRoom.set(playerId, roomId);
+    try {
+      const room = this.rooms.get(roomId);
+      if (room) {
+        room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
+        this.playerIdToRoom.set(playerId, roomId);
+      }
+
+    } catch (error) {
+      console.error(`[RoomRegistry] failed to join room ${roomId}`);
+      this.playerIdToSendFn.get(playerId)!({ type: 'error', message: 'Failed to join room' });
     }
   }
 
@@ -90,4 +96,9 @@ export class RoomRegistry {
       }
     }
   }
+
+  public listRooms(): RoomInfo[] {
+    return Array.from(this.rooms.values()).map(room => room.roomInfo);
+  }
+
 }

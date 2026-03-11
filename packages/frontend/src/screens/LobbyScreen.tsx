@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRoom } from '../context/RoomContext';
+import { RoomInfo } from '@stacktris/shared';
 
 const API_BASE = `${window.location.protocol}//${window.location.host}`;
 
-interface LobbyEntry {
-  id: string;
-  bet_sats: number;
-  created_at: number;
-}
 
 interface Props {
   onEnterGame: () => void;
@@ -27,8 +23,11 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
   const { roomStatus, send } = useRoom();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
+
   const [expanded, setExpanded] = useState<MenuItem | null>(null);
-  const [rooms, setRooms] = useState<LobbyEntry[]>([]);
+
+  const [rooms, setRooms] = useState<RoomInfo[]>([]);
+
   const [loadingRooms, setLoadingRooms] = useState(false);
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
       setLoadingRooms(true);
       try {
         const res = await fetch(`${API_BASE}/rooms`);
-        if (res.ok) setRooms(await res.json() as LobbyEntry[]);
+        if (res.ok) setRooms(await res.json() as RoomInfo[]);
       } catch { /* backend not up */ }
       finally { setLoadingRooms(false); }
     };
@@ -105,7 +104,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
                         </div>
                       ) : (
                         rooms.map(r => (
-                          <RoomRow key={r.id} room={r} onJoin={() => send({ type: 'join_room', room_id: r.id, bet_sats: r.bet_sats })} />
+                          <RoomRow key={r.roomId} room={r} onJoin={() => send({ type: 'join_room', room_id: r.roomId })} />
                         ))
                       )}
                     </div>
@@ -148,7 +147,7 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
                       </NervField>
-                      <NervButton onClick={() => joinRoomId && send({ type: 'join_room', room_id: joinRoomId, bet_sats: betSats })} disabled={!joinRoomId}>
+                      <NervButton onClick={() => joinRoomId && send({ type: 'join_room', room_id: joinRoomId, })} disabled={!joinRoomId}>
                         CONNECT TO SESSION
                       </NervButton>
                     </>
@@ -165,19 +164,20 @@ export function LobbyScreen({ onEnterGame, onEnterSolo }: Props) {
   );
 }
 
-function RoomRow({ room, onJoin }: { room: LobbyEntry; onJoin: () => void }) {
-  const ageSeconds = Math.floor(Date.now() / 1000) - room.created_at;
-  const age = ageSeconds < 60 ? `${ageSeconds}S` : `${Math.floor(ageSeconds / 60)}M`;
+function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
+
+  const age = Math.floor(Date.now()) - room.createdAt;
+
 
   return (
     <div className="flex items-center justify-between border border-border px-3 py-2">
       <div className="flex flex-col gap-0.5">
-        <span className="text-nerv-dim font-mono text-[10px] tracking-widest">ID:{room.id.slice(0, 8).toUpperCase()}</span>
+        <span className="text-nerv-dim font-mono text-[10px] tracking-widest">ID:{room.roomId.slice(0, 8).toUpperCase()}</span>
         <span className="text-nerv-dim/50 font-mono text-[9px]">T+{age}</span>
       </div>
       <div className="flex items-center gap-3">
         <span className="text-bitcoin font-mono text-sm font-bold tracking-wider">
-          {room.bet_sats.toLocaleString()}
+          {room.betSats.toLocaleString()}
           <span className="text-nerv-dim text-[10px] font-normal ml-1">SATS</span>
         </span>
         <button
