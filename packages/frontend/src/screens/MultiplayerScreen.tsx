@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
 import { BoardCanvas } from '../components/BoardCanvas';
 import { QueueCanvas } from '../components/QueueCanvas';
@@ -7,8 +7,9 @@ import { HoldCanvas } from '../components/HoldCanvas';
 import { GarbageMeter } from '../components/GarbageMeter';
 import { PieceSnapshot } from '../types';
 import { MultiplayerGameSession } from '../game/MultiplayerGameSession';
-import { RoomState } from '@stacktris/shared';
+import { PlayerInfo } from '@stacktris/shared';
 import { cn } from '../lib/utils';
+import { useConnection } from '../ws/WSContext';
 
 const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
@@ -25,8 +26,6 @@ export function MultiplayerScreen() {
   const holdRef = useRef<HTMLCanvasElement>(null);
 
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!' | null>(null);
-
-  const [isReady, setIsReady] = useState(false);
 
   const your = STUB;
 
@@ -98,20 +97,16 @@ export function MultiplayerScreen() {
 interface PlayerLobbyProps {
 }
 function PlayerLobby({ }: PlayerLobbyProps) {
+
   const { roomState, leaveRoom, readyUpdate } = useRoom();
+  const { playerId } = useConnection();
 
   const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
 
-  const handleLeave = () => {
-    leaveRoom();
-    navigate('/')
-  }
 
-  const handleReady = () => {
-    setIsReady(prev => !prev);
-    readyUpdate(isReady);
-  }
+  const handleLeave = () => { leaveRoom(); navigate('/'); };
+  const handleReady = () => { const next = !isReady; setIsReady(next); readyUpdate(next); };
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-sm pt-2">
@@ -124,7 +119,7 @@ function PlayerLobby({ }: PlayerLobbyProps) {
       <RoomIdBadge roomId={roomState.roomId} />
 
       <div className="w-full flex flex-col gap-3">
-
+        {roomState.players.map(p => <PlayerRow key={p.playerId} player={p} isYou={p.playerId === playerId} />)}
       </div>
 
       <button
@@ -145,6 +140,16 @@ function PlayerLobby({ }: PlayerLobbyProps) {
       </button>
     </div>
   );
+}
+
+
+function PlayerRow({ player }: { player: PlayerInfo; isYou: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-nerv-dim text-[10px] font-mono tracking-[0.3em]">{player.playerId}</span>
+      <span className={cn("text-[10px] font-mono tracking-[0.3em]", player.ready ? "text-magi" : "text-nerv-dim")}>{player.ready ? 'READY' : 'NOT READY'}</span>
+    </div>
+  )
 }
 
 function RoomIdBadge({ roomId }: { roomId: string }) {

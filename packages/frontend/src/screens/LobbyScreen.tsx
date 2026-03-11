@@ -20,6 +20,8 @@ const MENU = [
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { createRoom, joinRoom } = useRoom();
+
+
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
 
@@ -49,6 +51,17 @@ export function LobbyScreen() {
 
     setExpanded(prev => prev === id ? null : id as MenuItem);
   }
+
+  function handleJoinRoom(roomId: string) {
+    if (roomId) {
+      joinRoom(roomId);
+      navigate(`/room/${roomId}`);
+    }
+    else {
+      alert('Please enter a room ID');
+    }
+  }
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-10 px-4">
@@ -103,7 +116,7 @@ export function LobbyScreen() {
                         </div>
                       ) : (
                         rooms.map(r => (
-                          <RoomRow key={r.roomId} room={r} onJoin={() => joinRoom(r.roomId)} />
+                          <RoomRow key={r.roomId} room={r} onJoin={() => handleJoinRoom(r.roomId)} />
                         ))
                       )}
                     </div>
@@ -146,7 +159,7 @@ export function LobbyScreen() {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
                       </NervField>
-                      <NervButton onClick={() => joinRoomId && joinRoom(joinRoomId)} disabled={!joinRoomId}>
+                      <NervButton onClick={() => handleJoinRoom(joinRoomId)} disabled={!joinRoomId}>
                         CONNECT TO SESSION
                       </NervButton>
                     </>

@@ -71,6 +71,7 @@ export class Room {
       player.ready = ready;
     }
 
+    console.log(`[Room] onReadyUpdate: ${playerId} is now ${ready} in room ${this.id}`);
     // broadcast updated ready state to all players.
     this.broadcastRoomStateUpdate();
   }
