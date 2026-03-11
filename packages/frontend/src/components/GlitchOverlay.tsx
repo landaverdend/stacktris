@@ -109,7 +109,7 @@ export function GlitchOverlay() {
     }
 
     function resize() {
-      W = canvas.width  = window.innerWidth;
+      W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
     }
 

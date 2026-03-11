@@ -1,4 +1,4 @@
-import { ClientMsg, PlayerInfo, RoomInfo } from "@stacktris/shared";
+import { ClientMsg, PlayerInfo, RoomInfo, RoomStatus } from "@stacktris/shared";
 import { SendFn } from "./wsServer.js";
 
 interface PlayerSlot {
@@ -10,7 +10,6 @@ interface PlayerSlot {
 
 export const MAX_PLAYERS = 2;
 
-
 export class Room {
   private id: string;
   private createdAt: number = Date.now();
@@ -18,6 +17,7 @@ export class Room {
   private betSats: number;
   private players: Map<string, PlayerSlot> = new Map();
 
+  private status: RoomStatus = "waiting";
 
   constructor(id: string, betSats: number) {
     this.id = id;
@@ -38,7 +38,6 @@ export class Room {
       createdAt: this.createdAt,
     };
   }
-
 
   public addPlayer(playerId: string, sendFn: SendFn) {
     if (this.isFull) throw new Error(`Room ${this.id} is already full`);
@@ -81,8 +80,11 @@ export class Room {
       .map(p => ({ playerId: p.playerId, ready: p.ready }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id } });
+      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status } });
     });
+  }
+
+  private tickInterval() {
   }
 
 }

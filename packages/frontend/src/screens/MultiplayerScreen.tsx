@@ -7,15 +7,18 @@ import { HoldCanvas } from '../components/HoldCanvas';
 import { GarbageMeter } from '../components/GarbageMeter';
 import { PieceSnapshot } from '../types';
 import { MultiplayerGameSession } from '../game/MultiplayerGameSession';
+import { RoomState } from '@stacktris/shared';
 
 const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 
 export function MultiplayerScreen() {
-  const navigate = useNavigate();
-  const { roomState, send, resetRoom } = useRoom();
+  const { roomState } = useRoom();
 
+  const { status } = roomState;
+
+  // Refs for rendering the game state.
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
@@ -24,11 +27,7 @@ export function MultiplayerScreen() {
 
   const [isReady, setIsReady] = useState(false);
 
-
-  const handleGoToLobby = () => { resetRoom(); navigate('/'); };
-
   const your = STUB;
-  const opp = OPP_STUB;
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
@@ -74,21 +73,11 @@ export function MultiplayerScreen() {
       </div>
 
       {/* ── Right panel — MissionStaging or opponent mini board ── */}
-      {/* {isWaiting && (
-        <MissionStaging
-          roomId={roomStatus.roomId}
-          myIndex={roomStatus.myIndex}
-          players={roomStatus.players}
-          onToggleReady={() => {
-            // send({ type: 'player_ready', ready: !(myPlayer?.ready ?? false) });
-            send({ type: 'ready_update', ready: !isReady });
-            setIsReady(prev => !prev);
-          }}
-          onAbort={handleGoToLobby}
-        />
+      {status === 'waiting' && (
+        <PlayerLobby />
       )}
 
-      {isPlaying && (
+      {/* {isPlaying && (
         <div className="flex flex-col gap-1 pt-6">
           <p className="text-nerv-dim/50 text-[8px] font-mono tracking-[0.3em]">// HOSTILE UNIT</p>
           <div className="nerv-frame p-0.5">
@@ -105,62 +94,38 @@ export function MultiplayerScreen() {
   );
 }
 
-// ── MissionStaging ────────────────────────────────────────────────────────────
-
-interface MissionStagingProps {
-  roomId: string;
-  myIndex: 0 | 1;
-  players: { index: 0 | 1; ready: boolean }[];
-  onToggleReady: () => void;
-  onAbort: () => void;
+interface PlayerLobbyProps {
 }
+function PlayerLobby({ }: PlayerLobbyProps) {
+  const { roomState, leaveRoom } = useRoom();
 
-function MissionStaging({ roomId, myIndex, players, onToggleReady, onAbort }: MissionStagingProps) {
-  const myPlayer = players.find(p => p.index === myIndex);
-  const amReady = myPlayer?.ready ?? false;
+
+  const [isReady, setIsReady] = useState(false);
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-sm pt-2">
       <div className="text-center flex flex-col gap-2">
         <p className="text-nerv-dim text-xs tracking-[0.4em] font-mono">ネルフ</p>
-        <p className="text-bitcoin font-display font-bold text-3xl tracking-[0.3em]">MISSION STAGING</p>
+        <p className="text-bitcoin font-display font-bold text-3xl tracking-[0.3em]">OP_STAGING</p>
         <p className="text-nerv-dim text-xs tracking-[0.3em] font-jp mt-1">作戦準備中</p>
       </div>
 
-      <RoomIdBadge roomId={roomId} />
+      <RoomIdBadge roomId={roomState.roomId} />
 
       <div className="w-full flex flex-col gap-3">
-        <p className="text-nerv-dim/60 text-xs font-mono tracking-[0.4em]">// OPERATIVES</p>
-        {([0, 1] as const).map(idx => {
-          const player = players.find(p => p.index === idx);
-          const isMe = idx === myIndex;
-          return (
-            <div key={idx} className="nerv-frame px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">UNIT-0{idx + 1}</span>
-                {isMe && <span className="text-bitcoin/60 text-xs font-mono tracking-widest border-l border-border pl-3">YOU</span>}
-              </div>
-              {!player
-                ? <span className="text-nerv-dim/30 text-sm font-mono tracking-widest animate-pulse">◌ AWAITING</span>
-                : player.ready
-                  ? <span className="text-magi text-sm font-mono tracking-widest font-bold">■ READY</span>
-                  : <span className="text-nerv-dim/50 text-sm font-mono tracking-widest">◌ STANDBY</span>
-              }
-            </div>
-          );
-        })}
+
       </div>
 
       <button
-        onClick={onToggleReady}
+        onClick={() => { }}
         className={`w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors
-          ${amReady ? 'border-magi text-magi hover:bg-magi hover:text-black' : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'}`}
+          ${isReady ? 'border-magi text-magi hover:bg-magi hover:text-black' : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'}`}
       >
-        {amReady ? '■ READY — CLICK TO CANCEL' : '◌ CONFIRM READY'}
+        {isReady ? '■ READY — CLICK TO CANCEL' : '◌ CONFIRM READY'}
       </button>
 
       <button
-        onClick={onAbort}
+        onClick={() => { leaveRoom() }}
         className="px-6 py-2.5 border border-border-hi text-nerv-dim font-display text-xs tracking-[0.2em] hover:border-alert hover:text-alert transition-colors"
       >
         ABORT MISSION

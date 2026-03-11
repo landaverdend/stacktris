@@ -1,35 +1,39 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
-import type { ClientMsg, RoomState } from '@stacktris/shared';
+import type { RoomState } from '@stacktris/shared';
 import { useWS, useConnectionStatus } from '../ws/WSContext';
 import type { ConnectionStatus, } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface RoomContextValue {
   connectionStatus: ConnectionStatus;
   roomState: RoomState;
-  send: (msg: ClientMsg) => void;
-  resetRoom: () => void;
+
+  leaveRoom: () => void;
+  createRoom: (amountBet: number) => void;
+  joinRoom: (roomId: string) => void;
 }
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
 export function RoomProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+
   const ws = useWS();
 
   const connectionStatus = useConnectionStatus();
 
-  const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '' });
+  const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '', status: 'waiting' });
 
   useEffect(() => {
     const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {
-      console.log('onRoomCreated: ', msg);
+      navigate(`/room/${msg.room_id}`)
     };
 
     const onRoomJoined = (msg: { type: 'room_joined'; room_id: string }) => {
-      console.log('onRoomJoined: ', msg);
+      navigate(`/room/${msg.room_id}`)
     };
 
     const onRoomStateUpdate = (msg: { type: 'room_state_update'; roomState: RoomState }) => {
-      console.log('[RoomContext] onRoomStateUpdate: ', msg.roomState);
       setRoomState(msg.roomState);
     };
 
@@ -44,10 +48,13 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     };
   }, [ws]);
 
-  const send = useCallback((msg: ClientMsg) => ws.send(msg), [ws]);
-  const resetRoom = useCallback(() => { }, []);
+  const createRoom = useCallback((amountBet: number) => { ws.send({ type: 'create_room', bet_sats: amountBet }) }, [ws])
 
-  return <RoomContext.Provider value={{ connectionStatus, roomState, send, resetRoom }}>{children}</RoomContext.Provider>;
+  const joinRoom = useCallback((roomId: string) => { ws.send({ type: 'join_room', room_id: roomId }) }, [ws])
+
+  const leaveRoom = useCallback(() => { ws.send({ type: 'leave_room', room_id: roomState.roomId }) }, [ws])
+
+  return <RoomContext.Provider value={{ connectionStatus, roomState, leaveRoom, createRoom, joinRoom }}>{children}</RoomContext.Provider>;
 }
 
 export function useRoom(): RoomContextValue {

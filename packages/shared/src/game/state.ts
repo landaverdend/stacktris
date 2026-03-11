@@ -52,9 +52,11 @@ export function createGame(config: GameConfig = {}, seed?: number): GameWithBag 
     queue,
     holdPiece: null,
     holdUsed: false,
+
     score: 0,
     lines: 0,
     level: 0,
+
     combo: 0,
     isGameOver: activePiece === null,
     lockDelay: null,

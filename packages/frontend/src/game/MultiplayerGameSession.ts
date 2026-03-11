@@ -1,5 +1,5 @@
 import { VISIBLE_ROW_START, visibleBoard } from "@stacktris/shared";
-import { Canvases, Stats } from "./SoloGameSession";
+import { Canvases, GameStats } from "./SoloGameSession";
 import { InputHandler } from "./InputHandler";
 import { MultiplayerGame } from "./MultiplayerGame";
 import { renderBoard } from "../render/board";
@@ -12,10 +12,10 @@ export class MultiplayerGameSession {
   private game: MultiplayerGame;
 
   private input: InputHandler;
-  private onStats: (s: Stats) => void;
+  private onStats: (s: GameStats) => void;
   private rafId = 0;
 
-  constructor(onStats: (s: Stats) => void, seed: number) {
+  constructor(onStats: (s: GameStats) => void, seed: number) {
 
     this.onStats = onStats;
     this.game = new MultiplayerGame(seed, () => { })

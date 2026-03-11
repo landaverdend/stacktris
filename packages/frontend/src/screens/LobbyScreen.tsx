@@ -19,7 +19,7 @@ const MENU = [
 
 export function LobbyScreen() {
   const navigate = useNavigate();
-  const { roomState, send } = useRoom();
+  const { createRoom, joinRoom } = useRoom();
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
 
@@ -103,7 +103,7 @@ export function LobbyScreen() {
                         </div>
                       ) : (
                         rooms.map(r => (
-                          <RoomRow key={r.roomId} room={r} onJoin={() => send({ type: 'join_room', room_id: r.roomId })} />
+                          <RoomRow key={r.roomId} room={r} onJoin={() => joinRoom(r.roomId)} />
                         ))
                       )}
                     </div>
@@ -121,7 +121,7 @@ export function LobbyScreen() {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
                       </NervField>
-                      <NervButton onClick={() => send({ type: 'create_room', bet_sats: betSats })}>INITIALIZE SESSION</NervButton>
+                      <NervButton onClick={() => createRoom(betSats)}>INITIALIZE SESSION</NervButton>
                     </>
                   )}
 
@@ -146,7 +146,7 @@ export function LobbyScreen() {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
                       </NervField>
-                      <NervButton onClick={() => joinRoomId && send({ type: 'join_room', room_id: joinRoomId, })} disabled={!joinRoomId}>
+                      <NervButton onClick={() => joinRoomId && joinRoom(joinRoomId)} disabled={!joinRoomId}>
                         CONNECT TO SESSION
                       </NervButton>
                     </>
@@ -166,7 +166,6 @@ export function LobbyScreen() {
 function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
 
   const age = Math.floor(Date.now()) - room.createdAt;
-
 
   return (
     <div className="flex items-center justify-between border border-border px-3 py-2">

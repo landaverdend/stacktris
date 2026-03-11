@@ -81,6 +81,11 @@ export class RoomRegistry {
       const room = this.rooms.get(roomId);
       room?.removePlayer(playerId);
       this.playerIdToRoom.delete(playerId);
+
+      // Delete if empty.
+      if (room?.isEmpty) {
+        this.rooms.delete(roomId);
+      }
     }
   }
 
@@ -91,6 +96,7 @@ export class RoomRegistry {
       room?.removePlayer(playerId);
       this.playerIdToRoom.delete(playerId);
 
+      // Delete if empty.
       if (room?.isEmpty) {
         this.rooms.delete(roomId);
       }

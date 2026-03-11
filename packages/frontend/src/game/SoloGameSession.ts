@@ -4,7 +4,7 @@ import { InputHandler } from './InputHandler';
 import { renderBoard } from '../render/board';
 import { renderQueue, renderHold } from '../render/queue';
 
-export interface Stats {
+export interface GameStats {
   score: number;
   lines: number;
   level: number;
@@ -20,17 +20,17 @@ export class SoloGameSession {
   private game = new SoloGame();
   private input: InputHandler;
   private rafId = 0;
-  private prevLines = 0;
-  private onStats: (s: Stats) => void;
 
-  constructor(onStats: (s: Stats) => void) {
-    this.onStats = onStats;
+  private onStatUpdate: (stats: GameStats) => void;
+  private lastStats: GameStats = { score: -1, lines: -1, level: -1 };
+
+  constructor(onStatUpdate: (stats: GameStats) => void) {
+    this.onStatUpdate = onStatUpdate;
     this.input = new InputHandler(action => this.game.input(action, performance.now()));
   }
 
   start(canvases: Canvases): void {
     this.game.reset();
-    this.prevLines = 0;
     this.input.attach();
 
     const loop = (now: number) => {
@@ -51,6 +51,12 @@ export class SoloGameSession {
   private render(canvases: Canvases, now: number): void {
     const state = this.game.state;
 
+    if (this.haveStatsChanged()) {
+      const stats = { score: state.score, lines: state.lines, level: state.level };
+      this.lastStats = stats;
+      this.onStatUpdate(stats);
+    }
+
     const boardCtx = canvases.board.getContext('2d');
     if (boardCtx) {
       const piece = state.activePiece ? {
@@ -70,9 +76,13 @@ export class SoloGameSession {
     const holdCtx = canvases.hold.getContext('2d');
     if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
 
-    if (state.lines !== this.prevLines) {
-      this.prevLines = state.lines;
-      this.onStats({ score: state.score, lines: state.lines, level: state.level });
-    }
   }
+
+
+  private haveStatsChanged() {
+    const state = this.game.state;
+    return state.score !== this.lastStats.score || state.lines !== this.lastStats.lines || state.level !== this.lastStats.level;
+  }
+
 }
+

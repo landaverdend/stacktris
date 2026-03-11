@@ -51,12 +51,15 @@ export type ClientMsg =
 export interface PlayerInfo {
   playerId: string;
   ready: boolean;
-
 }
+
+
+export type RoomStatus = "waiting" | "countdown" | "playing" | "finished"
 
 export interface RoomState {
   roomId: string;
   players: PlayerInfo[];
+  status: RoomStatus;
 }
 
 // ── Server → Client ───────────────────────────────────────────────────────────
@@ -67,6 +70,3 @@ export type ServerMsg =
   | { type: 'room_state_update'; roomState: RoomState }
 
   | { type: 'error'; message: string };
-
-
-export type RoomStatus = ""
