@@ -21,7 +21,6 @@ export function LobbyScreen() {
   const navigate = useNavigate();
   const { createRoom, joinRoom } = useRoom();
 
-
   const [betSats, setBetSats] = useState(1000);
   const [joinRoomId, setJoinRoomId] = useState('');
 
@@ -30,16 +29,18 @@ export function LobbyScreen() {
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
 
-
   useEffect(() => {
     if (expanded !== 'battle') return;
     const fetch_ = async () => {
       setLoadingRooms(true);
       try {
         const res = await fetch(`${API_BASE}/rooms`);
-        if (res.ok) setRooms(await res.json() as RoomInfo[]);
-      } catch { /* backend not up */ }
-      finally { setLoadingRooms(false); }
+        if (res.ok) setRooms((await res.json()) as RoomInfo[]);
+      } catch {
+        /* backend not up */
+      } finally {
+        setLoadingRooms(false);
+      }
     };
     fetch_();
     const iv = setInterval(fetch_, 5_000);
@@ -47,21 +48,22 @@ export function LobbyScreen() {
   }, [expanded]);
 
   function handleItem(id: (typeof MENU)[number]['id']) {
-    if (id === 'solo') { navigate('/solo'); return; }
+    if (id === 'solo') {
+      navigate('/solo');
+      return;
+    }
 
-    setExpanded(prev => prev === id ? null : id as MenuItem);
+    setExpanded((prev) => (prev === id ? null : (id as MenuItem)));
   }
 
   function handleJoinRoom(roomId: string) {
     if (roomId) {
       joinRoom(roomId);
       navigate(`/room/${roomId}`);
-    }
-    else {
+    } else {
       alert('Please enter a room ID');
     }
   }
-
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-10 px-4">
@@ -73,9 +75,7 @@ export function LobbyScreen() {
       <div className="text-center flex flex-col gap-1">
         <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">ネルフ</p>
         <h1 className="font-display text-6xl font-bold text-bitcoin tracking-[0.15em]">STACKTRIS</h1>
-        <p className="text-nerv-dim text-[10px] tracking-[0.35em] font-mono mt-1">
-          BATTLE TETRIS // ライトニングネットワーク
-        </p>
+        <p className="text-nerv-dim text-[10px] tracking-[0.35em] font-mono mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
       </div>
 
       {/* Menu list */}
@@ -86,11 +86,11 @@ export function LobbyScreen() {
             <div key={item.id}>
               <button
                 onClick={() => handleItem(item.id)}
-                className={`w-full flex items-baseline justify-between px-0 py-3 border-b transition-colors group cursor-pointer ${isOpen
-                  ? 'border-bitcoin text-bitcoin'
-                  : 'border-border text-nerv-dim hover:text-bitcoin hover:border-bitcoin/50'
-                  } ${i === 0 ? 'border-t' : ''}`}
-              >
+                className={`w-full flex items-baseline justify-between px-0 py-3 border-b transition-colors group cursor-pointer ${
+                  isOpen
+                    ? 'border-bitcoin text-bitcoin'
+                    : 'border-border text-nerv-dim hover:text-bitcoin hover:border-bitcoin/50'
+                } ${i === 0 ? 'border-t' : ''}`}>
                 <span className="font-display text-sm font-bold tracking-[0.25em]">{item.label}</span>
                 <span className="font-jp text-[9px] opacity-50">{item.jp}</span>
               </button>
@@ -102,22 +102,22 @@ export function LobbyScreen() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-[10px] text-nerv-dim tracking-[0.3em]">OPEN SESSIONS</span>
-                        <span className={`text-[9px] font-mono text-bitcoin tracking-widest transition-opacity ${loadingRooms ? 'opacity-100' : 'opacity-0'}`}>◌ SYNC</span>
+                        <span
+                          className={`text-[9px] font-mono text-bitcoin tracking-widest transition-opacity ${loadingRooms ? 'opacity-100' : 'opacity-0'}`}>
+                          ◌ SYNC
+                        </span>
                       </div>
                       {rooms.length === 0 ? (
                         <div className="py-5 flex flex-col items-center gap-2">
                           <p className="text-nerv-dim font-mono text-xs tracking-widest">// NO SESSIONS FOUND</p>
                           <button
                             className="text-bitcoin text-xs tracking-widest hover:opacity-70 transition-opacity font-display"
-                            onClick={() => setExpanded('create')}
-                          >
+                            onClick={() => setExpanded('create')}>
                             CREATE ONE →
                           </button>
                         </div>
                       ) : (
-                        rooms.map(r => (
-                          <RoomRow key={r.roomId} room={r} onJoin={() => handleJoinRoom(r.roomId)} />
-                        ))
+                        rooms.map((r) => <RoomRow key={r.roomId} room={r} onJoin={() => handleJoinRoom(r.roomId)} />)
                       )}
                     </div>
                   )}
@@ -130,9 +130,11 @@ export function LobbyScreen() {
                           className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
                           value={betSats}
                           min={5}
-                          onChange={e => setBetSats(Number(e.target.value))}
+                          onChange={(e) => setBetSats(Number(e.target.value))}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">
+                          SATS
+                        </span>
                       </NervField>
                       <NervButton onClick={() => createRoom(betSats)}>INITIALIZE SESSION</NervButton>
                     </>
@@ -146,7 +148,7 @@ export function LobbyScreen() {
                           className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
                           value={joinRoomId}
                           placeholder="XXXXXXXX-XXXX-..."
-                          onChange={e => setJoinRoomId(e.target.value)}
+                          onChange={(e) => setJoinRoomId(e.target.value)}
                         />
                       </NervField>
                       <NervField label="BET AMOUNT" jp="掛け金">
@@ -155,9 +157,11 @@ export function LobbyScreen() {
                           className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono"
                           value={betSats}
                           min={1}
-                          onChange={e => setBetSats(Number(e.target.value))}
+                          onChange={(e) => setBetSats(Number(e.target.value))}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">
+                          SATS
+                        </span>
                       </NervField>
                       <NervButton onClick={() => handleJoinRoom(joinRoomId)} disabled={!joinRoomId}>
                         CONNECT TO SESSION
@@ -177,7 +181,6 @@ export function LobbyScreen() {
 }
 
 function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
-
   const age = Math.floor(Date.now()) - room.createdAt;
 
   return (
@@ -193,8 +196,7 @@ function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
         </span>
         <button
           onClick={onJoin}
-          className="px-3 py-1 border border-bitcoin text-bitcoin text-[10px] font-display font-bold tracking-widest hover:bg-bitcoin hover:text-black transition-colors"
-        >
+          className="px-3 py-1 border border-bitcoin text-bitcoin text-[10px] font-display font-bold tracking-widest hover:bg-bitcoin hover:text-black transition-colors cursor-pointer">
           JOIN
         </button>
       </div>
@@ -219,8 +221,7 @@ function NervButton({ onClick, children, disabled }: { onClick: () => void; chil
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-    >
+      className="w-full py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
       {children}
     </button>
   );
