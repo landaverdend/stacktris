@@ -1,3 +1,4 @@
+import { InputAction } from "./game/engine.js";
 
 export const COUNTDOWN_SECONDS = 3;
 
@@ -46,7 +47,9 @@ export type ClientMsg =
   | { type: 'create_room'; bet_sats: number }
   | { type: 'join_room'; room_id: string; }
   | { type: 'leave_room'; room_id: string }
-  | { type: 'ready_update'; ready: boolean };
+  | { type: 'ready_update'; ready: boolean }
+
+  | { type: 'game_action'; action: InputAction };
 
 
 

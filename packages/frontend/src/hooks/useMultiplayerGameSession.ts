@@ -17,7 +17,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       const { board, queue, hold } = refs;
       if (!board.current || !queue.current || !hold.current) return;
 
-      gameSession.current = new MultiplayerGameSession(msg.seed, () => { });
+      gameSession.current = new MultiplayerGameSession(msg.seed, ws);
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
     };
 
