@@ -3,17 +3,13 @@ import {
   gravityTickMs, levelFromLines, InputAction,
 } from '@stacktris/shared';
 
-type SendFn = (action: InputAction) => void;
 
 export class MultiplayerGame {
   private game: GameWithBag;
   private lastGravityMs: number = 0;
 
-  private send: SendFn;
-
-  constructor(private readonly seed: number, send: SendFn) {
+  constructor(private readonly seed: number) {
     this.game = createGame({ levelStrategy: levelFromLines }, seed);
-    this.send = send;
   }
 
   get state(): GameState {
@@ -38,7 +34,6 @@ export class MultiplayerGame {
   input(action: InputAction, now: number): void {
     if (this.game.state.isGameOver) return;
     this.game = applyInput(this.game, action, now);
-    this.send(action); // broadcast to server
   }
 
 

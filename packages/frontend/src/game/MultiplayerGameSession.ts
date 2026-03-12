@@ -2,7 +2,6 @@ import { InputHandler } from './InputHandler';
 import { MultiplayerGame } from './MultiplayerGame';
 import { renderGameState, Canvases } from '../render/gameState';
 import { WSClient } from '../ws/WSClient';
-import { InputAction } from '@stacktris/shared';
 
 export type { Canvases };
 
@@ -13,14 +12,13 @@ export class MultiplayerGameSession {
   private rafId = 0;
 
   constructor(seed: number, ws: WSClient) {
+    this.game = new MultiplayerGame(seed);
 
-    const onSend = (action: InputAction) => {
-      console.log('[MultiplayerGameSession] onSend ', action);
-      ws.send({ type: 'game_action', action });
-    }
-
-    this.game = new MultiplayerGame(seed, onSend);
-    this.input = new InputHandler(action => this.game.input(action, performance.now()));
+    this.input = new InputHandler((action) => {
+      // Broadcast inputs to server
+      ws.send({ type: 'game_action', action })
+      this.game.input(action, performance.now())
+    });
   }
 
   start(canvases: Canvases): void {
