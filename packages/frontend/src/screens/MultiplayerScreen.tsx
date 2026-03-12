@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
-import { BoardCanvas } from '../components/BoardCanvas';
 import { GarbageMeter } from '../components/GarbageMeter';
 import { PieceSnapshot } from '../types';
 import { PlayerInfo, COUNTDOWN_SECONDS } from '@stacktris/shared';

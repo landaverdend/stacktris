@@ -1,5 +1,6 @@
 import { ClientMsg, ServerMsg } from "@stacktris/shared";
 import { PlayerSlot } from "./types.js";
+import { PlayerGameState } from "./playerGameState.js";
 
 
 const TICK_INTERVAL_MS = 1000
@@ -7,6 +8,8 @@ const TICK_INTERVAL_MS = 1000
 export class GameSession {
 
   private players: Map<string, PlayerSlot> = new Map();
+  private playerGameStates: Record<string, PlayerGameState> = {}
+
   tickInterval: NodeJS.Timeout | null = null;
 
 
@@ -17,9 +20,9 @@ export class GameSession {
 
     for (const p of players) {
       this.players.set(p.playerId, p);
+      this.playerGameStates[p.playerId] = new PlayerGameState(this.seed)
     }
 
-    console.log(`[GameSession] created with ${this.players.size} players`);
     this.onEnd = onEnd;
 
     this.start();
@@ -27,12 +30,17 @@ export class GameSession {
 
 
   private onTick(): void {
-    console.log(`[GameSession] tick`);
   }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
     // TODO: handle game messages (piece moves, holds, etc.)
     console.log(`[GameSession] onMessage: ${msg.type} from player ${playerId}`);
+
+    switch (msg.type) {
+      case 'game_action':
+        this.playerGameStates[playerId].applyInput(msg.action);
+        break;
+    }
   }
 
 
