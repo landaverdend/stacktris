@@ -124,7 +124,7 @@ function PlayerLobby({ }: PlayerLobbyProps) {
       <button
         onClick={handleReady}
         className={cn(
-          'w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors',
+          'w-full py-4 font-display font-bold text-base tracking-[0.3em] nerv-frame border transition-colors cursor-pointer',
           isReady ? 'border-magi text-magi hover:bg-magi hover:text-black' : 'border-bitcoin text-bitcoin hover:bg-bitcoin hover:text-black'
         )}
       >
