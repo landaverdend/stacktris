@@ -5,7 +5,9 @@ import { MultiplayerGame } from "./MultiplayerGame";
 import { renderBoard } from "../render/board";
 import { renderHold, renderQueue } from "../render/queue";
 
-
+/**
+ * 
+ */
 
 export class MultiplayerGameSession {
 
@@ -67,10 +69,5 @@ export class MultiplayerGameSession {
 
     const holdCtx = canvases.hold.getContext('2d');
     if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
-
-    // if (state.lines !== this.prevLines) {
-    //   this.prevLines = state.lines;
-    //   this.onStats({ score: state.score, lines: state.lines, level: state.level });
-    // }
   }
 } 

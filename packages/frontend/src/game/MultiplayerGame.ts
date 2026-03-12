@@ -11,8 +11,8 @@ export class MultiplayerGame {
 
   private send: SendFn;
 
-  constructor(_seed: number, send: SendFn) {
-    this.game = createGame({ levelStrategy: levelFromLines });
+  constructor(seed: number, send: SendFn) {
+    this.game = createGame({ levelStrategy: levelFromLines }, seed);
     this.send = send;
   }
 

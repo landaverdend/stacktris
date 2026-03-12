@@ -9,6 +9,8 @@ export class GameSession {
   private players: Map<string, PlayerSlot> = new Map();
   tickInterval: NodeJS.Timeout | null = null;
 
+
+  private seed: number = Math.floor(Math.random() * 2 ** 32);
   private onEnd: (winnerId: string) => void;
 
   constructor(players: PlayerSlot[], onEnd: (winnerId: string) => void) {
@@ -20,17 +22,12 @@ export class GameSession {
     console.log(`[GameSession] created with ${this.players.size} players`);
     this.onEnd = onEnd;
 
-    this.tickInterval = setInterval(() => this.onTick(), TICK_INTERVAL_MS);
-
+    this.start();
   }
 
 
   private onTick(): void {
     console.log(`[GameSession] tick`);
-
-    for (const [_, player] of this.players.entries()) {
-    }
-
   }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
@@ -39,8 +36,22 @@ export class GameSession {
   }
 
 
+  public start(): void {
+    this.tickInterval = setInterval(() => this.onTick(), TICK_INTERVAL_MS);
+
+    this.seed = Math.floor(Math.random() * 2 ** 32)
+    this.broadcastToAll({ type: 'game_start', seed: this.seed })
+  }
+
   public destroy(): void {
     if (this.tickInterval) clearInterval(this.tickInterval);
     this.tickInterval = null;
   }
+
+  private broadcastToAll(msg: ServerMsg): void {
+    for (const [_, player] of this.players.entries()) {
+      player.sendFn(msg);
+    }
+  }
+
 }

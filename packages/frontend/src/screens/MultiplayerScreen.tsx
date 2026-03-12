@@ -10,15 +10,20 @@ import { MultiplayerGameSession } from '../game/MultiplayerGameSession';
 import { PlayerInfo, COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { cn } from '../lib/utils';
 import { useConnection } from '../ws/WSContext';
+import { useMultiplayerGameSession } from '../hooks/useMultiplayerGameSession';
 
 const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
 const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 
 export function MultiplayerScreen() {
+  useMultiplayerGameSession();
+
+
   const { roomState } = useRoom();
 
   const { status } = roomState;
+
 
   // Refs for rendering the game state.
   const boardRef = useRef<HTMLCanvasElement>(null);

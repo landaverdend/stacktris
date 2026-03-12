@@ -73,7 +73,7 @@ export type ServerMsg =
   | { type: 'room_state_update'; roomState: RoomState }
 
   // Game Ops
-
+  | { type: 'game_start'; seed: number; }
 
 
   | { type: 'error'; message: string };
