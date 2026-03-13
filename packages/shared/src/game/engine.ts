@@ -31,7 +31,6 @@ export function applyGravity(game: GameContext) {
     return { ...game, state: { ...game.state, activePiece: piece } };
   } else { // piece is grounded.
     piece.timeOnFloor += 1;
-
     if (piece.timeOnFloor > LOCK_DELAY_FRAMES) {
       return lockAndSpawn(game);
     }
@@ -84,18 +83,7 @@ export function applyInput(game: GameContext, action: InputAction, now: number):
 function applyMove(game: GameContext, moved: ActivePiece | null, now: number): GameContext {
   if (!moved) return game;
   const { bag, config, state } = game;
-  const piece = state.activePiece!;
 
-  // let lockDelay = piece.;
-  // if (lockDelay !== null) {
-  //   if (isGrounded(state.board, moved)) {
-  //     // Still grounded — reset timer, spend a move
-  //     lockDelay = { groundedSince: now, moves: lockDelay.moves + 1 };
-  //   } else {
-  //     // Moved off the stack — piece is airborne again
-  //     lockDelay = null;
-  //   }
-  // }
 
   return { bag, config, state: { ...state, activePiece: { ...moved, } } };
 }
