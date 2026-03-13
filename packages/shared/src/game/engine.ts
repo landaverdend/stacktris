@@ -1,6 +1,6 @@
 import { ActivePiece } from './pieces.js';
 import { tryMoveDown, tryMoveLeft, tryMoveRight, tryRotate, sonicDrop, lockPiece, clearLines, spawnPiece, isGrounded } from './board.js';
-import { GameWithBag } from './state.js';
+import { GameContext } from './state.js';
 
 export type InputAction = 'move_left' | 'move_right' | 'rotate_cw' | 'rotate_ccw' | 'soft_drop' | 'hard_drop' | 'hold';
 
@@ -8,7 +8,7 @@ const LOCK_DELAY_MS = 500;
 const MAX_LOCK_MOVES = 15;
 
 /** One gravity tick: move piece down, start/advance lock delay, or lock when delay expires. */
-export function applyGravity(game: GameWithBag, now: number): GameWithBag {
+export function applyGravity(game: GameContext, now: number): GameContext {
   const { state, bag, config } = game;
   if (!state.activePiece || state.isGameOver) return game;
 
@@ -32,7 +32,7 @@ export function applyGravity(game: GameWithBag, now: number): GameWithBag {
 }
 
 /** Apply a player input action. */
-export function applyInput(game: GameWithBag, action: InputAction, now: number): GameWithBag {
+export function applyInput(game: GameContext, action: InputAction, now: number): GameContext {
   const { state, bag, config } = game;
   if (!state.activePiece || state.isGameOver) return game;
 
@@ -72,7 +72,7 @@ export function applyInput(game: GameWithBag, action: InputAction, now: number):
 
 // ── Internals ─────────────────────────────────────────────────────────────────
 
-function applyMove(game: GameWithBag, moved: ActivePiece | null, now: number): GameWithBag {
+function applyMove(game: GameContext, moved: ActivePiece | null, now: number): GameContext {
   if (!moved) return game;
   const { bag, config, state } = game;
 
@@ -90,7 +90,7 @@ function applyMove(game: GameWithBag, moved: ActivePiece | null, now: number): G
   return { bag, config, state: { ...state, activePiece: moved, lockDelay } };
 }
 
-function lockAndSpawn(game: GameWithBag): GameWithBag {
+function lockAndSpawn(game: GameContext): GameContext {
   const { state, bag, config } = game;
   if (!state.activePiece) return game;
 

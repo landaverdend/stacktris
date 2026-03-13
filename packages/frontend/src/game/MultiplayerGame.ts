@@ -1,5 +1,5 @@
 import {
-  GameWithBag, createGame, applyGravity, applyInput,
+  GameContext, createGame, applyGravity, applyInput,
   gravityTickMs, levelFromLines,
   GameSnapshot,
 } from '@stacktris/shared';
@@ -8,7 +8,7 @@ import { InputHandler } from './InputHandler';
 import { Canvases, renderGameState } from '../render/gameState';
 
 export class MultiplayerGame {
-  private game: GameWithBag;
+  private game: GameContext;
   private lastGravityMs: number = 0;
 
   private inputHandler: InputHandler;

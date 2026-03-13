@@ -27,13 +27,13 @@ export interface GameConfig {
   levelStrategy?: (lines: number) => number;
 }
 
-export interface GameWithBag {
+export interface GameContext {
   state: GameState;
   bag: SeededPieceBag;
   config: GameConfig;
 }
 
-export function createGame(config: GameConfig = {}, seed?: number): GameWithBag {
+export function createGame(config: GameConfig = {}, seed?: number): GameContext {
   const bag = new SeededPieceBag(seed ?? Math.floor(Math.random() * 2 ** 32));
   const board = emptyBoard();
 

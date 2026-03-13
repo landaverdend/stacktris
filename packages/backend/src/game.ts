@@ -50,7 +50,6 @@ export class GameSession {
     }
   }
 
-
   public start(): void {
     this.seed = Math.floor(Math.random() * 2 ** 32);
     this.broadcastToAll({ type: 'game_start', seed: this.seed });

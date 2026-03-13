@@ -1,16 +1,16 @@
 import {
-  createGame, GameWithBag, GameState, InputAction,
+  createGame, GameContext, GameState, InputAction,
   applyGravity, applyInput, gravityTickMs, levelFromLines,
   GameSnapshot,
+  ActivePiece,
 } from "@stacktris/shared";
 
 
 export class PlayerGameState {
 
-  private game: GameWithBag;
+  private game: GameContext;
   private lastGravityMs: number = 0;
   pendingGarbage: number = 0;
-  private tickCount = 0;
 
   constructor(seed: number) {
     this.game = createGame({ levelStrategy: levelFromLines }, seed);
@@ -42,10 +42,8 @@ export class PlayerGameState {
     if (now - this.lastGravityMs >= interval) {
       this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
-      console.log(`gravity tick ${this.tickCount++}`);
     } else if (this.game.state.lockDelay !== null) {
       this.game = applyGravity(this.game, now);
-      console.log(`gravity tick (lock delay) ${this.tickCount++}`);
     }
   }
 

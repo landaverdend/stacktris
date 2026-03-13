@@ -1,7 +1,7 @@
-import { GameState, GameWithBag, createGame, applyGravity, applyInput, gravityTickMs, levelFromLines, InputAction } from '@stacktris/shared';
+import { GameState, GameContext, createGame, applyGravity, applyInput, gravityTickMs, levelFromLines, InputAction } from '@stacktris/shared';
 
 export class SoloGame {
-  private game: GameWithBag;
+  private game: GameContext;
   private lastGravityMs: number = 0;
 
   constructor() {
