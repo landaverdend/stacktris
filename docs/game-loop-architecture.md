@@ -23,3 +23,7 @@ client-predictive:
 
 Events that need server checking
 - piece locking
+- piece holds 
+- location/inputs
+- when we touch bottom
+  - maybe send over the timestamp...

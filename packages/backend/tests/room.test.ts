@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, } from 'vitest';
 import { MAX_PLAYERS, Room } from '../src/room.js';
-import type { SendFn } from '../src/wsServer.js';
+import { SendFn } from '../src/types.js';
 
 const makeSend = (): SendFn => vi.fn();
 
@@ -68,7 +68,7 @@ describe('Room', () => {
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
-      vi.runAllTimers();
+      vi.advanceTimersByTime(3500);
       expect(room.status).toBe('playing');
       expect(() => room.addPlayer('player-3', makeSend())).toThrow();
       vi.useRealTimers();
@@ -113,7 +113,7 @@ describe('Room', () => {
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       expect(room.status).toBe('countdown');
-      vi.runAllTimers();
+      vi.advanceTimersByTime(3500);
       expect(room.status).toBe('playing');
     });
 

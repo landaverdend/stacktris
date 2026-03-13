@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RoomRegistry } from '../src/roomRegistry.js';
-import type { SendFn } from '../src/wsServer.js';
+import { SendFn } from '../src/types.js';
 
 const makeSend = (): SendFn => vi.fn();
 
@@ -102,7 +102,7 @@ describe('RoomRegistry', () => {
       registry.onMessage('p2', { type: 'join_room', room_id: roomId });
       registry.onMessage('p1', { type: 'ready_update', ready: true });
       registry.onMessage('p2', { type: 'ready_update', ready: true });
-      vi.runAllTimers();
+      vi.advanceTimersByTime(3500);
       expect(registry.listRooms()).toHaveLength(0);
       vi.useRealTimers();
     });
