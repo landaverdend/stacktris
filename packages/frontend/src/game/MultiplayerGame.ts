@@ -9,7 +9,7 @@ import { Canvases, renderGameState } from '../render/gameState';
 import { ReplayBuffer } from './ReplayBuffer';
 
 
-const TICK_MS = 16; // ~60
+export const TICK_MS = 16; // ~60
 
 export class MultiplayerGame {
   private game: GameContext;

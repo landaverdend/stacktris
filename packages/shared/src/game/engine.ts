@@ -32,6 +32,11 @@ export function applyGravity(game: GameContext, now: number): GameContext {
   return game;
 }
 
+export function applyGravity2(game: GameContext) {
+
+}
+
+
 /** Apply a player input action. */
 export function applyInput(game: GameContext, action: InputAction, now: number): GameContext {
   const { state, bag, config } = game;
