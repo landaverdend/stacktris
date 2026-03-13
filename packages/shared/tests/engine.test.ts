@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { createGame } from './state.js';
-import { applyGravity, applyInput, LOCK_DELAY_FRAMES } from './engine.js';
-import { levelFromLines } from '../index.js';
+import { createGame } from '../src/game/state.js';
+import { applyGravity, applyInput, LOCK_DELAY_FRAMES } from '../src/game/engine.js';
+import { levelFromLines } from '../src/index.js';
 
 function makeGame() {
   return createGame({ levelStrategy: levelFromLines }, 42);
@@ -24,14 +24,10 @@ describe('applyGravity', () => {
     expect(game.state.activePiece!.row).toBe(initialRow + 1);
   });
 
-
-
-
   it('locks piece after LOCK_DELAY_FRAMES frames on the floor', () => {
     let game = makeGame();
+
   });
-
-
 
 });
 

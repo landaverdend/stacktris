@@ -120,19 +120,3 @@ export function ghostPiece(board: Board, piece: ActivePiece): ActivePiece {
 export function visibleBoard(board: Board): number[][] {
   return board.slice(VISIBLE_ROW_START);
 }
-
-/**
- * Returns a 32-bit integer checksum of the locked board state.
- * Used to validate client board state against the server shadow at piece lock boundaries.
- * The active piece is NOT included — pass the board after the piece has been locked.
- */
-export function boardChecksum(board: Board): number {
-  let h = 0x811c9dc5; // FNV-1a offset basis
-  for (let r = 0; r < board.length; r++) {
-    for (let c = 0; c < board[r].length; c++) {
-      h ^= board[r][c];
-      h = (Math.imul(h, 0x01000193) >>> 0); // FNV prime, keep as unsigned 32-bit
-    }
-  }
-  return h >>> 0;
-}
