@@ -8,6 +8,8 @@ export class MultiplayerGame {
   private game: GameWithBag;
   private lastGravityMs: number = 0;
 
+  private tickCount = 0;
+
   constructor(private readonly seed: number) {
     this.game = createGame({ levelStrategy: levelFromLines }, seed);
   }
@@ -24,8 +26,10 @@ export class MultiplayerGame {
     if (now - this.lastGravityMs >= interval) {
       this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
+      console.log(`gravity tick ${this.tickCount++}`);
     } else if (this.game.state.lockDelay !== null) {
       this.game = applyGravity(this.game, now);
+      console.log(`gravity tick (lock delay) ${this.tickCount++}`);
     }
   }
 

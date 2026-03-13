@@ -1,4 +1,6 @@
+import { Board } from "./game/board.js";
 import { InputAction } from "./game/engine.js";
+import { ActivePiece, PieceKind } from "./game/pieces.js";
 
 export const COUNTDOWN_SECONDS = 3;
 
@@ -19,16 +21,10 @@ export interface PieceSnapshot {
 }
 
 /** Full state sent to the player controlling this board. */
-export interface PlayerSnapshot {
-  board: number[][];          // [row][col] 0=empty 1-7=piece 8=garbage
-  current_piece: PieceSnapshot | null;
-  next_pieces: string[];
-  hold_piece: string | null;
-  hold_used: boolean;
-  pending_garbage: number;
-  score: number;
-  lines: number;
-  level: number;
+export interface GameSnapshot {
+  board: Board;
+  activePiece: ActivePiece | null;
+  holdPiece: PieceKind | null;
 }
 
 /** Reduced state sent to the opponent (no queue/hold to prevent prefetch advantage). */
@@ -50,7 +46,6 @@ export type ClientMsg =
   | { type: 'ready_update'; ready: boolean }
 
   | { type: 'game_action'; action: InputAction };
-
 
 
 export interface PlayerInfo {
@@ -77,6 +72,6 @@ export type ServerMsg =
 
   // Game Ops
   | { type: 'game_start'; seed: number; }
-
+  | { type: 'game_snapshot'; snapshot: GameSnapshot }
 
   | { type: 'error'; message: string };
