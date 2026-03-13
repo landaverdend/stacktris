@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createGame } from '../src/game/state.js';
 import { applyGravity, applyInput, LOCK_DELAY_FRAMES } from '../src/game/engine.js';
+import { sonicDrop } from '../src/game/board.js';
 import { levelFromLines } from '../src/index.js';
 
 function makeGame() {
@@ -27,6 +28,24 @@ describe('applyGravity', () => {
   it('locks piece after LOCK_DELAY_FRAMES frames on the floor', () => {
     let game = makeGame();
 
+    // Place piece at the floor without locking
+    const floorPiece = sonicDrop(game.state.board, game.state.activePiece!);
+    game = { ...game, state: { ...game.state, activePiece: floorPiece } };
+
+    const boardBefore = game.state.board.map(r => [...r]);
+
+    // Tick through the lock delay
+    for (let i = 0; i <= LOCK_DELAY_FRAMES; i++) {
+      game = applyGravity(game);
+    }
+
+    // Board should now have cells written where the piece locked
+    const boardChanged = game.state.board.some((row, r) =>
+      row.some((cell, c) => cell !== boardBefore[r][c])
+    );
+    expect(boardChanged).toBe(true);
+    // New piece should have spawned with timeOnFloor reset
+    expect(game.state.activePiece!.timeOnFloor).toBe(0);
   });
 
 });
