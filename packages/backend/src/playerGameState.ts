@@ -2,7 +2,6 @@ import {
   createGame, GameContext, GameState, InputAction,
   applyGravity, applyInput, gravityTickMs, levelFromLines,
   GameSnapshot,
-  ActivePiece,
 } from "@stacktris/shared";
 
 
@@ -42,7 +41,7 @@ export class PlayerGameState {
     if (now - this.lastGravityMs >= interval) {
       this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
-    } else if (this.game.state.lockDelay !== null) {
+    } else if (this.game.state.activePiece?.lockDelay !== null) {
       this.game = applyGravity(this.game, now);
     }
   }

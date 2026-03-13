@@ -1,12 +1,9 @@
 import { ActivePiece, PieceKind, SeededPieceBag } from './pieces.js';
 import { Board, emptyBoard, spawnPiece } from './board.js';
 
-export const QUEUE_SIZE = 5;
+export { LockDelay } from './pieces.js';
 
-export interface LockDelay {
-  groundedSince: number; // ms timestamp when piece first became grounded
-  moves: number;         // move/rotate resets used
-}
+export const QUEUE_SIZE = 5;
 
 export interface GameState {
   board: Board;
@@ -19,7 +16,6 @@ export interface GameState {
   level: number;
   combo: number;
   isGameOver: boolean;
-  lockDelay: LockDelay | null;
 }
 
 export interface GameConfig {
@@ -59,7 +55,6 @@ export function createGame(config: GameConfig = {}, seed?: number): GameContext 
 
     combo: 0,
     isGameOver: activePiece === null,
-    lockDelay: null,
   };
 
   return { state, bag, config };

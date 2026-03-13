@@ -12,19 +12,20 @@ export function applyGravity(game: GameContext, now: number): GameContext {
   const { state, bag, config } = game;
   if (!state.activePiece || state.isGameOver) return game;
 
-  const moved = tryMoveDown(state.board, state.activePiece);
+  const piece = state.activePiece;
+  const moved = tryMoveDown(state.board, piece);
   if (moved) {
     // Moved down — cancel any lock delay
-    return { bag, config, state: { ...state, activePiece: moved, lockDelay: null } };
+    return { bag, config, state: { ...state, activePiece: { ...moved, lockDelay: null } } };
   }
 
   // Piece is grounded
-  if (state.lockDelay === null) {
+  if (piece.lockDelay === null) {
     // Start the timer
-    return { bag, config, state: { ...state, lockDelay: { groundedSince: now, moves: 0 } } };
+    return { bag, config, state: { ...state, activePiece: { ...piece, lockDelay: { groundedSince: now, moves: 0 } } } };
   }
 
-  if (now - state.lockDelay.groundedSince >= LOCK_DELAY_MS || state.lockDelay.moves >= MAX_LOCK_MOVES) {
+  if (now - piece.lockDelay.groundedSince >= LOCK_DELAY_MS || piece.lockDelay.moves >= MAX_LOCK_MOVES) {
     return lockAndSpawn(game);
   }
 
@@ -45,12 +46,12 @@ export function applyInput(game: GameContext, action: InputAction, now: number):
     case 'rotate_ccw': return applyMove(game, tryRotate(state.board, piece, false), now);
     case 'soft_drop': {
       // If already grounded (lock delay active), soft drop commits the lock immediately
-      if (state.lockDelay !== null) return lockAndSpawn(game);
+      if (piece.lockDelay !== null) return lockAndSpawn(game);
       return applyMove(game, tryMoveDown(state.board, piece), now);
     }
     case 'hard_drop': {
       const landed = sonicDrop(state.board, piece);
-      return lockAndSpawn({ bag, config, state: { ...state, activePiece: landed, lockDelay: null } });
+      return lockAndSpawn({ bag, config, state: { ...state, activePiece: { ...landed, lockDelay: null } } });
     }
     case 'hold': {
       if (state.holdUsed) return game;
@@ -64,7 +65,7 @@ export function applyInput(game: GameContext, action: InputAction, now: number):
       return {
         bag,
         config,
-        state: { ...state, activePiece, queue, holdPiece: piece.kind, holdUsed: true, lockDelay: null },
+        state: { ...state, activePiece, queue, holdPiece: piece.kind, holdUsed: true },
       };
     }
   }
@@ -75,8 +76,9 @@ export function applyInput(game: GameContext, action: InputAction, now: number):
 function applyMove(game: GameContext, moved: ActivePiece | null, now: number): GameContext {
   if (!moved) return game;
   const { bag, config, state } = game;
+  const piece = state.activePiece!;
 
-  let lockDelay = state.lockDelay;
+  let lockDelay = piece.lockDelay;
   if (lockDelay !== null) {
     if (isGrounded(state.board, moved)) {
       // Still grounded — reset timer, spend a move
@@ -87,7 +89,7 @@ function applyMove(game: GameContext, moved: ActivePiece | null, now: number): G
     }
   }
 
-  return { bag, config, state: { ...state, activePiece: moved, lockDelay } };
+  return { bag, config, state: { ...state, activePiece: { ...moved, lockDelay } } };
 }
 
 function lockAndSpawn(game: GameContext): GameContext {
@@ -117,7 +119,6 @@ function lockAndSpawn(game: GameContext): GameContext {
       holdUsed: false,
       lines: newLines,
       level,
-      lockDelay: null,
       isGameOver: activePiece === null,
     },
   };

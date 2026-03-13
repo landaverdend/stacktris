@@ -18,7 +18,7 @@ export function renderGameState(state: GameState, canvases: Canvases, now: numbe
       rotation: state.activePiece.rotation,
       lock_active: false,
     } : null;
-    const alpha = state.lockDelay ? 0.4 + 0.6 * Math.abs(Math.sin(now * Math.PI / 180)) : 1;
+    const alpha = state.activePiece?.lockDelay ? 0.4 + 0.6 * Math.abs(Math.sin(now * Math.PI / 180)) : 1;
     renderBoard(boardCtx, visibleBoard(state.board), piece, false, alpha);
   }
 

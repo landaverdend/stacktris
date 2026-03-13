@@ -25,7 +25,7 @@ export class SoloGame {
     if (now - this.lastGravityMs >= interval) {
       this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
-    } else if (this.game.state.lockDelay !== null) {
+    } else if (this.game.state.activePiece?.lockDelay !== null) {
       // Keep ticking lock delay even between gravity intervals
       this.game = applyGravity(this.game, now);
     }

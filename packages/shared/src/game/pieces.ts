@@ -7,11 +7,17 @@ export const PIECE_VALUE: Record<PieceKind, number> = {
 
 export const ALL_PIECES: PieceKind[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 
+export interface LockDelay {
+  groundedSince: number; // ms timestamp when piece first became grounded
+  moves: number;         // move/rotate resets used
+}
+
 export interface ActivePiece {
   kind: PieceKind;
   row: number;
   col: number;
   rotation: number; // 0-3
+  lockDelay: LockDelay | null;
 }
 
 // [piece][rotation] = four [dr, dc] offsets relative to anchor

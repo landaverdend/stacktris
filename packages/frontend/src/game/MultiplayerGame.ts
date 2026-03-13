@@ -66,7 +66,7 @@ export class MultiplayerGame {
       this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
       console.log(`gravity tick ${this.tickCount++}`);
-    } else if (this.game.state.lockDelay !== null) {
+    } else if (this.game.state.activePiece?.lockDelay !== null) {
       this.game = applyGravity(this.game, now);
       console.log(`gravity tick (lock delay) ${this.tickCount++}`);
     }
