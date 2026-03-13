@@ -45,7 +45,11 @@ export class GameSession {
 
     switch (msg.type) {
       case 'game_action':
-        this.playerGameStates[playerId].applyInput(msg.action);
+        const ps = this.playerGameStates[playerId];
+        const valid = ps.applyInput(msg.action, msg.activePiece);
+        if (!valid) {
+          this.players.get(playerId)?.sendFn({ type: 'game_snapshot', snapshot: ps.snapshot })
+        }
         break;
     }
   }
