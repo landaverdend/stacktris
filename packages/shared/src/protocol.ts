@@ -45,7 +45,8 @@ export type ClientMsg =
   | { type: 'leave_room'; room_id: string }
   | { type: 'ready_update'; ready: boolean }
 
-  | { type: 'game_action'; action: InputAction };
+  // Game Ops 
+  | { type: 'game_action'; action: InputAction; activePiece: ActivePiece };
 
 
 export interface PlayerInfo {
