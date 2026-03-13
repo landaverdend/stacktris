@@ -6,26 +6,34 @@ import {
 import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
 import { Canvases, renderGameState } from '../render/gameState';
+import { ReplayBuffer } from './ReplayBuffer';
+
+
+const TICK_MS = 16; // ~60
 
 export class MultiplayerGame {
   private game: GameContext;
   private lastGravityMs: number = 0;
+  isSynced = true;
 
   private inputHandler: InputHandler;
-  private tickCount = 0;
+  private replayBuffer: ReplayBuffer;
 
-  private ws: WSClient;
+  private frameCount = 0;
+  private lastFrameTime = 0;
+  private simTime = 0;
+
 
   private rafId = 0;
 
-  constructor(private readonly seed: number, ws: WSClient) {
+  constructor(private readonly seed: number, private ws: WSClient) {
     this.game = createGame({ levelStrategy: levelFromLines }, seed);
 
-    this.ws = ws;
 
+    this.replayBuffer = new ReplayBuffer(ws);
     this.inputHandler = new InputHandler((action) => {
       // Broadcast inputs to server
-      ws.send({ type: 'game_action', action, activePiece: this.game.state.activePiece! })
+      this.replayBuffer.add({ action, frame: this.frameCount });
       if (this.game.state.isGameOver) return;
       this.game = applyInput(this.game, action, performance.now());
     });
@@ -41,8 +49,23 @@ export class MultiplayerGame {
     this.inputHandler.attach();
 
     const loop = (now: number) => {
-      this.inputHandler.tick(now);
-      this.tick(now);
+
+      if (this.lastFrameTime > 0) {
+        const delta = Math.min(now - this.lastFrameTime, 100);
+        this.simTime += delta;
+
+        while (this.simTime >= TICK_MS) {
+          this.frameCount++;
+          console.log(`frame ${this.frameCount}`);
+          this.inputHandler.tick(now);
+          this.tick(now);
+          this.simTime -= TICK_MS;
+        }
+      }
+
+      // this.inputHandler.tick(now);
+      // this.tick(now);
+      this.lastFrameTime = now;
       renderGameState(this.game.state, canvases, now);
       this.rafId = requestAnimationFrame(loop);
     };
@@ -65,11 +88,10 @@ export class MultiplayerGame {
     if (now - this.lastGravityMs >= interval) {
       this.game = applyGravity(this.game, now);
       this.lastGravityMs = now;
-      console.log(`gravity tick ${this.tickCount++}`);
     } else if (this.game.state.activePiece?.lockDelay !== null) {
       this.game = applyGravity(this.game, now);
-      console.log(`gravity tick (lock delay) ${this.tickCount++}`);
     }
+
   }
 
   reset(): void {
