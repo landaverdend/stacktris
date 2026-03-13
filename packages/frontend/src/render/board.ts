@@ -1,4 +1,4 @@
-import { PieceSnapshot } from '../types';
+import { ActivePiece } from '@stacktris/shared';
 
 const CELL_SIZE = 28;
 const GAP = 2;
@@ -27,7 +27,7 @@ export const CANVAS_HEIGHT = ROWS * CELL_SIZE;
 export function renderBoard(
   ctx: CanvasRenderingContext2D,
   board: number[][],
-  activePiece: PieceSnapshot | null,
+  activePiece: ActivePiece | null,
   dimmed = false,
   pieceAlpha = 1,
 ): void {
@@ -88,7 +88,7 @@ function pieceColorIndex(kind: string): number {
  * Returns the (dRow, dCol) offsets for a piece's cells at a given rotation.
  * Mirrors the SHAPES table in the Rust backend's piece.rs.
  */
-function pieceOffsets(p: PieceSnapshot): [number, number][] {
+function pieceOffsets(p: ActivePiece): [number, number][] {
   const shapes: Record<string, [number, number][][]> = {
     I: [
       [

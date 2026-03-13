@@ -94,7 +94,9 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece | null {
     row: VISIBLE_ROW_START - 2, // row 0, in the invisible buffer
     col: spawnCol(kind),
     rotation: 0,
-    lockDelay: null,
+
+    timeOnFloor: 0,
+    totalResets: 15, // 15 moves until the piece locks in place.
   };
   return isValid(board, piece) ? piece : null;
 }

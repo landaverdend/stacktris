@@ -67,7 +67,7 @@ export class MultiplayerGame {
       }
 
       this.lastFrameTime = now;
-      renderGameState(this.game.state, canvases, now);
+      renderGameState(this.game.state, canvases );
       this.rafId = requestAnimationFrame(loop);
     };
 

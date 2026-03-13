@@ -86,11 +86,10 @@ export function LobbyScreen() {
             <div key={item.id}>
               <button
                 onClick={() => handleItem(item.id)}
-                className={`w-full flex items-baseline justify-between px-0 py-3 border-b transition-colors group cursor-pointer ${
-                  isOpen
+                className={`w-full flex items-baseline justify-between px-0 py-3 border-b transition-colors group cursor-pointer ${isOpen
                     ? 'border-bitcoin text-bitcoin'
                     : 'border-border text-nerv-dim hover:text-bitcoin hover:border-bitcoin/50'
-                } ${i === 0 ? 'border-t' : ''}`}>
+                  } ${i === 0 ? 'border-t' : ''}`}>
                 <span className="font-display text-sm font-bold tracking-[0.25em]">{item.label}</span>
                 <span className="font-jp text-[9px] opacity-50">{item.jp}</span>
               </button>

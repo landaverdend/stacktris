@@ -12,7 +12,6 @@ export interface GameStats {
 
 export class SoloGame {
   private game: GameContext;
-  private lastGravityMs: number = 0;
 
   private inputHandler: InputHandler;
   private rafId = 0;
@@ -43,13 +42,13 @@ export class SoloGame {
           this.frameCount++;
           // console.log(`frame ${this.frameCount}`);
           this.inputHandler.tick(now);
+          this.tick();
 
-          this.tick(now);
           this.simTime -= TICK_MS;
         }
       }
 
-      this.render(canvases, now);
+      this.render(canvases);
       this.lastFrameTime = now;
       this.rafId = requestAnimationFrame(loop);
     };
@@ -59,7 +58,6 @@ export class SoloGame {
 
   reset(): void {
     this.game = createGame({ levelStrategy: levelFromLines });
-    this.lastGravityMs = 0;
   }
 
   stop(): void {
@@ -67,17 +65,17 @@ export class SoloGame {
     this.inputHandler.detach();
   }
 
-  tick(now: number): void {
+  tick(): void {
     if (this.game.state.isGameOver) return;
 
-    this.game = applyGravity(this.game, this.frameCount);
+    this.game = applyGravity(this.game);
   }
 
-  private render(canvases: Canvases, now: number) {
+  private render(canvases: Canvases) {
     const state = this.game.state;
 
     // TODO: include solo stats 
-    renderGameState(state, canvases, now);
+    renderGameState(state, canvases);
   }
 
   onInput(action: InputAction, now: number): void {

@@ -24,7 +24,7 @@ export class ReplayBuffer {
   flush(): void {
     if (this.buffer.length === 0) return;
   
-    this.ws.send({ type: 'game_action', buffer: this.buffer })
+    // this.ws.send({ type: 'game_action', buffer: this.buffer })
     this.buffer = [];
   }
 }

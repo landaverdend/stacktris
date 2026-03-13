@@ -1,8 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
-import { GarbageMeter } from '../components/GarbageMeter';
-import { PieceSnapshot } from '../types';
 import { PlayerInfo, COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { cn } from '../lib/utils';
 import { useConnection } from '../ws/WSContext';
@@ -10,9 +8,6 @@ import { useMultiplayerGameSession } from '../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../render/queue';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../render/board';
 
-const EMPTY_BOARD = Array.from({ length: 20 }, () => new Array(10).fill(0));
-const STUB = { board: EMPTY_BOARD, current_piece: null as PieceSnapshot | null, next_pieces: [] as string[], hold_piece: null as string | null, hold_used: false, pending_garbage: 0, score: 0, lines: 0, level: 1 };
-const OPP_STUB = { board: EMPTY_BOARD, pending_garbage: 0, score: 0, lines: 0, level: 1 };
 
 export function MultiplayerScreen() {
 
@@ -27,7 +22,6 @@ export function MultiplayerScreen() {
 
 
   useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
-  const your = STUB;
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
@@ -40,7 +34,7 @@ export function MultiplayerScreen() {
         </div>
 
         <div className="flex items-end gap-1">
-          <GarbageMeter pendingGarbage={your.pending_garbage} />
+          {/* <GarbageMeter pendingGarbage={your.pending_garbage} /> */}
           <div className="flex flex-col gap-1.5">
             <div className="relative">
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="border border-border-hi bg-pit block" />

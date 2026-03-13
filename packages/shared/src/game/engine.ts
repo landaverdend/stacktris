@@ -1,10 +1,10 @@
 import { ActivePiece } from './pieces.js';
-import { tryMoveDown, tryMoveLeft, tryMoveRight, tryRotate, sonicDrop, lockPiece, clearLines, spawnPiece, isGrounded, isValid } from './board.js';
+import { tryMoveDown, tryMoveLeft, tryMoveRight, tryRotate, sonicDrop, lockPiece, clearLines, spawnPiece, isGrounded } from './board.js';
 import { GameContext } from './state.js';
 
 export type InputAction = 'move_left' | 'move_right' | 'rotate_cw' | 'rotate_ccw' | 'soft_drop' | 'hard_drop' | 'hold';
 
-const LOCK_DELAY_MS = 500;
+export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 const MAX_LOCK_MOVES = 15;
 
 /**
@@ -29,8 +29,12 @@ export function applyGravity(game: GameContext) {
   if (canMoveDown) {
     piece.row = newPiece.row;
     return { ...game, state: { ...game.state, activePiece: piece } };
-  } else {
+  } else { // piece is grounded.
+    piece.timeOnFloor += 1;
 
+    if (piece.timeOnFloor > LOCK_DELAY_FRAMES) {
+      return lockAndSpawn(game);
+    }
   }
 
   return game
@@ -50,12 +54,12 @@ export function applyInput(game: GameContext, action: InputAction, now: number):
     case 'rotate_ccw': return applyMove(game, tryRotate(state.board, piece, false), now);
     case 'soft_drop': {
       // If already grounded (lock delay active), soft drop commits the lock immediately
-      if (piece.lockDelay !== null) return lockAndSpawn(game);
+      // if (piece.lockDelay !== null) return lockAndSpawn(game);
       return applyMove(game, tryMoveDown(state.board, piece), now);
     }
     case 'hard_drop': {
       const landed = sonicDrop(state.board, piece);
-      return lockAndSpawn({ bag, config, state: { ...state, activePiece: { ...landed, lockDelay: null } } });
+      return lockAndSpawn({ bag, config, state: { ...state, activePiece: { ...landed } } });
     }
     case 'hold': {
       if (state.holdUsed) return game;
@@ -82,18 +86,18 @@ function applyMove(game: GameContext, moved: ActivePiece | null, now: number): G
   const { bag, config, state } = game;
   const piece = state.activePiece!;
 
-  let lockDelay = piece.lockDelay;
-  if (lockDelay !== null) {
-    if (isGrounded(state.board, moved)) {
-      // Still grounded — reset timer, spend a move
-      lockDelay = { groundedSince: now, moves: lockDelay.moves + 1 };
-    } else {
-      // Moved off the stack — piece is airborne again
-      lockDelay = null;
-    }
-  }
+  // let lockDelay = piece.;
+  // if (lockDelay !== null) {
+  //   if (isGrounded(state.board, moved)) {
+  //     // Still grounded — reset timer, spend a move
+  //     lockDelay = { groundedSince: now, moves: lockDelay.moves + 1 };
+  //   } else {
+  //     // Moved off the stack — piece is airborne again
+  //     lockDelay = null;
+  //   }
+  // }
 
-  return { bag, config, state: { ...state, activePiece: { ...moved, lockDelay } } };
+  return { bag, config, state: { ...state, activePiece: { ...moved, } } };
 }
 
 function lockAndSpawn(game: GameContext): GameContext {

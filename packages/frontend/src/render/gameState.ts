@@ -1,4 +1,4 @@
-import { GameState, visibleBoard, VISIBLE_ROW_START } from '@stacktris/shared';
+import { GameState, visibleBoard } from '@stacktris/shared';
 import { renderBoard } from './board';
 import { renderQueue, renderHold } from './queue';
 
@@ -8,18 +8,11 @@ export interface Canvases {
   hold: HTMLCanvasElement;
 }
 
-export function renderGameState(state: GameState, canvases: Canvases, now: number): void {
+export function renderGameState(state: GameState, canvases: Canvases): void {
   const boardCtx = canvases.board.getContext('2d');
   if (boardCtx) {
-    const piece = state.activePiece ? {
-      kind: state.activePiece.kind,
-      row: state.activePiece.row - VISIBLE_ROW_START,
-      col: state.activePiece.col,
-      rotation: state.activePiece.rotation,
-      lock_active: false,
-    } : null;
-    const alpha = state.activePiece?.lockDelay ? 0.4 + 0.6 * Math.abs(Math.sin(now * Math.PI / 180)) : 1;
-    renderBoard(boardCtx, visibleBoard(state.board), piece, false, alpha);
+    const piece = state.activePiece;
+    renderBoard(boardCtx, visibleBoard(state.board), piece);
   }
 
   const queueCtx = canvases.queue.getContext('2d');

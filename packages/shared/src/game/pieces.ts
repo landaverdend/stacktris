@@ -17,7 +17,12 @@ export interface ActivePiece {
   row: number;
   col: number;
   rotation: number; // 0-3
-  lockDelay: LockDelay | null;
+
+
+  // How many frames the piece has been on the floor.  
+  timeOnFloor: number;  
+  // The amount of times the lock delay has been reset
+  totalResets: number;
 }
 
 // [piece][rotation] = four [dr, dc] offsets relative to anchor

@@ -11,15 +11,6 @@ export interface RoomInfo {
   createdAt: number;
 }
 
-/** Active piece position sent over the wire. */
-export interface PieceSnapshot {
-  kind: string;
-  row: number;
-  col: number;
-  rotation: number;
-  lock_active: boolean;
-}
-
 /** Full state sent to the player controlling this board. */
 export interface GameSnapshot {
   board: Board;
