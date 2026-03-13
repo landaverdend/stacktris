@@ -7,4 +7,4 @@ Idea:
   - the client should send out batched inputs every set interval (300 frames?)
   - server will independently compute what the state **should** be from your inputs
   - if the two don't match; we have desynced
-  
+  - gravity needs to be calculated based on the frame over time rather than what we currently have.

@@ -56,15 +56,18 @@ export class MultiplayerGame {
 
         while (this.simTime >= TICK_MS) {
           this.frameCount++;
-          console.log(`frame ${this.frameCount}`);
+          // console.log(`frame ${this.frameCount}`);
           this.inputHandler.tick(now);
           this.tick(now);
           this.simTime -= TICK_MS;
+
+          // Flush the replay input buffer every 10 frames.
+          if (this.frameCount % 10 === 0) {
+            this.replayBuffer.flush();
+          }
         }
       }
 
-      // this.inputHandler.tick(now);
-      // this.tick(now);
       this.lastFrameTime = now;
       renderGameState(this.game.state, canvases, now);
       this.rafId = requestAnimationFrame(loop);

@@ -3,13 +3,13 @@ import {
   applyGravity, applyInput, gravityTickMs, levelFromLines,
   GameSnapshot,
   ActivePiece,
+  InputBuffer,
 } from "@stacktris/shared";
 
 
 export class PlayerGameState {
 
   private game: GameContext;
-  private lastGravityMs: number = 0;
   pendingGarbage: number = 0;
 
   constructor(seed: number) {
@@ -32,21 +32,6 @@ export class PlayerGameState {
     return this.game.state.isGameOver;
   }
 
-  tick(): void {
-    if (this.game.state.isGameOver) return;
-
-    const now = Date.now();
-    if (this.lastGravityMs === 0) this.lastGravityMs = now;
-
-    const interval = gravityTickMs(this.game.state.level);
-    if (now - this.lastGravityMs >= interval) {
-      this.game = applyGravity(this.game, now);
-      this.lastGravityMs = now;
-    } else if (this.game.state.activePiece?.lockDelay !== null) {
-      this.game = applyGravity(this.game, now);
-    }
-  }
-
   /**
    * Applies an input action to the game state. If it  
    * @param input 
@@ -63,4 +48,15 @@ export class PlayerGameState {
     this.game = applyInput(this.game, input, Date.now());
     return true;
   }
+
+
+  /**
+   * Given the input buffer, run the simulation and validate the resultant state.
+   */
+  runSim(buffer: InputBuffer) {
+    console.log(`[PlayerGameState] running simulation for buffer: ${JSON.stringify(buffer)}`);
+
+  }
+
+
 }

@@ -3,10 +3,6 @@ import { PlayerSlot } from "./types.js";
 import { PlayerGameState } from "./playerGameState.js";
 
 
-const TICK_RATE = 20; // ticks per second
-const TICK_LENGTH_MS = 1000 / TICK_RATE;
-
-
 export class GameSession {
 
   private players: Map<string, PlayerSlot> = new Map();
@@ -29,16 +25,7 @@ export class GameSession {
   }
 
 
-  private tick(): void {
-    if (!this.running) return;
 
-    this.tickTimeout = setTimeout(() => this.tick(), TICK_LENGTH_MS);
-
-    for (const ps of Object.values(this.playerGameStates)) {
-      ps.tick();
-    }
-
-  }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
     console.log(`[GameSession] onMessage: ${msg.type} from player ${playerId}`);
@@ -46,10 +33,7 @@ export class GameSession {
     switch (msg.type) {
       case 'game_action':
         const ps = this.playerGameStates[playerId];
-        const valid = ps.applyInput(msg.action, msg.activePiece);
-        if (!valid) {
-          this.players.get(playerId)?.sendFn({ type: 'game_snapshot', snapshot: ps.snapshot })
-        }
+        console.log(`[GameSession] game action: ${JSON.stringify(msg.buffer)}`);
         break;
     }
   }
@@ -59,7 +43,6 @@ export class GameSession {
     this.broadcastToAll({ type: 'game_start', seed: this.seed });
 
     this.running = true;
-    this.tickTimeout = setTimeout(() => this.tick(), TICK_LENGTH_MS);
 
     // send initial snapshots to all players
     for (const ps of Object.values(this.playerGameStates)) {

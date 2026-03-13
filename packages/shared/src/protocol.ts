@@ -38,6 +38,11 @@ export interface OpponentSnapshot {
 
 // ── Client → Server ───────────────────────────────────────────────────────────
 
+export interface InputBuffer {
+  action: InputAction;
+  frame: number;
+}
+
 export type ClientMsg =
   // Room Operations
   | { type: 'create_room'; bet_sats: number }
@@ -46,7 +51,7 @@ export type ClientMsg =
   | { type: 'ready_update'; ready: boolean }
 
   // Game Ops 
-  | { type: 'game_action'; buffer: { action: InputAction; frame: number }[]; };
+  | { type: 'game_action'; buffer: InputBuffer; };
 
 
 export interface PlayerInfo {
