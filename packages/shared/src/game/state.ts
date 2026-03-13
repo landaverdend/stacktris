@@ -9,7 +9,10 @@ export interface GameState {
   board: Board;
   activePiece: ActivePiece | null;
   queue: PieceKind[];      // next QUEUE_SIZE pieces
+
   gravity: number;
+  gravityAccumulator: number;
+
   holdPiece: PieceKind | null;
   holdUsed: boolean;
   score: number;
@@ -51,6 +54,8 @@ export function createGame(config: GameConfig = {}, seed?: number): GameContext 
     holdUsed: false,
 
     gravity: 0.02, // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
+    gravityAccumulator: 0,
+
     score: 0,
     lines: 0,
     level: 0,

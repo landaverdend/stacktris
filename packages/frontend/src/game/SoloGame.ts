@@ -1,4 +1,4 @@
-import { GameState, GameContext, createGame, applyGravity, applyInput, gravityTickMs, levelFromLines, InputAction } from '@stacktris/shared';
+import { GameState, GameContext, createGame, applyInput, levelFromLines, InputAction, applyGravity } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render/gameState';
 import { InputHandler } from './InputHandler';
 import { TICK_MS } from './MultiplayerGame';
@@ -41,8 +41,9 @@ export class SoloGame {
 
         while (this.simTime >= TICK_MS) {
           this.frameCount++;
-          console.log(`frame ${this.frameCount}`);
+          // console.log(`frame ${this.frameCount}`);
           this.inputHandler.tick(now);
+
           this.tick(now);
           this.simTime -= TICK_MS;
         }
@@ -68,16 +69,8 @@ export class SoloGame {
 
   tick(now: number): void {
     if (this.game.state.isGameOver) return;
-    if (this.lastGravityMs === 0) this.lastGravityMs = now;
 
-    const interval = gravityTickMs(this.game.state.level);
-    if (now - this.lastGravityMs >= interval) {
-      this.game = applyGravity(this.game, now);
-      this.lastGravityMs = now;
-    } else if (this.game.state.activePiece?.lockDelay !== null) {
-      // Keep ticking lock delay even between gravity intervals
-      this.game = applyGravity(this.game, now);
-    }
+    this.game = applyGravity(this.game, this.frameCount);
   }
 
   private render(canvases: Canvases, now: number) {

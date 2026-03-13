@@ -1,6 +1,6 @@
 import {
-  GameContext, createGame, applyGravity, applyInput,
-  gravityTickMs, levelFromLines,
+  GameContext, createGame, applyInput,
+  levelFromLines,
   GameSnapshot,
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
@@ -13,7 +13,6 @@ export const TICK_MS = 16; // ~60
 
 export class MultiplayerGame {
   private game: GameContext;
-  private lastGravityMs: number = 0;
   isSynced = true;
 
   private inputHandler: InputHandler;
@@ -49,7 +48,6 @@ export class MultiplayerGame {
     this.inputHandler.attach();
 
     const loop = (now: number) => {
-
       if (this.lastFrameTime > 0) {
         const delta = Math.min(now - this.lastFrameTime, 100);
         this.simTime += delta;
@@ -85,21 +83,11 @@ export class MultiplayerGame {
 
   tick(now: number): void {
     if (this.game.state.isGameOver) return;
-    if (this.lastGravityMs === 0) this.lastGravityMs = now;
-
-    const interval = gravityTickMs(this.game.state.level);
-    if (now - this.lastGravityMs >= interval) {
-      this.game = applyGravity(this.game, now);
-      this.lastGravityMs = now;
-    } else if (this.game.state.activePiece?.lockDelay !== null) {
-      this.game = applyGravity(this.game, now);
-    }
 
   }
 
   reset(): void {
     this.game = createGame({ levelStrategy: levelFromLines }, this.seed);
-    this.lastGravityMs = 0;
   }
 
 

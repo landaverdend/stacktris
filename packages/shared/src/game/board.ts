@@ -1,4 +1,4 @@
-import { ActivePiece, PieceKind, PIECE_VALUE, boardCells, cells, kickOffsets, spawnCol } from './pieces.js';
+import { ActivePiece, PieceKind, PIECE_VALUE, boardCells, kickOffsets, spawnCol } from './pieces.js';
 
 export const ROWS = 22;   // 2 invisible buffer rows at top + 20 visible
 export const COLS = 10;
@@ -12,7 +12,6 @@ export function emptyBoard(): Board {
 }
 
 // ── Collision ─────────────────────────────────────────────────────────────────
-
 export function isValid(board: Board, piece: ActivePiece): boolean {
   for (const [r, c] of boardCells(piece)) {
     if (c < 0 || c >= COLS || r >= ROWS) return false;
@@ -105,13 +104,6 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece | null {
 /** Returns the level (1-based) for a given total lines cleared. Every 10 lines = +1 level. */
 export function levelFromLines(lines: number): number {
   return Math.min(Math.floor(lines / 10) + 1, 20);
-}
-
-/** Returns the gravity tick interval in ms for a given level (Marathon formula). */
-export function gravityTickMs(level: number): number {
-  const l = level - 1;
-  const ms = Math.pow(0.8 - l * 0.007, l) * 1000;
-  return Math.max(ms, 33);
 }
 
 // ── Ghost piece ───────────────────────────────────────────────────────────────

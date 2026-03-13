@@ -1,5 +1,5 @@
 import { ActivePiece } from './pieces.js';
-import { tryMoveDown, tryMoveLeft, tryMoveRight, tryRotate, sonicDrop, lockPiece, clearLines, spawnPiece, isGrounded } from './board.js';
+import { tryMoveDown, tryMoveLeft, tryMoveRight, tryRotate, sonicDrop, lockPiece, clearLines, spawnPiece, isGrounded, isValid } from './board.js';
 import { GameContext } from './state.js';
 
 export type InputAction = 'move_left' | 'move_right' | 'rotate_cw' | 'rotate_ccw' | 'soft_drop' | 'hard_drop' | 'hold';
@@ -7,35 +7,34 @@ export type InputAction = 'move_left' | 'move_right' | 'rotate_cw' | 'rotate_ccw
 const LOCK_DELAY_MS = 500;
 const MAX_LOCK_MOVES = 15;
 
-/** One gravity tick: move piece down, start/advance lock delay, or lock when delay expires. */
-export function applyGravity(game: GameContext, now: number): GameContext {
-  const { state, bag, config } = game;
-  if (!state.activePiece || state.isGameOver) return game;
+/**
+ * On each frame tick, apply the current gravity to the active piece y-coordinate.
+ * @param game 
+ * @param frameCount 
+ */
+export function applyGravity(game: GameContext) {
 
-  const piece = state.activePiece;
-  const moved = tryMoveDown(state.board, piece);
-  if (moved) {
-    // Moved down — cancel any lock delay
-    return { bag, config, state: { ...state, activePiece: { ...moved, lockDelay: null } } };
+  if (!game.state.activePiece || game.state.isGameOver) return game;
+
+  const piece = game.state.activePiece;
+  game.state.gravityAccumulator += game.state.gravity;
+  const rowsToFall = Math.floor(game.state.gravityAccumulator)
+
+  game.state.gravityAccumulator -= rowsToFall; // keep leftover fraction
+
+  const newPiece = { ...piece, row: piece.row + rowsToFall };
+
+  // Check if we can move down to the new row
+  const canMoveDown = tryMoveDown(game.state.board, newPiece);
+  if (canMoveDown) {
+    piece.row = newPiece.row;
+    return { ...game, state: { ...game.state, activePiece: piece } };
+  } else {
+
   }
 
-  // Piece is grounded
-  if (piece.lockDelay === null) {
-    // Start the timer
-    return { bag, config, state: { ...state, activePiece: { ...piece, lockDelay: { groundedSince: now, moves: 0 } } } };
-  }
-
-  if (now - piece.lockDelay.groundedSince >= LOCK_DELAY_MS || piece.lockDelay.moves >= MAX_LOCK_MOVES) {
-    return lockAndSpawn(game);
-  }
-
-  return game;
+  return game
 }
-
-export function applyGravity2(game: GameContext) {
-
-}
-
 
 /** Apply a player input action. */
 export function applyInput(game: GameContext, action: InputAction, now: number): GameContext {

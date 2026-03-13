@@ -1,6 +1,6 @@
 import {
   createGame, GameContext, GameState, InputAction,
-  applyGravity, applyInput, gravityTickMs, levelFromLines,
+  applyInput, levelFromLines,
   GameSnapshot,
   ActivePiece,
   InputBuffer,
