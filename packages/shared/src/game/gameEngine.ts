@@ -59,14 +59,6 @@ export class GameEngine {
   }
 
   handleLockDelayMode() {
-    // If lock delay was active, but we can move down, reset the piece to be in the air.
-    if (canMoveDown(this.state.board, this.state.activePiece)) {
-      console.log('resetting piece to be in the air')
-      this.state.activePiece.isFloored = false;
-      this.state.activePiece.totalResets = 15;
-      return;
-    }
-
     // Increment time on floor frames
     this.state.activePiece.timeOnFloor++;
 
@@ -91,8 +83,10 @@ export class GameEngine {
     if (this.state.activePiece.isFloored) {
       // Take off a reset from the total amoutn remaining.
       this.state.activePiece.totalResets++;
-      this.state.activePiece.timeOnFloor = 0;
-      console.log('Total resets remaining: ', this.state.activePiece.totalResets);
+
+      if (this.state.activePiece.totalResets < 15) {
+        this.state.activePiece.timeOnFloor = 0;
+      }
     }
 
 
