@@ -19,7 +19,7 @@ export interface GameState {
 
   // Player stats
   // score: number;
-  // lines: number;
+  lines: number;
   // level: number;
   // combo: number;
 
@@ -44,6 +44,11 @@ export function createGameState(seed?: number): GameState {
     // Gravity settings 
     gravity: 0.02, // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
     gravityAccumulator: 0, // rewinds when threshold of 1 is reached.
+
+
+    lines: 0,
+
+
 
     isGameOver: false,
   }

@@ -105,11 +105,12 @@ export class GameEngine {
   handleLock() {
     lockPiece(this.state.board, this.state.activePiece);
 
+    // Check if any lines are full and clear them. Update score and level based on the number of lines cleared.
     const linesCleared = clearLines(this.state.board);
+    this.state.lines += linesCleared;
 
     this.spawnNewPiece();
     this.state.holdUsed = false;
-
   }
 
   handleInput(input: InputAction) {
@@ -117,7 +118,6 @@ export class GameEngine {
       // Take off a reset from the total amoutn remaining.
       this.state.activePiece.totalResets++;
 
-      console.log('total resets: ', this.state.activePiece.totalResets);
       if (this.state.activePiece.totalResets < MAX_LOCK_RESETS) {
         this.state.activePiece.timeOnFloor = 0;
       }
