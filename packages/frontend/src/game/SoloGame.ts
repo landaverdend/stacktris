@@ -1,4 +1,4 @@
-import { GameState, InputAction, GameEngine } from '@stacktris/shared';
+import { GameState, GameEngine } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render/gameState';
 import { InputHandler } from './InputHandler';
 import { TICK_MS } from './MultiplayerGame';
@@ -27,7 +27,9 @@ export class SoloGame {
 
   constructor() {
     this.gameEngine = new GameEngine();
-    this.inputHandler = new InputHandler(action => this.onInput(action, performance.now()));
+    this.inputHandler = new InputHandler(action => {
+      this.gameEngine.handleInput(action);
+    });
   }
 
   get state(): GameState {
@@ -45,7 +47,7 @@ export class SoloGame {
 
         while (this.simTime >= TICK_MS) {
           this.frameCount++;
-          
+
           this.inputHandler.tick(now);
           this.gameEngine.tick();
 
@@ -76,10 +78,5 @@ export class SoloGame {
 
     // TODO: include solo stats 
     renderGameState(state, canvases);
-  }
-
-  onInput(action: InputAction, now: number): void {
-    // if (this.game.state.isGameOver) return;
-    // this.game = applyInput(this.game, action, now);
   }
 }

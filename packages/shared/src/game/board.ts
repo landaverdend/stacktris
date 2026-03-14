@@ -1,3 +1,4 @@
+import { sonicDrop } from './movements.js';
 import { ActivePiece, PieceKind, PIECE_VALUE, boardCells, kickOffsets, spawnCol } from './pieces.js';
 
 export const ROWS = 22;   // 2 invisible buffer rows at top + 20 visible
@@ -24,46 +25,8 @@ export function isGrounded(board: Board, piece: ActivePiece): boolean {
   return !isValid(board, { ...piece, row: piece.row + 1 });
 }
 
-// ── Movement ──────────────────────────────────────────────────────────────────
 
-export function canMoveDown(board: Board, piece: ActivePiece): boolean {
-  return isValid(board, { ...piece, row: piece.row + 1 });
-}
-
-export function tryMoveDown(board: Board, piece: ActivePiece): ActivePiece | null {
-  const moved = { ...piece, row: piece.row + 1 };
-  return isValid(board, moved) ? moved : null;
-}
-
-export function tryMoveLeft(board: Board, piece: ActivePiece): ActivePiece | null {
-  const moved = { ...piece, col: piece.col - 1 };
-  return isValid(board, moved) ? moved : null;
-}
-
-export function tryMoveRight(board: Board, piece: ActivePiece): ActivePiece | null {
-  const moved = { ...piece, col: piece.col + 1 };
-  return isValid(board, moved) ? moved : null;
-}
-
-export function tryRotate(board: Board, piece: ActivePiece, cw: boolean): ActivePiece | null {
-  const nextRot = ((piece.rotation + (cw ? 1 : 3)) % 4) as number;
-  const kicks = kickOffsets(piece.kind, piece.rotation, cw);
-  for (const [dc, dr] of kicks) {
-    const candidate = { ...piece, rotation: nextRot, row: piece.row + dr, col: piece.col + dc };
-    if (isValid(board, candidate)) return candidate;
-  }
-  return null;
-}
-
-export function sonicDrop(board: Board, piece: ActivePiece): ActivePiece {
-  let p = piece;
-  let next: ActivePiece | null;
-  while ((next = tryMoveDown(board, p)) !== null) p = next;
-  return p;
-}
-
-// ── Locking & clearing ────────────────────────────────────────────────────────
-
+// Lock the piece to the board.
 export function lockPiece(board: Board, piece: ActivePiece): void {
   const value = PIECE_VALUE[piece.kind];
   for (const [r, c] of boardCells(piece)) {
@@ -128,7 +91,6 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece {
 export function levelFromLines(lines: number): number {
   return Math.min(Math.floor(lines / 10) + 1, 20);
 }
-
 // ── Ghost piece ───────────────────────────────────────────────────────────────
 
 export function ghostPiece(board: Board, piece: ActivePiece): ActivePiece {
