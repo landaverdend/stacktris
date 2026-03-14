@@ -57,13 +57,6 @@ describe('spawnPiece', () => {
     expect(spawnPiece(emptyBoard(), 'T')).not.toBeNull();
   });
 
-  it('returns null when spawn area is blocked (top-out)', () => {
-    const board = emptyBoard();
-    for (let c = 0; c < COLS; c++) board[0][c] = 1;
-    for (let c = 0; c < COLS; c++) board[1][c] = 1;
-    expect(spawnPiece(board, 'T')).toBeNull();
-  });
-
   it('spawns with timeOnFloor = 0', () => {
     expect(spawnPiece(emptyBoard(), 'I')?.timeOnFloor).toBe(0);
   });

@@ -14,8 +14,8 @@ export class GameEngine {
 
   private state: GameState;
 
-  constructor() {
-    this.state = createGameState();
+  constructor(initialGameState?: GameState, seed?: number) {
+    this.state = initialGameState ?? createGameState(seed);
   }
 
 
