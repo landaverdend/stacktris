@@ -63,8 +63,12 @@ export class GameEngine {
     this.state.activePiece.timeOnFloor++;
 
     if (this.state.activePiece.timeOnFloor >= LOCK_DELAY_FRAMES) {
-      console.log('locking piece into place')
-      // lock the piece into place
+      // Safety: snap to floor before locking in case a rotation kick moved the piece off the ground
+      while (canMoveDown(this.state.board, this.state.activePiece)) {
+        console.log('moving piece down to floor')
+        applyMovement(this.state.activePiece, 'move_down');
+      }
+
       lockPiece(this.state.board, this.state.activePiece);
       this.spawnNewPiece();
     }
@@ -84,6 +88,7 @@ export class GameEngine {
       // Take off a reset from the total amoutn remaining.
       this.state.activePiece.totalResets++;
 
+      console.log('total resets: ', this.state.activePiece.totalResets);
       if (this.state.activePiece.totalResets < 15) {
         this.state.activePiece.timeOnFloor = 0;
       }
@@ -116,5 +121,4 @@ export class GameEngine {
         break;
     }
   }
-
 }
