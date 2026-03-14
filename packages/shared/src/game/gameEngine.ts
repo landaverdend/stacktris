@@ -1,4 +1,4 @@
-import { lockPiece, spawnPiece } from "./board.js";
+import { clearLines, lockPiece, spawnPiece } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
@@ -52,15 +52,10 @@ export class GameEngine {
       if (canMoveDown(this.state.board, this.state.activePiece)) {
         applyMovement(this.state.activePiece, 'move_down')
 
-        console.log('piece row: ', this.state.activePiece.row, 'highest row: ', this.state.activePiece.highestRowIndex);
-
         if (this.state.activePiece.row > this.state.activePiece.highestRowIndex) {
-          console.log('piece has moved down to a new lowest row, resetting total resets')
           this.state.activePiece.highestRowIndex = this.state.activePiece.row;
           this.state.activePiece.totalResets = 0; // reset the total amount of resets used
         }
-
-
       }
     }
 
@@ -79,7 +74,6 @@ export class GameEngine {
     if (this.state.activePiece.timeOnFloor >= LOCK_DELAY_FRAMES) {
       // Safety: snap to floor before locking in case a rotation kick moved the piece off the ground
       while (canMoveDown(this.state.board, this.state.activePiece)) {
-        console.log('moving piece down to floor')
         applyMovement(this.state.activePiece, 'move_down');
       }
 
@@ -99,10 +93,23 @@ export class GameEngine {
     this.state.activePiece = newPiece;
   }
 
+
+  /**
+   * When a piece lock happens, there are a few things that need to happen:
+   * - Piece gets locked into place on the board.
+   * - Lines get cleared from the board.
+   * - New piece is spawned.
+   * - Hold boolean is reset.
+   * @returns The number of lines cleared 
+   */
   handleLock() {
     lockPiece(this.state.board, this.state.activePiece);
+
+    const linesCleared = clearLines(this.state.board);
+
     this.spawnNewPiece();
     this.state.holdUsed = false;
+
   }
 
   handleInput(input: InputAction) {
