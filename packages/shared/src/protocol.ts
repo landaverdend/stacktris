@@ -1,6 +1,6 @@
 import { Board } from "./game/board.js";
-import { InputAction } from "./game/engine.js";
 import { ActivePiece, PieceKind } from "./game/pieces.js";
+import { InputAction } from "./game/types.js";
 
 export const COUNTDOWN_SECONDS = 3;
 

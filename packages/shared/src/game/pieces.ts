@@ -18,11 +18,11 @@ export interface ActivePiece {
   col: number;
   rotation: number; // 0-3
 
-
   // How many frames the piece has been on the floor.  
-  timeOnFloor: number;  
+  isFloored: boolean;
+  timeOnFloor: number;
   // The amount of times the lock delay has been reset
-  totalResets: number;
+  totalResetsRemaining: number;
 }
 
 // [piece][rotation] = four [dr, dc] offsets relative to anchor
@@ -79,7 +79,6 @@ export function boardCells(piece: ActivePiece): [number, number][] {
   return cells(piece.kind, piece.rotation).map(([dr, dc]) => [piece.row + dr, piece.col + dc]);
 }
 
-// Spawn col matches Rust: O=4, everything else=3
 export function spawnCol(kind: PieceKind): number {
   return kind === 'O' ? 4 : 3;
 }

@@ -18,6 +18,6 @@ export function renderGameState(state: GameState, canvases: Canvases): void {
   const queueCtx = canvases.queue.getContext('2d');
   if (queueCtx) renderQueue(queueCtx, state.queue);
 
-  const holdCtx = canvases.hold.getContext('2d');
-  if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
+  // const holdCtx = canvases.hold.getContext('2d');
+  // if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
 }

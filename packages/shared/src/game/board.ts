@@ -26,6 +26,10 @@ export function isGrounded(board: Board, piece: ActivePiece): boolean {
 
 // ── Movement ──────────────────────────────────────────────────────────────────
 
+export function canMoveDown(board: Board, piece: ActivePiece): boolean {
+  return isValid(board, { ...piece, row: piece.row + 1 });
+}
+
 export function tryMoveDown(board: Board, piece: ActivePiece): ActivePiece | null {
   const moved = { ...piece, row: piece.row + 1 };
   return isValid(board, moved) ? moved : null;
@@ -88,17 +92,34 @@ export function clearLines(board: Board): number {
 // ── Spawn ─────────────────────────────────────────────────────────────────────
 
 /** Spawns a piece at the standard position. Returns null if blocked (top-out). */
-export function spawnPiece(board: Board, kind: PieceKind): ActivePiece | null {
+// export function spawnPiece(board: Board, kind: PieceKind): ActivePiece | null {
+//   const piece: ActivePiece = {
+//     kind,
+//     row: VISIBLE_ROW_START - 2, // row 0, in the invisible buffer
+//     col: spawnCol(kind),
+//     rotation: 0,
+
+//     timeOnFloor: 0,
+//     totalResets: 15, // 15 moves until the piece locks in place.
+//   };
+//   return isValid(board, piece) ? piece : null;
+// }
+
+
+export function spawnPiece(board: Board, kind: PieceKind): ActivePiece {
+
   const piece: ActivePiece = {
     kind,
-    row: VISIBLE_ROW_START - 2, // row 0, in the invisible buffer
+    row: VISIBLE_ROW_START - 2,
     col: spawnCol(kind),
     rotation: 0,
 
+    isFloored: false,
     timeOnFloor: 0,
-    totalResets: 15, // 15 moves until the piece locks in place.
-  };
-  return isValid(board, piece) ? piece : null;
+    totalResetsRemaining: 15
+  }
+
+  return piece;
 }
 
 // ── Gravity ───────────────────────────────────────────────────────────────────

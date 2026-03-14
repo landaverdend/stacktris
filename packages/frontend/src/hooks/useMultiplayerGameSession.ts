@@ -1,6 +1,6 @@
 import { RefObject, useEffect, useRef } from "react";
 import { useWS } from "../ws/WSContext";
-import { MultiplayerGame } from "../game/MultiplayerGame";
+// import { MultiplayerGame } from "../game/MultiplayerGame";
 
 type CanvasRefs = {
   board: RefObject<HTMLCanvasElement | null>;
@@ -10,22 +10,22 @@ type CanvasRefs = {
 
 export function useMultiplayerGameSession(refs: CanvasRefs) {
   const ws = useWS();
-  const gameSession = useRef<MultiplayerGame | null>(null);
+  const gameSession = useRef<null>(null);
 
   useEffect(() => {
     const handleGameStart = (msg: { type: 'game_start'; seed: number }) => {
       const { board, queue, hold } = refs;
       if (!board.current || !queue.current || !hold.current) return;
 
-      gameSession.current = new MultiplayerGame(msg.seed, ws);
-      gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
+      // gameSession.current = new MultiplayerGame(msg.seed, ws);
+      // gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
     };
 
     ws.on('game_start', handleGameStart);
 
     return () => {
       ws.off('game_start', handleGameStart);
-      gameSession.current?.stop();
+      // gameSession.current?.stop();
     };
   }, [ws]);
 }
