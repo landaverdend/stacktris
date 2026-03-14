@@ -43,8 +43,6 @@ export class PlayerGameState {
     console.log(`active piece from the game state: ${JSON.stringify(this.game.state.activePiece)}`);
 
     // TODO: given the active piece from the client- can we determine that it was possible to get to that position from the shadow state?
-
-
     this.game = applyInput(this.game, input, Date.now());
     return true;
   }
