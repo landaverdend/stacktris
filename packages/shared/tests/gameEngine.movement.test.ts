@@ -27,14 +27,14 @@ function slideDown(engine: GameEngine): number {
 
 describe('move_left', () => {
   it('decrements col by 1', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const before = engine.getState().activePiece.col;
     engine.handleInput('move_left');
     expect(engine.getState().activePiece.col).toBe(before - 1);
   });
 
   it('is blocked by the left wall', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const stoppedAt = slideLeft(engine);
     engine.handleInput('move_left');
     expect(engine.getState().activePiece.col).toBe(stoppedAt);
@@ -44,7 +44,7 @@ describe('move_left', () => {
     const state = createGameState(42);
     // Wall off col 5 so the piece can never pass it
     for (let r = ROWS - 10; r < ROWS; r++) state.board[r][5] = 1;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     const stoppedAt = slideLeft(engine);
     engine.handleInput('move_left');
     expect(engine.getState().activePiece.col).toBe(stoppedAt);
@@ -55,14 +55,14 @@ describe('move_left', () => {
 
 describe('move_right', () => {
   it('increments col by 1', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const before = engine.getState().activePiece.col;
     engine.handleInput('move_right');
     expect(engine.getState().activePiece.col).toBe(before + 1);
   });
 
   it('is blocked by the right wall', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const stoppedAt = slideRight(engine);
     engine.handleInput('move_right');
     expect(engine.getState().activePiece.col).toBe(stoppedAt);
@@ -71,14 +71,14 @@ describe('move_right', () => {
   it('is blocked by a locked cell to the right', () => {
     const state = createGameState(42);
     for (let r = ROWS - 10; r < ROWS; r++) state.board[r][COLS - 5] = 1;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     const stoppedAt = slideRight(engine);
     engine.handleInput('move_right');
     expect(engine.getState().activePiece.col).toBe(stoppedAt);
   });
 
   it('left then right returns to original col', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const original = engine.getState().activePiece.col;
     engine.handleInput('move_left');
     engine.handleInput('move_right');
@@ -90,14 +90,14 @@ describe('move_right', () => {
 
 describe('soft_drop', () => {
   it('increments row by 1', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const before = engine.getState().activePiece.row;
     engine.handleInput('soft_drop');
     expect(engine.getState().activePiece.row).toBe(before + 1);
   });
 
   it('is blocked by the floor', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     const stoppedAt = slideDown(engine);
     engine.handleInput('soft_drop');
     expect(engine.getState().activePiece.row).toBe(stoppedAt);
@@ -107,7 +107,7 @@ describe('soft_drop', () => {
     const state = createGameState(42);
     // Fill a row near the bottom to act as a ceiling
     for (let c = 0; c < COLS; c++) state.board[ROWS - 5][c] = 1;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     const stoppedAt = slideDown(engine);
     engine.handleInput('soft_drop');
     expect(engine.getState().activePiece.row).toBe(stoppedAt);
@@ -118,9 +118,9 @@ describe('soft_drop', () => {
 
 describe('hard_drop', () => {
   it('snaps piece to the floor row', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     // soft-drop to find where the floor is, then reset and hard-drop
-    const engineRef = new GameEngine(undefined, 42);
+    const engineRef = new GameEngine({ seed: 42 });
     const floorRow = slideDown(engineRef);
 
     engine.handleInput('hard_drop');
@@ -130,7 +130,7 @@ describe('hard_drop', () => {
   });
 
   it('spawns a fresh piece after locking', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     engine.handleInput('hard_drop');
     const piece = engine.getState().activePiece;
     expect(piece.isFloored).toBe(false);
@@ -139,7 +139,7 @@ describe('hard_drop', () => {
   });
 
   it('resets holdUsed after locking', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     engine.handleInput('hold');
     expect(engine.getState().holdUsed).toBe(true);
     engine.handleInput('hard_drop');
@@ -147,7 +147,7 @@ describe('hard_drop', () => {
   });
 
   it('writes locked cells onto the board', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     engine.handleInput('hard_drop');
     const hasLockedCells = engine.getState().board.some(row => row.some(c => c !== 0));
     expect(hasLockedCells).toBe(true);
@@ -162,7 +162,7 @@ describe('rotation', () => {
     const state = createGameState(42);
     state.activePiece.kind = 'T';
     state.activePiece.rotation = 0;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     engine.handleInput('rotate_cw');
     expect(engine.getState().activePiece.rotation).toBe(1);
   });
@@ -171,7 +171,7 @@ describe('rotation', () => {
     const state = createGameState(42);
     state.activePiece.kind = 'T';
     state.activePiece.rotation = 0;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     engine.handleInput('rotate_ccw');
     expect(engine.getState().activePiece.rotation).toBe(3);
   });
@@ -180,7 +180,7 @@ describe('rotation', () => {
     const state = createGameState(42);
     state.activePiece.kind = 'T';
     state.activePiece.rotation = 0;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     for (let i = 0; i < 4; i++) engine.handleInput('rotate_cw');
     expect(engine.getState().activePiece.rotation).toBe(0);
   });
@@ -189,7 +189,7 @@ describe('rotation', () => {
     const state = createGameState(42);
     state.activePiece.kind = 'T';
     state.activePiece.rotation = 0;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     engine.handleInput('rotate_cw');
     engine.handleInput('rotate_ccw');
     expect(engine.getState().activePiece.rotation).toBe(0);

@@ -24,18 +24,18 @@ function dropToFloor(engine: GameEngine): void {
 
 describe('becoming floored', () => {
   it('piece is not floored at spawn', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     expect(engine.getState().activePiece.isFloored).toBe(false);
   });
 
   it('piece becomes floored when it can no longer move down', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     expect(engine.getState().activePiece.isFloored).toBe(true);
   });
 
   it('timeOnFloor is 0 immediately after landing', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     expect(engine.getState().activePiece.timeOnFloor).toBe(0);
   });
@@ -45,7 +45,7 @@ describe('becoming floored', () => {
 
 describe('timeOnFloor accumulation', () => {
   it('increments by 1 each tick while floored', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     engine.tick();
     expect(engine.getState().activePiece.timeOnFloor).toBe(1);
@@ -54,7 +54,7 @@ describe('timeOnFloor accumulation', () => {
   });
 
   it('does not lock before LOCK_DELAY_FRAMES ticks', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     for (let i = 0; i < LOCK_DELAY_FRAMES - 1; i++) engine.tick();
     const piece = engine.getState().activePiece;
@@ -63,7 +63,7 @@ describe('timeOnFloor accumulation', () => {
   });
 
   it('locks and spawns a new piece after exactly LOCK_DELAY_FRAMES ticks', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     for (let i = 0; i < LOCK_DELAY_FRAMES; i++) engine.tick();
     const piece = engine.getState().activePiece;
@@ -77,7 +77,7 @@ describe('timeOnFloor accumulation', () => {
 
 describe('lock delay resets', () => {
   it('any input while floored increments totalResets', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     engine.handleInput('move_left');
     expect(engine.getState().activePiece.totalResets).toBe(1);
@@ -86,7 +86,7 @@ describe('lock delay resets', () => {
   });
 
   it('input while floored resets timeOnFloor to 0', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     for (let i = 0; i < 10; i++) engine.tick();
     expect(engine.getState().activePiece.timeOnFloor).toBe(10);
@@ -95,7 +95,7 @@ describe('lock delay resets', () => {
   });
 
   it('each input buys another LOCK_DELAY_FRAMES window', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     // Accumulate close to the threshold then reset
     for (let i = 0; i < LOCK_DELAY_FRAMES - 1; i++) engine.tick();
@@ -118,7 +118,7 @@ describe('per-tetromino: rotation consumes resets', () => {
   it.each(ALL_PIECES)('%s: rotating while floored increments totalResets', (kind: PieceKind) => {
     const state = createGameState(42);
     state.activePiece.kind = kind;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     dropToFloor(engine);
 
     engine.handleInput('rotate_cw');
@@ -128,7 +128,7 @@ describe('per-tetromino: rotation consumes resets', () => {
   it.each(ALL_PIECES)('%s: rotating while floored resets timeOnFloor when resets remain', (kind: PieceKind) => {
     const state = createGameState(42);
     state.activePiece.kind = kind;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     dropToFloor(engine);
 
     for (let i = 0; i < 10; i++) engine.tick();
@@ -148,7 +148,7 @@ describe('per-tetromino: rotation consumes resets', () => {
   it.each(ALL_PIECES)('%s: rotation does NOT reset timeOnFloor once resets are exhausted', (kind: PieceKind) => {
     const state = createGameState(42);
     state.activePiece.kind = kind;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     dropToFloor(engine);
 
     // Exhaust all resets, then accumulate some floor time
@@ -165,7 +165,7 @@ describe('per-tetromino: rotation consumes resets', () => {
   it.each(ALL_PIECES)('%s: piece locks after LOCK_DELAY_FRAMES ticks once resets are exhausted', (kind: PieceKind) => {
     const state = createGameState(42);
     state.activePiece.kind = kind;
-    const engine = new GameEngine(state);
+    const engine = new GameEngine({ initialGameState: state });
     dropToFloor(engine);
 
     // Exhaust resets and park the timer just before the threshold
@@ -186,7 +186,7 @@ describe('per-tetromino: rotation consumes resets', () => {
 
 describe('MAX_LOCK_RESETS exhaustion', () => {
   it('timeOnFloor no longer resets after MAX_LOCK_RESETS inputs', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     engine.getState().activePiece.totalResets = MAX_LOCK_RESETS;
     for (let i = 0; i < 10; i++) engine.tick();
@@ -196,7 +196,7 @@ describe('MAX_LOCK_RESETS exhaustion', () => {
   });
 
   it('piece locks on the next tick after MAX_LOCK_RESETS with a full timer', () => {
-    const engine = new GameEngine(undefined, 42);
+    const engine = new GameEngine({ seed: 42 });
     dropToFloor(engine);
     const state = engine.getState();
     state.activePiece.totalResets = MAX_LOCK_RESETS;

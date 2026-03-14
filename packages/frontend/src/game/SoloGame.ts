@@ -26,7 +26,12 @@ export class SoloGame {
   private simTime = 0;
 
   constructor() {
-    this.gameEngine = new GameEngine();
+    this.gameEngine = new GameEngine({
+      onLinesCleared: (lines: number) => {
+        console.log('lines cleared ' + lines);
+      }
+    });
+
     this.inputHandler = new InputHandler(action => {
       this.gameEngine.handleInput(action);
     });
@@ -37,7 +42,6 @@ export class SoloGame {
   }
 
   start(canvases: Canvases): void {
-    this.reset();
     this.inputHandler.attach();
 
     const loop = (now: number) => {
@@ -55,7 +59,7 @@ export class SoloGame {
         }
       }
 
-      this.render(canvases);
+      renderGameState(this.gameEngine.getState(), canvases);
       this.lastFrameTime = now;
       this.rafId = requestAnimationFrame(loop);
     };
@@ -70,13 +74,5 @@ export class SoloGame {
   stop(): void {
     cancelAnimationFrame(this.rafId);
     this.inputHandler.detach();
-  }
-
-
-  private render(canvases: Canvases) {
-    const state = this.gameEngine.getState();
-
-    // TODO: include solo stats 
-    renderGameState(state, canvases);
   }
 }

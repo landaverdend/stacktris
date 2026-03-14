@@ -7,6 +7,14 @@ import { InputAction, PieceKind } from "./types.js";
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 
+
+export type EngineConfig = {
+  seed?: number;
+  initialGameState?: GameState;
+
+  onLinesCleared?: (lines: number) => void;
+}
+
 /**
  * Wrapper for interacting with game state. Caller handles frames and whatnot
  */
@@ -14,8 +22,19 @@ export class GameEngine {
 
   private state: GameState;
 
-  constructor(initialGameState?: GameState, seed?: number) {
-    this.state = initialGameState ?? createGameState(seed);
+  private onLinesCleared: ((lines: number) => void) | undefined;
+
+
+
+  constructor(config?: EngineConfig) {
+
+    if (!config) {
+      this.state = createGameState();
+      this.onLinesCleared = undefined;
+    } else {
+      this.state = config.initialGameState ?? createGameState(config.seed);
+      this.onLinesCleared = config.onLinesCleared ?? (() => { });
+    }
   }
 
 
@@ -107,7 +126,11 @@ export class GameEngine {
 
     // Check if any lines are full and clear them. Update score and level based on the number of lines cleared.
     const linesCleared = clearLines(this.state.board);
-    this.state.lines += linesCleared;
+    if (linesCleared > 0) {
+      this.state.lines += linesCleared;
+      this.onLinesCleared?.(linesCleared);
+    }
+
 
     this.spawnNewPiece();
     this.state.holdUsed = false;
