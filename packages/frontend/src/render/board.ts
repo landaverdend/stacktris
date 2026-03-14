@@ -4,6 +4,7 @@ const CELL_SIZE = 28;
 const GAP = 2;
 const COLS = 10;
 const ROWS = 20;
+const BUFFER_ROWS = 2; // invisible buffer rows stripped by visibleBoard()
 
 // Index matches Piece enum on server: 0=empty, 1=I, 2=O, 3=T, 4=S, 5=Z, 6=J, 7=L, 8=garbage
 const COLORS: readonly string[] = [
@@ -46,15 +47,16 @@ export function renderBoard(
 
   if (activePiece) {
     const cells = pieceOffsets(activePiece);
+    const visRow = activePiece.row - BUFFER_ROWS;
 
     // ── Ghost piece ─────────────────────────────────────────────────────────
-    const ghostRow = ghostDrop(board, cells, activePiece.row, activePiece.col);
-    const drop = ghostRow - activePiece.row;
+    const ghostRow = ghostDrop(board, cells, visRow, activePiece.col);
+    const drop = ghostRow - visRow;
     if (drop > 0) {
       ctx.globalAlpha = dimmed ? 0.1 : GHOST_ALPHA;
       ctx.fillStyle = COLORS[pieceColorIndex(activePiece.kind)];
       for (const [dr, dc] of cells) {
-        const r = activePiece.row + drop + dr;
+        const r = visRow + drop + dr;
         const c = activePiece.col + dc;
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
         ctx.fillRect(c * CELL_SIZE + GAP, r * CELL_SIZE + GAP, CELL_SIZE - GAP * 2, CELL_SIZE - GAP * 2);
@@ -66,7 +68,7 @@ export function renderBoard(
     ctx.globalAlpha = dimmed ? 0.4 * pieceAlpha : pieceAlpha;
     ctx.fillStyle = COLORS[pieceColorIndex(activePiece.kind)];
     for (const [dr, dc] of cells) {
-      const r = activePiece.row + dr;
+      const r = visRow + dr;
       const c = activePiece.col + dc;
       if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
       ctx.fillRect(c * CELL_SIZE + GAP, r * CELL_SIZE + GAP, CELL_SIZE - GAP * 2, CELL_SIZE - GAP * 2);

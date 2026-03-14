@@ -28,6 +28,7 @@ export function applyGravity(game: GameContext) {
   const canMoveDown = tryMoveDown(game.state.board, newPiece);
   if (canMoveDown) {
     piece.row = newPiece.row;
+    piece.timeOnFloor = 0; // reset
     return { ...game, state: { ...game.state, activePiece: piece } };
   } else { // piece is grounded.
     piece.timeOnFloor += 1;
@@ -84,6 +85,9 @@ function applyMove(game: GameContext, moved: ActivePiece | null, now: number): G
   if (!moved) return game;
   const { bag, config, state } = game;
 
+  if (moved.timeOnFloor > LOCK_DELAY_FRAMES) {
+    return lockAndSpawn(game);
+  }
 
   return { bag, config, state: { ...state, activePiece: { ...moved, } } };
 }
