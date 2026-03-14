@@ -4,7 +4,7 @@ import {
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
-import { Canvases, renderGameState } from '../render/gameState';
+import { Canvases, renderGameState } from '../render';
 import { ReplayBuffer } from './ReplayBuffer';
 
 

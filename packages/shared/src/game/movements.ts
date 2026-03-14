@@ -1,6 +1,6 @@
 import { Board, isValid } from "./board.js";
-import { ActivePiece, kickOffsets } from "./pieces.js";
-import { MovementAction } from "./types.js";
+import { kickOffsets } from "./pieces.js";
+import { ActivePiece, MovementAction } from "./types.js";
 
 
 export function applyMovement(piece: ActivePiece, action: MovementAction) {

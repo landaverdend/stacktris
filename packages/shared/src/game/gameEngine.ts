@@ -1,7 +1,7 @@
 import { lockPiece, spawnPiece } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState } from "./state.js";
-import { InputAction } from "./types.js";
+import { InputAction, PieceKind } from "./types.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
@@ -83,8 +83,7 @@ export class GameEngine {
         applyMovement(this.state.activePiece, 'move_down');
       }
 
-      lockPiece(this.state.board, this.state.activePiece);
-      this.spawnNewPiece();
+      this.handleLock();
     }
 
     if (canMoveDown(this.state.board, this.state.activePiece)) {
@@ -94,11 +93,16 @@ export class GameEngine {
 
   }
 
-
-  // Grab from the bag, spawn piece onto the board.
-  spawnNewPiece() {
-    const newPiece = spawnPiece(this.state.board, this.state.bag.next());
+  // Grab from the bag, spawn piece onto the board. Optional param to override the kind of piece to spawn (used for holds)
+  spawnNewPiece(kind?: PieceKind) {
+    const newPiece = spawnPiece(this.state.board, kind ?? this.state.bag.next());
     this.state.activePiece = newPiece;
+  }
+
+  handleLock() {
+    lockPiece(this.state.board, this.state.activePiece);
+    this.spawnNewPiece();
+    this.state.holdUsed = false;
   }
 
   handleInput(input: InputAction) {
@@ -140,8 +144,23 @@ export class GameEngine {
         break;
       case 'hard_drop':
         sonicDrop(this.state.board, this.state.activePiece);
-        lockPiece(this.state.board, this.state.activePiece);
-        this.spawnNewPiece();
+        this.handleLock();
+        break;
+
+      // Hold the current piece and spawn a new one
+      case 'hold':
+        if (this.state.holdUsed) return;
+
+        // If first time holding, add to hold and then spawn a new piece.
+        if (this.state.holdPiece === null) {
+          this.state.holdPiece = this.state.activePiece.kind;
+          this.spawnNewPiece();
+        } else {
+          const temp = this.state.holdPiece;
+          this.state.holdPiece = this.state.activePiece.kind;
+          this.spawnNewPiece(temp);
+        }
+        this.state.holdUsed = true;
         break;
     }
 

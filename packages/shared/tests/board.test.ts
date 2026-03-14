@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  emptyBoard, isValid, isGrounded,
-  tryMoveDown, tryMoveLeft, tryMoveRight, tryRotate,
-  sonicDrop, lockPiece, clearLines, spawnPiece,
-  visibleBoard, ROWS, COLS, VISIBLE_ROW_START, VISIBLE_ROWS,
+  emptyBoard,
+  spawnPiece,
+  ROWS, COLS,
 } from '../src/game/board.js';
-import { ActivePiece } from '../src/game/pieces.js';
 
 
 

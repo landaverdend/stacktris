@@ -1,5 +1,5 @@
-import { GameState, GameEngine } from '@stacktris/shared';
-import { Canvases, renderGameState } from '../render/gameState';
+import { GameEngine, GameState } from '@stacktris/shared';
+import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
 import { TICK_MS } from './MultiplayerGame';
 

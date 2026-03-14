@@ -1,5 +1,6 @@
-import { ActivePiece, PieceKind, SeededPieceBag } from './pieces.js';
+import { ALL_PIECES } from './pieces.js';
 import { Board, emptyBoard, spawnPiece } from './board.js';
+import { ActivePiece, PieceKind } from './types.js';
 
 export { LockDelay } from './pieces.js';
 
@@ -8,15 +9,13 @@ export const QUEUE_SIZE = 5;
 export interface GameState {
   board: Board;
   activePiece: ActivePiece;
-  queue: PieceKind[];
-
   bag: SeededPieceBag; // used to spawn new pieces.
 
   gravity: number;
   gravityAccumulator: number;
 
-  // holdPiece: PieceKind | null;
-  // holdUsed: boolean;
+  holdPiece: PieceKind | null;
+  holdUsed: boolean;
 
   // Player stats
   // score: number;
@@ -32,54 +31,69 @@ export function createGameState(seed?: number): GameState {
 
   const bag = new SeededPieceBag(seed ?? Math.floor(Math.random() * 2 ** 32));
   const board = emptyBoard();
-
-  const queue: PieceKind[] = Array.from({ length: QUEUE_SIZE }, () => bag.next());
-  const activePiece = spawnPiece(board, queue.shift()!);
+  const activePiece = spawnPiece(board, bag.next());
 
   return {
     board,
     activePiece,
-    queue,
     bag,
+
+    holdPiece: null,
+    holdUsed: false,
 
     // Gravity settings 
     gravity: 0.02, // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
     gravityAccumulator: 0, // rewinds when threshold of 1 is reached.
-    
+
     isGameOver: false,
   }
 }
 
-// export function createGame(seed?: number): GameState {
-//   const bag = new SeededPieceBag(seed ?? Math.floor(Math.random() * 2 ** 32));
-//   const board = emptyBoard();
 
-//   // Fill initial queue
-//   const queue: PieceKind[] = Array.from({ length: QUEUE_SIZE }, () => bag.next());
 
-//   // First piece comes from front of queue
-//   const firstKind = queue.shift()!;
-//   queue.push(bag.next());
+// ── 7-bag RNG (Mulberry32 PRNG) ───────────────────────────────────────────────
+function mulberry32(seed: number): () => number {
+  return function () {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
-//   const activePiece = spawnPiece(board, firstKind);
+export class SeededPieceBag {
+  private queue: PieceKind[] = [];
+  private currentBag: PieceKind[] = [];
+  private rng: () => number;
 
-//   const state: GameState = {
-//     board,
-//     activePiece,
-//     queue,
-//     holdPiece: null,
-//     holdUsed: false,
+  constructor(seed: number) {
+    this.rng = mulberry32(seed);
+    while (this.queue.length < 10) {
+      this.queue.push(this.drawOne());
+    }
+  }
 
-//     gravity: 0.02, // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
-//     gravityAccumulator: 0,
+  next(): PieceKind {
+    const piece = this.queue.shift()!;
+    this.queue.push(this.drawOne());
+    return piece;
+  }
 
-//     score: 0,
-//     lines: 0,
-//     level: 0,
+  peek(count = 10): PieceKind[] {
+    return this.queue.slice(0, count);
+  }
 
-//     combo: 0,
-//     isGameOver: activePiece === null,
-//   };
+  private drawOne(): PieceKind {
+    if (this.currentBag.length === 0) this.refillBag();
+    return this.currentBag.pop()!;
+  }
 
-//   return { state, bag, config };
-// }
+  private refillBag(): void {
+    const arr: PieceKind[] = [...ALL_PIECES];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    this.currentBag = arr;
+  }
+}

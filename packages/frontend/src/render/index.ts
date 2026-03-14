@@ -1,6 +1,6 @@
 import { GameState, visibleBoard } from '@stacktris/shared';
 import { renderBoard } from './board';
-import { renderQueue } from './queue';
+import { renderHold, renderQueue } from './queue';
 
 export interface Canvases {
   board: HTMLCanvasElement;
@@ -16,8 +16,8 @@ export function renderGameState(state: GameState, canvases: Canvases): void {
   }
 
   const queueCtx = canvases.queue.getContext('2d');
-  if (queueCtx) renderQueue(queueCtx, state.queue);
+  if (queueCtx) renderQueue(queueCtx, state.bag.peek());
 
-  // const holdCtx = canvases.hold.getContext('2d');
-  // if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
+  const holdCtx = canvases.hold.getContext('2d');
+  if (holdCtx) renderHold(holdCtx, state.holdPiece, state.holdUsed);
 }
