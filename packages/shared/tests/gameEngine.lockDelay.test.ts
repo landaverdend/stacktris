@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { GameEngine, LOCK_DELAY_FRAMES, MAX_LOCK_RESETS } from '../src/game/gameEngine.js';
-import { ROWS } from '../src/game/board.js';
+import { createGameState } from '../src/game/state.js';
+import { COLS, ROWS } from '../src/game/board.js';
+import { ALL_PIECES } from '../src/game/pieces.js';
+import type { PieceKind } from '../src/game/types.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -101,6 +104,81 @@ describe('lock delay resets', () => {
     // Should need another full window before locking
     for (let i = 0; i < LOCK_DELAY_FRAMES - 1; i++) engine.tick();
     expect(engine.getState().activePiece.isFloored).toBe(true);
+  });
+});
+
+// ── Per-tetromino rotation spin-lock ─────────────────────────────────────────
+//
+// Each piece should consume a reset on every rotate_cw input while floored,
+// regardless of whether the rotation actually moves the piece (O piece) or
+// whether an SRS kick temporarily lifts it (I piece). Once MAX_LOCK_RESETS is
+// reached, further rotations must not reset the lock timer.
+
+describe('per-tetromino: rotation consumes resets', () => {
+  it.each(ALL_PIECES)('%s: rotating while floored increments totalResets', (kind: PieceKind) => {
+    const state = createGameState(42);
+    state.activePiece.kind = kind;
+    const engine = new GameEngine(state);
+    dropToFloor(engine);
+
+    engine.handleInput('rotate_cw');
+    expect(engine.getState().activePiece.totalResets).toBeGreaterThanOrEqual(1);
+  });
+
+  it.each(ALL_PIECES)('%s: rotating while floored resets timeOnFloor when resets remain', (kind: PieceKind) => {
+    const state = createGameState(42);
+    state.activePiece.kind = kind;
+    const engine = new GameEngine(state);
+    dropToFloor(engine);
+
+    for (let i = 0; i < 10; i++) engine.tick();
+    engine.handleInput('rotate_cw');
+
+    // If the piece is still floored after the rotation, timeOnFloor must have reset.
+    // If an SRS kick lifted it off the floor (I piece), it's no longer floored so
+    // the timer is irrelevant — it will restart from 0 when it lands again.
+    const piece = engine.getState().activePiece;
+    if (piece.isFloored) {
+      expect(piece.timeOnFloor).toBe(0);
+    } else {
+      expect(piece.timeOnFloor).toBe(0); // fresh landing state
+    }
+  });
+
+  it.each(ALL_PIECES)('%s: rotation does NOT reset timeOnFloor once resets are exhausted', (kind: PieceKind) => {
+    const state = createGameState(42);
+    state.activePiece.kind = kind;
+    const engine = new GameEngine(state);
+    dropToFloor(engine);
+
+    // Exhaust all resets, then accumulate some floor time
+    engine.getState().activePiece.totalResets = MAX_LOCK_RESETS;
+    for (let i = 0; i < 10; i++) engine.tick();
+    const timeBefore = engine.getState().activePiece.timeOnFloor;
+
+    engine.handleInput('rotate_cw');
+
+    // timeOnFloor must not have decreased — the piece is out of resets
+    expect(engine.getState().activePiece.timeOnFloor).toBeGreaterThanOrEqual(timeBefore);
+  });
+
+  it.each(ALL_PIECES)('%s: piece locks after LOCK_DELAY_FRAMES ticks once resets are exhausted', (kind: PieceKind) => {
+    const state = createGameState(42);
+    state.activePiece.kind = kind;
+    const engine = new GameEngine(state);
+    dropToFloor(engine);
+
+    // Exhaust resets and park the timer just before the threshold
+    const piece = engine.getState().activePiece;
+    piece.totalResets = MAX_LOCK_RESETS;
+    piece.timeOnFloor = LOCK_DELAY_FRAMES - 1;
+
+    engine.tick(); // should push over the threshold and trigger handleLock
+
+    const next = engine.getState().activePiece;
+    expect(next.isFloored).toBe(false);
+    expect(next.timeOnFloor).toBe(0);
+    expect(engine.getState().board.some(row => row.some(c => c !== 0))).toBe(true);
   });
 });
 
