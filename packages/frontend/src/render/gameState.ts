@@ -1,6 +1,6 @@
 import { GameState, visibleBoard } from '@stacktris/shared';
 import { renderBoard } from './board';
-import { renderQueue, renderHold } from './queue';
+import { renderQueue } from './queue';
 
 export interface Canvases {
   board: HTMLCanvasElement;

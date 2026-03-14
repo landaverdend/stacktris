@@ -1,10 +1,11 @@
 import { lockPiece, spawnPiece } from "./board.js";
-import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, tryRotate } from "./movements.js";
+import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState } from "./state.js";
 import { InputAction } from "./types.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
+export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 
 /**
  * Wrapper for interacting with game state. Caller handles frames and whatnot
@@ -42,26 +43,39 @@ export class GameEngine {
    */
   fall() {
     this.state.gravityAccumulator += this.state.gravity;
+
     // Check if the accumulator has reached 1, if so, move piece down if possible
     const aboveThreshold = Math.floor(this.state.gravityAccumulator)
     this.state.gravityAccumulator -= aboveThreshold; // Keep leftover  
 
-    // If accumulator is above threshold, move piece down if possible, otherwise kick off the lock delay  
     if (aboveThreshold > 0) {
       if (canMoveDown(this.state.board, this.state.activePiece)) {
         applyMovement(this.state.activePiece, 'move_down')
-      }
-      else {
-        this.state.activePiece.isFloored = true;
-        console.log('piece is floored now')
+
+        console.log('piece row: ', this.state.activePiece.row, 'highest row: ', this.state.activePiece.highestRowIndex);
+
+        if (this.state.activePiece.row > this.state.activePiece.highestRowIndex) {
+          console.log('piece has moved down to a new lowest row, resetting total resets')
+          this.state.activePiece.highestRowIndex = this.state.activePiece.row;
+          this.state.activePiece.totalResets = 0; // reset the total amount of resets used
+        }
+
+
       }
     }
+
+    // If we can't continue moving down, the piece is now floored.
+    if (!canMoveDown(this.state.board, this.state.activePiece)) {
+      this.state.activePiece.isFloored = true;
+    }
+
   }
 
   handleLockDelayMode() {
     // Increment time on floor frames
     this.state.activePiece.timeOnFloor++;
 
+    // We've run out of time on the floor, lock the piece in place.
     if (this.state.activePiece.timeOnFloor >= LOCK_DELAY_FRAMES) {
       // Safety: snap to floor before locking in case a rotation kick moved the piece off the ground
       while (canMoveDown(this.state.board, this.state.activePiece)) {
@@ -71,6 +85,11 @@ export class GameEngine {
 
       lockPiece(this.state.board, this.state.activePiece);
       this.spawnNewPiece();
+    }
+
+    if (canMoveDown(this.state.board, this.state.activePiece)) {
+      console.log('piece can move down, resetting to not floored')
+      this.state.activePiece.isFloored = false;
     }
 
   }
@@ -83,15 +102,15 @@ export class GameEngine {
   }
 
   handleInput(input: InputAction) {
-
     if (this.state.activePiece.isFloored) {
       // Take off a reset from the total amoutn remaining.
       this.state.activePiece.totalResets++;
 
       console.log('total resets: ', this.state.activePiece.totalResets);
-      if (this.state.activePiece.totalResets < 15) {
+      if (this.state.activePiece.totalResets < MAX_LOCK_RESETS) {
         this.state.activePiece.timeOnFloor = 0;
       }
+
     }
 
 
@@ -119,6 +138,12 @@ export class GameEngine {
       case 'rotate_ccw':
         tryRotate(this.state.board, this.state.activePiece, false);
         break;
+      case 'hard_drop':
+        sonicDrop(this.state.board, this.state.activePiece);
+        lockPiece(this.state.board, this.state.activePiece);
+        this.spawnNewPiece();
+        break;
     }
+
   }
 }

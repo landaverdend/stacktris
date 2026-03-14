@@ -79,6 +79,8 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece {
 
     isFloored: false,
     timeOnFloor: 0,
+
+    highestRowIndex: VISIBLE_ROW_START - 2,
     totalResets: 0
   }
 

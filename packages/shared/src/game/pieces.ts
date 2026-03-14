@@ -21,6 +21,8 @@ export interface ActivePiece {
   // How many frames the piece has been on the floor.  
   isFloored: boolean;
   timeOnFloor: number;
+
+  highestRowIndex: number; // the lowest row the piece has touched
   // The amount of times the lock delay has been reset
   totalResets: number;
 }

@@ -18,7 +18,6 @@ export function applyMovement(piece: ActivePiece, action: MovementAction) {
   }
 }
 
-
 export function canMoveDown(board: Board, piece: ActivePiece): boolean {
   return isValid(board, { ...piece, row: piece.row + 1 });
 }
