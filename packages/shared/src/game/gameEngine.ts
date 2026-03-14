@@ -1,7 +1,10 @@
+import { lockPiece, spawnPiece } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, tryRotate } from "./movements.js";
 import { createGameState, GameState } from "./state.js";
 import { InputAction } from "./types.js";
 
+
+export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 
 /**
  * Wrapper for interacting with game state. Caller handles frames and whatnot
@@ -26,11 +29,8 @@ export class GameEngine {
   tick(): void {
     if (this.state.isGameOver) return;
 
-    // apply gravity tick.
     if (this.state.activePiece.isFloored) {
-      // TODO: handle locked piece logic.
-      console.log('locked piece logic.')
-
+      this.handleLockDelayMode();
     } else {
       this.fall();
     }
@@ -53,12 +53,49 @@ export class GameEngine {
       }
       else {
         this.state.activePiece.isFloored = true;
+        console.log('piece is floored now')
       }
     }
   }
 
+  handleLockDelayMode() {
+    // If lock delay was active, but we can move down, reset the piece to be in the air.
+    if (canMoveDown(this.state.board, this.state.activePiece)) {
+      console.log('resetting piece to be in the air')
+      this.state.activePiece.isFloored = false;
+      this.state.activePiece.totalResets = 15;
+      return;
+    }
+
+    // Increment time on floor frames
+    this.state.activePiece.timeOnFloor++;
+
+    if (this.state.activePiece.timeOnFloor >= LOCK_DELAY_FRAMES) {
+      console.log('locking piece into place')
+      // lock the piece into place
+      lockPiece(this.state.board, this.state.activePiece);
+      this.spawnNewPiece();
+    }
+
+  }
+
+
+  // Grab from the bag, spawn piece onto the board.
+  spawnNewPiece() {
+    const newPiece = spawnPiece(this.state.board, this.state.bag.next());
+    this.state.activePiece = newPiece;
+  }
+
   handleInput(input: InputAction) {
-    console.log(`[GameEngine] handling input: ${input}`);
+
+    if (this.state.activePiece.isFloored) {
+      // Take off a reset from the total amoutn remaining.
+      this.state.activePiece.totalResets++;
+      this.state.activePiece.timeOnFloor = 0;
+      console.log('Total resets remaining: ', this.state.activePiece.totalResets);
+    }
+
+
     switch (input) {
       case 'move_left':
         if (canMoveLeft(this.state.board, this.state.activePiece)) {
@@ -71,7 +108,6 @@ export class GameEngine {
           applyMovement(this.state.activePiece, 'move_right')
         }
         break;
-
       // TODO: if they are already on the ground, lock the piece into place.
       case 'soft_drop':
         if (canMoveDown(this.state.board, this.state.activePiece)) {

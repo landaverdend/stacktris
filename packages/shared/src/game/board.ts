@@ -26,7 +26,7 @@ export function isGrounded(board: Board, piece: ActivePiece): boolean {
 }
 
 
-// Lock the piece to the board.
+// Lock the piece to the board. Alters state of the board
 export function lockPiece(board: Board, piece: ActivePiece): void {
   const value = PIECE_VALUE[piece.kind];
   for (const [r, c] of boardCells(piece)) {
@@ -79,7 +79,7 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece {
 
     isFloored: false,
     timeOnFloor: 0,
-    totalResetsRemaining: 15
+    totalResets: 0
   }
 
   return piece;

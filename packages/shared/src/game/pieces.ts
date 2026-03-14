@@ -22,7 +22,7 @@ export interface ActivePiece {
   isFloored: boolean;
   timeOnFloor: number;
   // The amount of times the lock delay has been reset
-  totalResetsRemaining: number;
+  totalResets: number;
 }
 
 // [piece][rotation] = four [dr, dc] offsets relative to anchor
