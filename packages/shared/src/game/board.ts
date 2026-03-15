@@ -71,6 +71,17 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece {
   return piece;
 }
 
+/** Shifts all rows up by `lines`, then fills the bottom `lines` rows with garbage (value 8) with a single gap column left empty. */
+export function applyGarbageLines(board: Board, lines: number, gap: number): void {
+  for (let r = 0; r < ROWS - lines; r++) {
+    board[r] = board[r + lines];
+  }
+  for (let r = ROWS - lines; r < ROWS; r++) {
+    board[r] = new Array(COLS).fill(8);
+    board[r][gap] = 0;
+  }
+}
+
 // ── Gravity ───────────────────────────────────────────────────────────────────
 
 /** Returns the level (1-based) for a given total lines cleared. Every 10 lines = +1 level. */

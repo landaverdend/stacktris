@@ -1,6 +1,6 @@
-import { clearLines, lockPiece, spawnPiece } from "./board.js";
+import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
-import { createGameState, GameState } from "./state.js";
+import { createGameState, GameState, mulberry32 } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
 
 
@@ -24,9 +24,11 @@ export class GameEngine {
   private state: GameState;
 
   private onLinesCleared: ((lines: number) => void) | undefined;
+  private garbageRng: () => number;
 
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
+    this.garbageRng = mulberry32(this.seed);
 
     if (!config) {
       this.state = createGameState(this.seed);
@@ -129,6 +131,11 @@ export class GameEngine {
       this.onLinesCleared?.(linesCleared);
     }
 
+    // // Flush pending garbage onto the board
+    for (const g of this.state.pendingGarbage) {
+      applyGarbageLines(this.state.board, g.lines, g.gap);
+    }
+    this.state.pendingGarbage = [];
 
     this.spawnNewPiece();
     this.state.holdUsed = false;
@@ -194,7 +201,8 @@ export class GameEngine {
 
   }
 
-  addGarbage(n: number) {
-    // this.state.pending
+  addGarbage(n: number): void {
+    const gap = Math.floor(this.garbageRng() * COLS);
+    this.state.pendingGarbage.push({ lines: n, triggerFrame: 0, gap });
   }
 }
