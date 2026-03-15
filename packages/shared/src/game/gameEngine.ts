@@ -24,10 +24,7 @@ export class GameEngine {
 
   private onLinesCleared: ((lines: number) => void) | undefined;
 
-
-
   constructor(config?: EngineConfig) {
-
     if (!config) {
       this.state = createGameState();
       this.onLinesCleared = undefined;

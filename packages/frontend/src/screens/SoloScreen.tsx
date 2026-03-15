@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
-import { GameStats, SoloGame } from '../game/SoloGame';
+import { GameStats, LocalGame } from '../game/LocalGame';
 
 export function SoloScreen() {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export function SoloScreen() {
   const [stats, setStats] = useState<GameStats>({ score: 0, lines: 0, level: 0 });
 
   useEffect(() => {
-    const game = new SoloGame();
+    const game = new LocalGame();
     game.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! });
 
     return () => game.stop();

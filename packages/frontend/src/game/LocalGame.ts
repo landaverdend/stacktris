@@ -1,7 +1,7 @@
 import { GameEngine, GameState } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
-import { TICK_MS } from './MultiplayerGame';
+import { TICK_MS } from './NetworkGame';
 
 export interface GameStats {
   score: number;
@@ -15,7 +15,7 @@ export interface GameStats {
  * Game engine is responsible for all logic/state management.
  * This class sends input to the game engine and renders the game state
  */
-export class SoloGame {
+export class LocalGame {
   private gameEngine: GameEngine;
 
   private inputHandler: InputHandler;
