@@ -1,7 +1,6 @@
 import { RefObject, useEffect, useRef } from "react";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
-// import { NetworkGame } from "../game/NetworkGame";
 
 type CanvasRefs = {
   board: RefObject<HTMLCanvasElement | null>;

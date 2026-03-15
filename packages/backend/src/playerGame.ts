@@ -23,8 +23,15 @@ export class PlayerGame {
     }
   }
 
-  handleInput(input: InputBuffer) {
-    console.log('PlayerGame handleInput', input);
+
+  /**
+   * When we receive a batch of inputs, we need to run them against the game engine to determine if the state is valid. 
+   * @param input 
+   */
+  handleInput(batch: InputBuffer) {
+    for (const i of batch) {
+
+    }
   }
 
 }

@@ -1,6 +1,8 @@
 import {
   GameEngine,
+  GameSnapshot,
   InputBuffer,
+  ServerMsg,
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
@@ -11,7 +13,6 @@ export const TICK_MS = 16; // ~60
 
 
 export class NetworkGame {
-
 
   private gameEngine: GameEngine;
 
@@ -34,6 +35,10 @@ export class NetworkGame {
       this.gameEngine.handleInput(action);
     })
 
+    this.ws.on('game_snapshot', (msg: ServerMsg) => {
+      // this.gameEngine.setState(snapshot);
+      console.log('NetworkGame game snapshot', msg);
+    })
   }
 
   get state() {

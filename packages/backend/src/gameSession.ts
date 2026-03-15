@@ -1,10 +1,8 @@
-import { ClientMsg, ServerMsg } from "@stacktris/shared";
-import { PlayerSlot } from "./types.js";
-import { PlayerGame } from "./playerGame.js";
-
+import { ClientMsg, ServerMsg } from '@stacktris/shared';
+import { PlayerSlot } from './types.js';
+import { PlayerGame } from './playerGame.js';
 
 export class GameSession {
-
   private players: Map<string, PlayerSlot> = new Map();
   private playerGameStates: Record<string, PlayerGame> = {};
 
@@ -23,7 +21,6 @@ export class GameSession {
     this.onEnd = onEnd;
     this.start();
   }
-
 
   public onMessage(playerId: string, msg: ClientMsg): void {
     console.log(`[GameSession] onMessage: ${msg.type} from player ${playerId}`);
@@ -59,5 +56,4 @@ export class GameSession {
       player.sendFn(msg);
     }
   }
-
 }

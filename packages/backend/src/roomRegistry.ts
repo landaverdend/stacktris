@@ -1,10 +1,8 @@
-import { ClientMsg, RoomInfo } from "@stacktris/shared";
-import { Room } from "./room.js";
-import { SendFn } from "./types.js";
-
+import { ClientMsg, RoomInfo } from '@stacktris/shared';
+import { Room } from './room.js';
+import { SendFn } from './types.js';
 
 export class RoomRegistry {
-
   // Map of player ID to send function
   private playerIdToSendFn = new Map<string, SendFn>();
 
@@ -12,11 +10,14 @@ export class RoomRegistry {
   private rooms: Map<string, Room> = new Map();
   private playerIdToRoom = new Map<string, string>();
 
-  constructor() {
-  }
+  constructor() {}
 
-  get roomCount() { return this.rooms.size; }
-  roomForPlayer(playerId: string) { return this.playerIdToRoom.get(playerId); }
+  get roomCount() {
+    return this.rooms.size;
+  }
+  roomForPlayer(playerId: string) {
+    return this.playerIdToRoom.get(playerId);
+  }
 
   public onConnect(playerId: string, sendFn: SendFn) {
     this.playerIdToSendFn.set(playerId, sendFn);
@@ -40,13 +41,12 @@ export class RoomRegistry {
 
       /// All other cases should be routed directly to the room.
       default:
-        const room = this.rooms.get(this.playerIdToRoom.get(playerId)!)
+        const room = this.rooms.get(this.playerIdToRoom.get(playerId)!);
         if (room) {
           room.onMessage(playerId, msg);
         }
         break;
     }
-
   }
 
   private createRoom(playerId: string, betSats: number): void {
@@ -61,7 +61,6 @@ export class RoomRegistry {
     this.playerIdToSendFn.get(playerId)!({ type: 'room_created', room_id: roomId });
   }
 
-
   private joinRoom(playerId: string, roomId: string): void {
     try {
       const room = this.rooms.get(roomId);
@@ -69,7 +68,6 @@ export class RoomRegistry {
         room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
         this.playerIdToRoom.set(playerId, roomId);
       }
-
     } catch (error) {
       console.error(`[RoomRegistry] failed to join room ${roomId}`);
       this.playerIdToSendFn.get(playerId)!({ type: 'error', message: 'Failed to join room' });
@@ -105,7 +103,8 @@ export class RoomRegistry {
   }
 
   public listRooms(): RoomInfo[] {
-    return Array.from(this.rooms.values()).filter(room => room.status === 'waiting').map(room => room.roomInfo);
+    return Array.from(this.rooms.values())
+      .filter((room) => room.status === 'waiting')
+      .map((room) => room.roomInfo);
   }
-
 }
