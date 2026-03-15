@@ -20,20 +20,22 @@ export type EngineConfig = {
  */
 export class GameEngine {
 
+  private seed: number;
   private state: GameState;
 
   private onLinesCleared: ((lines: number) => void) | undefined;
 
   constructor(config?: EngineConfig) {
+    this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
+
     if (!config) {
-      this.state = createGameState();
+      this.state = createGameState(this.seed);
       this.onLinesCleared = undefined;
     } else {
-      this.state = config.initialGameState ?? createGameState(config.seed);
+      this.state = config.initialGameState ?? createGameState(this.seed);
       this.onLinesCleared = config.onLinesCleared ?? (() => { });
     }
   }
-
 
   getState(): GameState {
     return this.state;
@@ -97,7 +99,6 @@ export class GameEngine {
     }
 
     if (canMoveDown(this.state.board, this.state.activePiece)) {
-      console.log('piece can move down, resetting to not floored')
       this.state.activePiece.isFloored = false;
     }
 
@@ -191,5 +192,9 @@ export class GameEngine {
         break;
     }
 
+  }
+
+  addGarbage(n: number) {
+    // this.state.pending
   }
 }

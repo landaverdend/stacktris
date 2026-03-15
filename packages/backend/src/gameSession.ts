@@ -5,7 +5,7 @@ import { PlayerGame } from './playerGame.js';
 export class GameSession {
 
 
-  private players: Map<string, PlayerSlot> = new Map();
+  private players: Record<string, PlayerSlot> = {}
   private playerGames: Record<string, PlayerGame> = {};
 
   private running = false;
@@ -14,7 +14,7 @@ export class GameSession {
 
   constructor(players: PlayerSlot[], onEnd: (winnerId: string) => void) {
     for (const p of players) {
-      this.players.set(p.playerId, p);
+      this.players[p.playerId] = p;
     }
 
     this.start();
@@ -35,7 +35,7 @@ export class GameSession {
     this.seed = Math.floor(Math.random() * 2 ** 32);
 
     // Create PlayerGames AFTER seed is finalized so server and client share the same seed
-    for (const [playerId] of this.players.entries()) {
+    for (const playerId of Object.keys(this.players)) {
       this.playerGames[playerId] = new PlayerGame(this.seed);
     }
 
@@ -53,7 +53,7 @@ export class GameSession {
   }
 
   private broadcastToAll(msg: ServerMsg): void {
-    for (const [_, player] of this.players.entries()) {
+    for (const player of Object.values(this.players)) {
       player.sendFn(msg);
     }
   }

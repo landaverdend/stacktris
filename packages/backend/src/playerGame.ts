@@ -14,7 +14,7 @@ export class PlayerGame {
   constructor(seed: number) {
     this.gameEngine = new GameEngine({
       seed, onLinesCleared: (lines) => {
-        console.log(`[PlayerGame] lines cleared ${lines}`)
+
       }
     })
   }

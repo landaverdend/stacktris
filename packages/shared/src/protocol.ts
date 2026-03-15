@@ -69,5 +69,7 @@ export type ServerMsg =
   // Game Ops
   | { type: 'game_start'; seed: number; }
   | { type: 'game_snapshot'; snapshot: GameSnapshot }
+  | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
+
 
   | { type: 'error'; message: string };

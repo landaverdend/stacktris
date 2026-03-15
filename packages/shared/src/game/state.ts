@@ -22,14 +22,15 @@ export interface GameState {
   lines: number;
   // level: number;
   // combo: number;
+  pendingGarbage: PendingGarbage[];
 
   isGameOver: boolean;
 }
 
 
-export function createGameState(seed?: number): GameState {
+export function createGameState(seed: number): GameState {
 
-  const bag = new SeededPieceBag(seed ?? Math.floor(Math.random() * 2 ** 32));
+  const bag = new SeededPieceBag(seed);
   const board = emptyBoard();
   const activePiece = spawnPiece(board, bag.next());
 
@@ -47,14 +48,21 @@ export function createGameState(seed?: number): GameState {
 
 
     lines: 0,
-
-
+    pendingGarbage: [],
 
     isGameOver: false,
   }
 }
 
 
+/**
+ *  
+ */
+export type PendingGarbage = {
+  lines: number;
+  triggerFrame: number;
+  gap: number;
+}
 
 // ── 7-bag RNG (Mulberry32 PRNG) ───────────────────────────────────────────────
 function mulberry32(seed: number): () => number {

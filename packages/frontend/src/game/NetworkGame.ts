@@ -1,6 +1,5 @@
 import {
   GameEngine,
-  GameSnapshot,
   InputBuffer,
   ServerMsg,
 } from '@stacktris/shared';
@@ -10,7 +9,6 @@ import { Canvases, renderGameState } from '../render';
 
 
 export const TICK_MS = 16; // ~60
-
 
 export class NetworkGame {
 
