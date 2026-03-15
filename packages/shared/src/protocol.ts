@@ -41,7 +41,7 @@ export type ClientMsg =
   | { type: 'ready_update'; ready: boolean }
 
   // Game Ops 
-  | { type: 'game_action'; buffer: InputBuffer; };
+  | { type: 'game_action'; buffer: InputBuffer; frame: number };
 
 
 export interface PlayerInfo {

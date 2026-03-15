@@ -64,7 +64,7 @@ export class NetworkGame {
 
           if (this.frameCount % 180 === 0) {
             console.log('NetworkGame flush replay buffer');
-            this.ws.send({ type: 'game_action', buffer: this.inputBuffer });
+            this.ws.send({ type: 'game_action', buffer: this.inputBuffer, frame: this.frameCount });
             this.inputBuffer = [];
           }
         }
