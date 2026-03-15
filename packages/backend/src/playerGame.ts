@@ -13,9 +13,7 @@ export class PlayerGame {
 
   constructor(seed: number) {
     this.gameEngine = new GameEngine({
-      seed, onLinesCleared: (lines) => {
-
-      }
+      seed
     })
   }
 

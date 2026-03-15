@@ -26,11 +26,7 @@ export class LocalGame {
   private simTime = 0;
 
   constructor() {
-    this.gameEngine = new GameEngine({
-      onLinesCleared: (lines: number) => {
-        console.log('lines cleared ' + lines);
-      }
-    });
+    this.gameEngine = new GameEngine();
 
     this.inputHandler = new InputHandler(action => {
       this.gameEngine.handleInput(action);

@@ -23,7 +23,8 @@ export class GameEngine {
   private seed: number;
   private state: GameState;
 
-  private onLinesCleared: ((lines: number) => void) | undefined;
+
+  private tickCount = 0;
   private garbageRng: () => number;
 
   constructor(config?: EngineConfig) {
@@ -32,10 +33,8 @@ export class GameEngine {
 
     if (!config) {
       this.state = createGameState(this.seed);
-      this.onLinesCleared = undefined;
     } else {
       this.state = config.initialGameState ?? createGameState(this.seed);
-      this.onLinesCleared = config.onLinesCleared ?? (() => { });
     }
   }
 
@@ -49,6 +48,8 @@ export class GameEngine {
    */
   tick(): void {
     if (this.state.isGameOver) return;
+
+    this.tickCount++;
 
     if (this.state.activePiece.isFloored) {
       this.handleLockDelayMode();
@@ -128,7 +129,6 @@ export class GameEngine {
     const linesCleared = clearLines(this.state.board);
     if (linesCleared > 0) {
       this.state.lines += linesCleared;
-      this.onLinesCleared?.(linesCleared);
     }
 
     // // Flush pending garbage onto the board
@@ -201,8 +201,8 @@ export class GameEngine {
 
   }
 
-  addGarbage(n: number): void {
+  addGarbage(n: number, delayTicks: number): void {
     const gap = Math.floor(this.garbageRng() * COLS);
-    this.state.pendingGarbage.push({ lines: n, triggerFrame: 0, gap });
+    this.state.pendingGarbage.push({ lines: n, triggerFrame: this.tickCount + delayTicks, gap });
   }
 }
