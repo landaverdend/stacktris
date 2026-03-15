@@ -1,5 +1,5 @@
 import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus } from "@stacktris/shared";
-import { GameSession } from "./game.js";
+import { GameSession } from "./gameSession.js";
 import { PlayerSlot, SendFn } from "./types.js";
 
 // Valid state transitions for a room.

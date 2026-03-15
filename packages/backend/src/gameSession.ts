@@ -1,12 +1,12 @@
 import { ClientMsg, ServerMsg } from "@stacktris/shared";
 import { PlayerSlot } from "./types.js";
-import { PlayerGameState } from "./playerGameState.js";
+import { PlayerGame } from "./playerGame.js";
 
 
 export class GameSession {
 
   private players: Map<string, PlayerSlot> = new Map();
-  private playerGameStates: Record<string, PlayerGameState> = {};
+  private playerGameStates: Record<string, PlayerGame> = {};
 
   private running = false;
   private tickTimeout: NodeJS.Timeout | null = null;
@@ -17,14 +17,12 @@ export class GameSession {
   constructor(players: PlayerSlot[], onEnd: (winnerId: string) => void) {
     for (const p of players) {
       this.players.set(p.playerId, p);
-      this.playerGameStates[p.playerId] = new PlayerGameState(this.seed);
+      this.playerGameStates[p.playerId] = new PlayerGame(this.seed);
     }
 
     this.onEnd = onEnd;
     this.start();
   }
-
-
 
 
   public onMessage(playerId: string, msg: ClientMsg): void {
@@ -44,7 +42,7 @@ export class GameSession {
 
     this.running = true;
 
-    // send initial snapshots to all players
+    // send initial state snapshots to all players
     for (const ps of Object.values(this.playerGameStates)) {
       this.broadcastToAll({ type: 'game_snapshot', snapshot: ps.snapshot });
     }

@@ -28,10 +28,10 @@ export interface OpponentSnapshot {
 
 // ── Client → Server ───────────────────────────────────────────────────────────
 
-export interface InputBuffer {
+export type InputBuffer = {
   action: InputAction;
   frame: number;
-}
+}[];
 
 export type ClientMsg =
   // Room Operations
