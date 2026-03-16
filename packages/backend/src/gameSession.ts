@@ -46,8 +46,9 @@ export class GameSession {
     this.running = true;
 
     // send initial state snapshots to all players
-    for (const ps of Object.values(this.playerGames)) {
-      this.broadcastToAll({ type: 'game_snapshot', snapshot: ps.snapshot });
+    for (const [playerId, pg] of Object.entries(this.playerGames)) {
+      this.players[playerId].sendFn({ type: 'game_snapshot', snapshot: pg.snapshot });
+      this.broadcastBoardUpdate(playerId, pg.snapshot.board);
     }
   }
 

@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { PendingGarbage } from "@stacktris/shared";
+import { Board, PendingGarbage } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
 
@@ -14,6 +14,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const gameSession = useRef<NetworkGame | null>(null);
   const unsubGarbage = useRef<(() => void) | null>(null);
   const [pendingGarbage, setPendingGarbage] = useState<PendingGarbage[]>([]);
+  const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
 
   useEffect(() => {
     const handleGameStart = (msg: { type: 'game_start'; seed: number }) => {
@@ -25,10 +26,16 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
     };
 
+    const handleOpponentBoardUpdate = (msg: { type: 'opponent_board_update'; playerId: string; board: Board }) => {
+      setOpponentBoards(prev => ({ ...prev, [msg.playerId]: msg.board }));
+    };
+
     ws.on('game_start', handleGameStart);
+    ws.on('opponent_board_update', handleOpponentBoardUpdate);
 
     return () => {
       ws.off('game_start', handleGameStart);
+      ws.off('opponent_board_update', handleOpponentBoardUpdate);
       unsubGarbage.current?.();
       gameSession.current?.stop();
     };
@@ -36,5 +43,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbage, getTickCount };
+  return { pendingGarbage, getTickCount, opponentBoards };
 }

@@ -8,6 +8,7 @@ import { useMultiplayerGameSession } from '../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../render/queue';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../render/board';
 import { GarbageMeter } from '../components/GarbageMeter';
+import { OpponentBoard } from '../components/OpponentBoard';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -19,7 +20,7 @@ export function MultiplayerScreen() {
 
   const { status } = roomState;
 
-  const { pendingGarbage, getTickCount } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
+  const { pendingGarbage, getTickCount, opponentBoards } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
@@ -57,8 +58,14 @@ export function MultiplayerScreen() {
         </div>
       </div>
 
-      {/* ── Right panel — MissionStaging or opponent mini board ── */}
-      {(status === 'waiting' || status === 'countdown') && <PlayerLobby />}
+      {/* ── Right panel — lobby or opponent boards ── */}
+      {status === 'playing'
+        ? <div className="flex flex-col gap-4">
+            {Object.entries(opponentBoards).map(([id, board]) => (
+              <OpponentBoard key={id} board={board} />
+            ))}
+          </div>
+        : <PlayerLobby />}
     </div>
   );
 }

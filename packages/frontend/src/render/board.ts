@@ -24,6 +24,7 @@ const GHOST_ALPHA = 0.25;
 
 export const CANVAS_WIDTH = COLS * CELL_SIZE;
 export const CANVAS_HEIGHT = ROWS * CELL_SIZE;
+export const OPPONENT_CELL_SIZE = 14;
 
 export function renderBoard(
   ctx: CanvasRenderingContext2D,
@@ -31,8 +32,11 @@ export function renderBoard(
   activePiece: ActivePiece | null,
   dimmed = false,
   pieceAlpha = 1,
+  cellSize = CELL_SIZE,
 ): void {
-  ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  const w = COLS * cellSize;
+  const h = ROWS * cellSize;
+  ctx.clearRect(0, 0, w, h);
 
   if (dimmed) ctx.globalAlpha = 0.4;
 
@@ -41,7 +45,7 @@ export function renderBoard(
     for (let col = 0; col < COLS; col++) {
       const v = board[row]?.[col] ?? 0;
       ctx.fillStyle = v === 0 ? EMPTY_COLOR : COLORS[v];
-      ctx.fillRect(col * CELL_SIZE + GAP, row * CELL_SIZE + GAP, CELL_SIZE - GAP * 2, CELL_SIZE - GAP * 2);
+      ctx.fillRect(col * cellSize + GAP, row * cellSize + GAP, cellSize - GAP * 2, cellSize - GAP * 2);
     }
   }
 
@@ -59,7 +63,7 @@ export function renderBoard(
         const r = visRow + drop + dr;
         const c = activePiece.col + dc;
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
-        ctx.fillRect(c * CELL_SIZE + GAP, r * CELL_SIZE + GAP, CELL_SIZE - GAP * 2, CELL_SIZE - GAP * 2);
+        ctx.fillRect(c * cellSize + GAP, r * cellSize + GAP, cellSize - GAP * 2, cellSize - GAP * 2);
       }
       ctx.globalAlpha = dimmed ? 0.4 : 1;
     }
@@ -71,7 +75,7 @@ export function renderBoard(
       const r = visRow + dr;
       const c = activePiece.col + dc;
       if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
-      ctx.fillRect(c * CELL_SIZE + GAP, r * CELL_SIZE + GAP, CELL_SIZE - GAP * 2, CELL_SIZE - GAP * 2);
+      ctx.fillRect(c * cellSize + GAP, r * cellSize + GAP, cellSize - GAP * 2, cellSize - GAP * 2);
     }
   }
 
