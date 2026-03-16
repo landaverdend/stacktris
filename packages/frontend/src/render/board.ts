@@ -1,6 +1,6 @@
 import { ActivePiece } from '@stacktris/shared';
 
-const CELL_SIZE = 28;
+export const CELL_SIZE = 28;
 const GAP = 2;
 const COLS = 10;
 const ROWS = 20;

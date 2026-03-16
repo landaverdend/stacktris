@@ -1,6 +1,6 @@
 import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
-import { createGameState, GameState, mulberry32 } from "./state.js";
+import { createGameState, GameState, mulberry32, PendingGarbage } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
 
 
@@ -25,6 +25,10 @@ export type EngineConfig = {
   onAttack?: (lines: number) => void;
 }
 
+type EngineEventMap = {
+  pendingGarbage: PendingGarbage[];
+};
+
 /**
  * Wrapper for interacting with game state. Caller handles frames and whatnot
  */
@@ -37,6 +41,22 @@ export class GameEngine {
   private tickCount = 0;
   private garbageRng: () => number;
   private onAttack: ((lines: number) => void) | undefined;
+  private subscribers = new Map<keyof EngineEventMap, Set<(val: any) => void>>();
+
+  subscribe<K extends keyof EngineEventMap>(event: K, fn: (val: EngineEventMap[K]) => void): () => void {
+    if (!this.subscribers.has(event)) this.subscribers.set(event, new Set());
+    this.subscribers.get(event)!.add(fn);
+    return () => this.subscribers.get(event)?.delete(fn);
+  }
+
+  private emit<K extends keyof EngineEventMap>(event: K, val: EngineEventMap[K]): void {
+    this.subscribers.get(event)?.forEach(fn => fn(val));
+  }
+
+  private setPendingGarbage(val: PendingGarbage[]): void {
+    this.state.pendingGarbage = val;
+    this.emit('pendingGarbage', val);
+  }
 
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
@@ -127,7 +147,8 @@ export class GameEngine {
    */
   handlePendingGarbage() {
     const ready = this.state.pendingGarbage.filter(g => this.tickCount >= g.triggerFrame);
-    this.state.pendingGarbage = this.state.pendingGarbage.filter(g => this.tickCount < g.triggerFrame);
+    if (ready.length === 0) return;
+    this.setPendingGarbage(this.state.pendingGarbage.filter(g => this.tickCount < g.triggerFrame));
     for (const g of ready) {
       applyGarbageLines(this.state.board, g.lines, g.gap);
     }
@@ -232,21 +253,22 @@ export class GameEngine {
 
   addGarbage(n: number, delayTicks: number): void {
     const gap = Math.floor(this.garbageRng() * COLS);
-    this.state.pendingGarbage.push({ lines: n, triggerFrame: this.tickCount + delayTicks, gap });
+    this.setPendingGarbage([...this.state.pendingGarbage, { lines: n, triggerFrame: this.tickCount + delayTicks, gap }]);
   }
 
   clearPendingGarbage(n: number): number {
-    while (n > 0 && this.state.pendingGarbage.length > 0) {
-      const first = this.state.pendingGarbage[0];
+    const queue = [...this.state.pendingGarbage];
+    while (n > 0 && queue.length > 0) {
+      const first = queue[0];
       if (first.lines <= n) {
         n -= first.lines;
-        this.state.pendingGarbage.shift();
+        queue.shift();
       } else {
-        first.lines -= n;
+        queue[0] = { ...first, lines: first.lines - n };
         n = 0;
       }
     }
-
+    this.setPendingGarbage(queue);
     return n; // leftover lines not cancelled = net attack
   }
 

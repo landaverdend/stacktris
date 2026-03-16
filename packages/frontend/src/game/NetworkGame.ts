@@ -1,6 +1,7 @@
 import {
   GameEngine,
   InputBuffer,
+  PendingGarbage,
   ServerMsg,
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
@@ -45,6 +46,10 @@ export class NetworkGame {
 
   get state() {
     return this.gameEngine.getState();
+  }
+
+  subscribeGarbage(fn: (val: PendingGarbage[]) => void): () => void {
+    return this.gameEngine.subscribe('pendingGarbage', fn);
   }
 
   start(canvases: Canvases): void {

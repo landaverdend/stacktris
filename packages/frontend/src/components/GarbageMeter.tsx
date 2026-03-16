@@ -1,19 +1,18 @@
 import { useEffect, useRef } from 'react';
-import { CANVAS_HEIGHT } from '../render/board';
+import { CANVAS_HEIGHT, CELL_SIZE } from '../render/board';
+import { PendingGarbage } from '@stacktris/shared';
 
-const METER_WIDTH = 6;
-const MAX_ROWS = 20;
-// NERV threat palette: amber → orange → alert red
-const COLOR_HIGH = '#cc2200';
-const COLOR_MID = '#f97316';
-const COLOR_LOW = '#f7931a';
-const BG_COLOR = '#0a0a0a';
+const ROWS = 20;
+const GAP = 2;
+const GARBAGE_COLOR = '#888888';
+const EMPTY_COLOR = '#111111';
+const PIT_COLOR = '#050505';
 
 interface Props {
-  pendingGarbage: number;
+  garbageStack: PendingGarbage[];
 }
 
-export function GarbageMeter({ pendingGarbage }: Props) {
+export function GarbageMeter({ garbageStack }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -22,31 +21,28 @@ export function GarbageMeter({ pendingGarbage }: Props) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, METER_WIDTH, CANVAS_HEIGHT);
-    ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(0, 0, METER_WIDTH, CANVAS_HEIGHT);
+    ctx.fillStyle = PIT_COLOR;
+    ctx.fillRect(0, 0, CELL_SIZE, CANVAS_HEIGHT);
 
-    if (pendingGarbage <= 0) return;
+    const totalLines = Math.min(
+      garbageStack.reduce((acc, g) => acc + g.lines, 0),
+      ROWS
+    );
+    const filledFrom = ROWS - totalLines; // rows [filledFrom..19] are garbage
 
-    const clamped = Math.min(pendingGarbage, MAX_ROWS);
-    const fillHeight = (clamped / MAX_ROWS) * CANVAS_HEIGHT;
-    const y = CANVAS_HEIGHT - fillHeight;
-
-    ctx.fillStyle =
-      clamped >= 10 ? COLOR_HIGH :
-      clamped >= 5  ? COLOR_MID  :
-                      COLOR_LOW;
-
-    ctx.fillRect(0, y, METER_WIDTH, fillHeight);
-  }, [pendingGarbage]);
+    for (let row = 0; row < ROWS; row++) {
+      ctx.fillStyle = row >= filledFrom ? GARBAGE_COLOR : EMPTY_COLOR;
+      ctx.fillRect(GAP, row * CELL_SIZE + GAP, CELL_SIZE - GAP * 2, CELL_SIZE - GAP * 2);
+    }
+  }, [garbageStack]);
 
   return (
     <canvas
       ref={canvasRef}
-      width={METER_WIDTH}
+      width={CELL_SIZE}
       height={CANVAS_HEIGHT}
-      style={{ width: METER_WIDTH, height: CANVAS_HEIGHT }}
-      className="block"
+      style={{ width: CELL_SIZE, height: CANVAS_HEIGHT }}
+      className="block border border-border-hi"
     />
   );
 }
