@@ -36,7 +36,9 @@ export class GameSession {
 
     // Create PlayerGames AFTER seed is finalized so server and client share the same seed
     for (const playerId of Object.keys(this.players)) {
-      this.playerGames[playerId] = new PlayerGame(this.seed);
+      this.playerGames[playerId] = new PlayerGame(this.seed, (lines, triggerFrame) => {
+        this.routeGarbage(playerId, lines, triggerFrame);
+      });
     }
 
     this.broadcastToAll({ type: 'game_start', seed: this.seed });
@@ -50,6 +52,14 @@ export class GameSession {
 
   public destroy(): void {
     this.running = false;
+  }
+
+  private routeGarbage(attackerId: string, lines: number, triggerFrame: number): void {
+    for (const [id, game] of Object.entries(this.playerGames)) {
+      if (id === attackerId) continue;
+      game.addGarbage(lines);
+      this.players[id].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
+    }
   }
 
   private broadcastToAll(msg: ServerMsg): void {

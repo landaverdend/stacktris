@@ -37,6 +37,10 @@ export class NetworkGame {
       // this.gameEngine.setState(snapshot);
       console.log('NetworkGame game snapshot', msg);
     })
+
+    this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number }) => {
+      this.gameEngine.addGarbage(msg.lines, msg.triggerFrame);
+    })
   }
 
   get state() {

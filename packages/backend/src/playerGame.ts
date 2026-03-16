@@ -1,6 +1,7 @@
 import {
   GameEngine,
   GameSnapshot,
+  GARBAGE_DELAY_FRAMES,
   InputBuffer,
 } from "@stacktris/shared";
 
@@ -11,10 +12,15 @@ export class PlayerGame {
 
   private frameCount = 0;
 
-  constructor(seed: number) {
+  constructor(seed: number, onAttack: (lines: number, triggerFrame: number) => void) {
     this.gameEngine = new GameEngine({
-      seed
-    })
+      seed,
+      onAttack: (lines) => onAttack(lines, this.frameCount + GARBAGE_DELAY_FRAMES),
+    });
+  }
+
+  addGarbage(lines: number): void {
+    this.gameEngine.addGarbage(lines, GARBAGE_DELAY_FRAMES);
   }
 
   get snapshot(): GameSnapshot {
