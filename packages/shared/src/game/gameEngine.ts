@@ -9,6 +9,14 @@ export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 
 export const GARBAGE_DELAY_FRAMES = 60 * 15; // 15 seconds of delay
 
+// Lines cleared → garbage lines sent to opponent. Singles send nothing.
+export const GARBAGE_TABLE: Record<number, number> = {
+  1: 0,
+  2: 1,
+  3: 2,
+  4: 4,
+};
+
 export type EngineConfig = {
   seed?: number;
   initialGameState?: GameState;
@@ -150,7 +158,8 @@ export class GameEngine {
       this.state.lines += linesCleared;
 
 
-      const netAttack = this.clearPendingGarbage(linesCleared);
+      const attack = GARBAGE_TABLE[linesCleared] ?? 0;
+      const netAttack = this.clearPendingGarbage(attack);
       if (netAttack > 0) {
         this.onAttack?.(netAttack);
       }
