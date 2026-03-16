@@ -90,18 +90,18 @@ describe('garbage cancellation on line clear', () => {
   it('line clears cancel pending garbage from the front of the queue', () => {
     const engine = new GameEngine({ seed: 42 });
     engine.addGarbage(2, GARBAGE_DELAY_FRAMES);
-    fillBottomRows(engine, 2);
+    fillBottomRows(engine, 3);
     engine.handleInput('hard_drop');
-    // 2 lines cleared, 2 lines pending → queue fully cancelled
+    // 3 lines cleared → 2 attack, 2 pending → queue fully cancelled
     expect(engine.getState().pendingGarbage.length).toBe(0);
   });
 
   it('partial cancellation: clears fewer lines than pending', () => {
     const engine = new GameEngine({ seed: 42 });
     engine.addGarbage(4, GARBAGE_DELAY_FRAMES);
-    fillBottomRows(engine, 1);
+    fillBottomRows(engine, 2);
     engine.handleInput('hard_drop');
-    // 1 line cleared, 4 pending → 3 remain
+    // 2 lines cleared → 1 attack, 4 pending → 3 remain
     expect(engine.getState().pendingGarbage.length).toBe(1);
     expect(engine.getState().pendingGarbage[0].lines).toBe(3);
   });
@@ -110,9 +110,9 @@ describe('garbage cancellation on line clear', () => {
     const engine = new GameEngine({ seed: 42 });
     engine.addGarbage(1, GARBAGE_DELAY_FRAMES);
     engine.addGarbage(2, GARBAGE_DELAY_FRAMES);
-    fillBottomRows(engine, 2);
+    fillBottomRows(engine, 3);
     engine.handleInput('hard_drop');
-    // 2 cleared: removes first entry (1) and takes 1 from second → 1 remains
+    // 3 lines cleared → 2 attack: removes first entry (1) and takes 1 from second → 1 remains
     expect(engine.getState().pendingGarbage.length).toBe(1);
     expect(engine.getState().pendingGarbage[0].lines).toBe(1);
   });
@@ -132,7 +132,7 @@ describe('onAttack callback', () => {
   it('fires with full line count when queue is empty', () => {
     const onAttack = vi.fn();
     const engine = new GameEngine({ seed: 42, onAttack });
-    fillBottomRows(engine, 2);
+    fillBottomRows(engine, 3);
     engine.handleInput('hard_drop');
     expect(onAttack).toHaveBeenCalledWith(2);
   });
