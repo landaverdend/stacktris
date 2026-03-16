@@ -2,6 +2,7 @@ import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS } from "./bo
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState, mulberry32, PendingGarbage } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
+import { Emitter } from "./emitter.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
@@ -20,12 +21,10 @@ export const GARBAGE_TABLE: Record<number, number> = {
 export type EngineConfig = {
   seed?: number;
   initialGameState?: GameState;
-
-  // Callback for when an attack is made. Pass in the number of lines being sent out (for network matches or whatever)
-  onAttack?: (lines: number) => void;
 }
 
-type EngineEventMap = {
+export type EngineEventMap = {
+  attack: number;
   pendingGarbage: PendingGarbage[];
 };
 
@@ -36,32 +35,15 @@ export class GameEngine {
 
   private seed: number;
   private state: GameState;
-
-
   private tickCount = 0;
   private garbageRng: () => number;
-  private onAttack: ((lines: number) => void) | undefined;
-  private subscribers = new Map<keyof EngineEventMap, Set<(val: any) => void>>();
+  private emitter = new Emitter<EngineEventMap>();
 
-  subscribe<K extends keyof EngineEventMap>(event: K, fn: (val: EngineEventMap[K]) => void): () => void {
-    if (!this.subscribers.has(event)) this.subscribers.set(event, new Set());
-    this.subscribers.get(event)!.add(fn);
-    return () => this.subscribers.get(event)?.delete(fn);
-  }
-
-  private emit<K extends keyof EngineEventMap>(event: K, val: EngineEventMap[K]): void {
-    this.subscribers.get(event)?.forEach(fn => fn(val));
-  }
-
-  private setPendingGarbage(val: PendingGarbage[]): void {
-    this.state.pendingGarbage = val;
-    this.emit('pendingGarbage', val);
-  }
+  subscribe = this.emitter.subscribe.bind(this.emitter);
 
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
     this.garbageRng = mulberry32(this.seed);
-    this.onAttack = config?.onAttack;
 
     if (!config) {
       this.state = createGameState(this.seed);
@@ -76,7 +58,7 @@ export class GameEngine {
 
   /**
    * Tick happens on every frame. Smallest atomic unit of time / game logic.
-   * @returns 
+   * @returns
    */
   tick(): void {
     if (this.state.isGameOver) return;
@@ -101,7 +83,7 @@ export class GameEngine {
 
     // Check if the accumulator has reached 1, if so, move piece down if possible
     const aboveThreshold = Math.floor(this.state.gravityAccumulator)
-    this.state.gravityAccumulator -= aboveThreshold; // Keep leftover  
+    this.state.gravityAccumulator -= aboveThreshold; // Keep leftover
 
     if (aboveThreshold > 0) {
       if (canMoveDown(this.state.board, this.state.activePiece)) {
@@ -168,7 +150,7 @@ export class GameEngine {
    * - Lines get cleared from the board.
    * - New piece is spawned.
    * - Hold boolean is reset.
-   * @returns The number of lines cleared 
+   * @returns The number of lines cleared
    */
   handleLock() {
     lockPiece(this.state.board, this.state.activePiece);
@@ -178,11 +160,10 @@ export class GameEngine {
     if (linesCleared > 0) {
       this.state.lines += linesCleared;
 
-
       const attack = GARBAGE_TABLE[linesCleared] ?? 0;
       const netAttack = this.clearPendingGarbage(attack);
       if (netAttack > 0) {
-        this.onAttack?.(netAttack);
+        this.emitter.emit('attack', netAttack);
       }
     }
 
@@ -270,6 +251,11 @@ export class GameEngine {
     }
     this.setPendingGarbage(queue);
     return n; // leftover lines not cancelled = net attack
+  }
+
+  private setPendingGarbage(val: PendingGarbage[]): void {
+    this.state.pendingGarbage = val;
+    this.emitter.emit('pendingGarbage', val);
   }
 
 }

@@ -131,7 +131,8 @@ describe('garbage cancellation on line clear', () => {
 describe('onAttack callback', () => {
   it('fires with full line count when queue is empty', () => {
     const onAttack = vi.fn();
-    const engine = new GameEngine({ seed: 42, onAttack });
+    const engine = new GameEngine({ seed: 42 });
+    engine.subscribe('attack', onAttack);
     fillBottomRows(engine, 3);
     engine.handleInput('hard_drop');
     expect(onAttack).toHaveBeenCalledWith(2);
@@ -139,7 +140,8 @@ describe('onAttack callback', () => {
 
   it('does not fire when all cleared lines are absorbed by the queue', () => {
     const onAttack = vi.fn();
-    const engine = new GameEngine({ seed: 42, onAttack });
+    const engine = new GameEngine({ seed: 42 });
+    engine.subscribe('attack', onAttack);
     engine.addGarbage(4, GARBAGE_DELAY_FRAMES);
     fillBottomRows(engine, 2);
     engine.handleInput('hard_drop');
@@ -148,7 +150,8 @@ describe('onAttack callback', () => {
 
   it('fires with the remainder after partial cancellation', () => {
     const onAttack = vi.fn();
-    const engine = new GameEngine({ seed: 42, onAttack });
+    const engine = new GameEngine({ seed: 42 });
+    engine.subscribe('attack', onAttack);
     engine.addGarbage(1, GARBAGE_DELAY_FRAMES);
     fillBottomRows(engine, 4);
     engine.handleInput('hard_drop');
@@ -158,7 +161,8 @@ describe('onAttack callback', () => {
 
   it('does not fire when no lines are cleared', () => {
     const onAttack = vi.fn();
-    const engine = new GameEngine({ seed: 42, onAttack });
+    const engine = new GameEngine({ seed: 42 });
+    engine.subscribe('attack', onAttack);
     engine.handleInput('hard_drop');
     expect(onAttack).not.toHaveBeenCalled();
   });

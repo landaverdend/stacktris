@@ -170,7 +170,7 @@ function CountdownOverlay() {
       <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
         {countdownDisplay}
       </p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — MAGI SYNC COMPLETE</p>
+      <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — SYNC COMPLETE</p>
     </div>
   );
 }

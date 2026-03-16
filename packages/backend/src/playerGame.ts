@@ -13,10 +13,8 @@ export class PlayerGame {
   private frameCount = 0;
 
   constructor(seed: number, onAttack: (lines: number, triggerFrame: number) => void) {
-    this.gameEngine = new GameEngine({
-      seed,
-      onAttack: (lines) => onAttack(lines, this.frameCount + GARBAGE_DELAY_FRAMES),
-    });
+    this.gameEngine = new GameEngine({ seed });
+    this.gameEngine.subscribe('attack', (lines) => onAttack(lines, this.frameCount + GARBAGE_DELAY_FRAMES));
   }
 
   addGarbage(lines: number): void {
