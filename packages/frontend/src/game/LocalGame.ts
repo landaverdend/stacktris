@@ -32,6 +32,9 @@ export class LocalGame {
       this.gameEngine.handleInput(action);
     });
 
+    this.gameEngine.subscribe('gameOver', () => {
+      alert('Game Over')
+    })
 
   }
 

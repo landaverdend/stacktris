@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { useConnection } from '../ws/WSContext';
 import { useMultiplayerGameSession } from '../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../render/queue';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../render/board';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, OPPONENT_CELL_SIZE } from '../render/board';
 import { GarbageMeter } from '../components/GarbageMeter';
 import { OpponentBoard } from '../components/OpponentBoard';
 
@@ -60,7 +60,7 @@ export function MultiplayerScreen() {
 
       {/* ── Right panel — lobby or opponent boards ── */}
       {status === 'playing'
-        ? <div className="flex flex-col gap-4">
+        ? <div className="flex flex-wrap gap-4" style={{ maxWidth: 2 * 10 * OPPONENT_CELL_SIZE + 16 }}>
             {Object.entries(opponentBoards).map(([id, board]) => (
               <OpponentBoard key={id} board={board} />
             ))}

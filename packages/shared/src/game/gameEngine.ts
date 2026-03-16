@@ -1,8 +1,9 @@
-import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board } from "./board.js";
+import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState, mulberry32, PendingGarbage } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
+import { boardCells } from "./pieces.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
@@ -32,6 +33,7 @@ export type EngineEventMap = {
   attack: number;
   pendingGarbage: PendingGarbage[];
   pieceLocked: PieceLockedEvent;
+  gameOver: void;
 };
 
 /**
@@ -146,6 +148,14 @@ export class GameEngine {
   // Grab from the bag, spawn piece onto the board. Optional param to override the kind of piece to spawn (used for holds)
   spawnNewPiece(kind?: PieceKind) {
     const newPiece = spawnPiece(this.state.board, kind ?? this.state.bag.next());
+
+    // Block out: spawn position is already occupied
+    if (!isValid(this.state.board, newPiece)) {
+      this.state.isGameOver = true;
+      this.emitter.emit('gameOver', undefined);
+      return;
+    }
+
     this.state.activePiece = newPiece;
   }
 
@@ -173,6 +183,14 @@ export class GameEngine {
       }
     }
 
+
+    // Lock out: piece locked entirely in the invisible buffer zone
+    const cells = [...boardCells(this.state.activePiece)];
+    if (cells.every(([r]) => r < VISIBLE_ROW_START)) {
+      this.state.isGameOver = true;
+      this.emitter.emit('gameOver', undefined);
+      return;
+    }
 
     this.emitter.emit('pieceLocked', { board: this.state.board, linesCleared });
 

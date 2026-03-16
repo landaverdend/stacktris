@@ -23,7 +23,7 @@ class RoomStateMachine {
   }
 }
 
-export const MAX_PLAYERS = 2;
+export const MAX_PLAYERS = 4;
 
 export class Room {
   private id: string;
@@ -101,7 +101,7 @@ export class Room {
   }
 
   private checkAllReady() {
-    return this.playerCount >= 2 && Array.from(this.players.values()).every(p => p.ready);
+    return this.playerCount >= 2 && this.playerCount <= MAX_PLAYERS && Array.from(this.players.values()).every(p => p.ready);
   }
 
   private startCountdown() {
