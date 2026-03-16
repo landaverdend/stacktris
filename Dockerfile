@@ -1,5 +1,5 @@
 # ── Stage 1: Build all packages ───────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -17,9 +17,7 @@ COPY packages/backend ./packages/backend
 COPY packages/frontend ./packages/frontend
 
 # Build in dependency order: shared → frontend + backend
-RUN npm run build:shared
-RUN npm run build --workspace=packages/frontend
-RUN npm run build --workspace=packages/backend
+RUN npm run build
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM node:20-alpine
