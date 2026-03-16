@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { PendingGarbage } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
@@ -34,5 +34,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
     };
   }, [ws]);
 
-  return { pendingGarbage };
+  const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
+
+  return { pendingGarbage, getTickCount };
 }

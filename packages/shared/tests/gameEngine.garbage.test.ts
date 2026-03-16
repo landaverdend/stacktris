@@ -28,11 +28,10 @@ describe('addGarbage: queuing', () => {
     expect(engine.getState().pendingGarbage[0].lines).toBe(3);
   });
 
-  it('triggerFrame is tickCount + delayTicks at time of call', () => {
+  it('triggerFrame is sentFrame + GARBAGE_DELAY_FRAMES', () => {
     const engine = new GameEngine({ seed: 42 });
-    tickN(engine, 10);
     engine.addGarbage(2, 5);
-    expect(engine.getState().pendingGarbage[0].triggerFrame).toBe(15);
+    expect(engine.getState().pendingGarbage[0].triggerFrame).toBe(5 + GARBAGE_DELAY_FRAMES);
   });
 
   it('multiple addGarbage calls stack in order', () => {
@@ -49,16 +48,16 @@ describe('addGarbage: queuing', () => {
 describe('garbage timing', () => {
   it('does not apply before triggerFrame is reached', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(2, 10);
-    tickN(engine, 9);
+    engine.addGarbage(2, 0);
+    tickN(engine, GARBAGE_DELAY_FRAMES - 1);
     expect(engine.getState().pendingGarbage.length).toBe(1);
     expect(engine.getState().board[ROWS - 1].some(c => c === 8)).toBe(false);
   });
 
   it('applies on the tick that reaches triggerFrame', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(2, 10);
-    tickN(engine, 10);
+    engine.addGarbage(2, 0);
+    tickN(engine, GARBAGE_DELAY_FRAMES);
     expect(engine.getState().pendingGarbage.length).toBe(0);
     expect(engine.getState().board[ROWS - 1].some(c => c === 8)).toBe(true);
     expect(engine.getState().board[ROWS - 2].some(c => c === 8)).toBe(true);
@@ -66,17 +65,17 @@ describe('garbage timing', () => {
 
   it('applies the correct number of garbage rows', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(4, 5);
-    tickN(engine, 5);
+    engine.addGarbage(4, 0);
+    tickN(engine, GARBAGE_DELAY_FRAMES);
     const garbageRows = engine.getState().board.filter(row => row.some(c => c === 8));
     expect(garbageRows.length).toBe(4);
   });
 
   it('two entries with different delays apply independently', () => {
     const engine = new GameEngine({ seed: 42 });
+    engine.addGarbage(1, 0);
     engine.addGarbage(1, 5);
-    engine.addGarbage(1, 10);
-    tickN(engine, 5);
+    tickN(engine, GARBAGE_DELAY_FRAMES);
     expect(engine.getState().pendingGarbage.length).toBe(1); // second still pending
     expect(engine.getState().board[ROWS - 1].some(c => c === 8)).toBe(true);
     tickN(engine, 5);

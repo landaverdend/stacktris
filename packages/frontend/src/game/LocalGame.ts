@@ -31,6 +31,8 @@ export class LocalGame {
     this.inputHandler = new InputHandler(action => {
       this.gameEngine.handleInput(action);
     });
+
+
   }
 
   get state(): GameState {

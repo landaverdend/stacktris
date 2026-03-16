@@ -232,9 +232,9 @@ export class GameEngine {
 
   }
 
-  addGarbage(n: number, delayTicks: number): void {
+  addGarbage(n: number, triggerFrame: number): void {
     const gap = Math.floor(this.garbageRng() * COLS);
-    this.setPendingGarbage([...this.state.pendingGarbage, { lines: n, triggerFrame: this.tickCount + delayTicks, gap }]);
+    this.setPendingGarbage([...this.state.pendingGarbage, { lines: n, triggerFrame: triggerFrame + GARBAGE_DELAY_FRAMES, gap }]);
   }
 
   clearPendingGarbage(n: number): number {

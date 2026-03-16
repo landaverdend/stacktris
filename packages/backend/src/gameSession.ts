@@ -57,7 +57,7 @@ export class GameSession {
   private routeGarbage(attackerId: string, lines: number, triggerFrame: number): void {
     for (const [id, game] of Object.entries(this.playerGames)) {
       if (id === attackerId) continue;
-      game.addGarbage(lines);
+      game.addGarbage(lines, triggerFrame);
       this.players[id].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
     }
   }

@@ -48,6 +48,10 @@ export class NetworkGame {
     return this.gameEngine.getState();
   }
 
+  get currentFrame() {
+    return this.frameCount;
+  }
+
   subscribeGarbage(fn: (val: PendingGarbage[]) => void): () => void {
     return this.gameEngine.subscribe('pendingGarbage', fn);
   }

@@ -19,7 +19,7 @@ export function MultiplayerScreen() {
 
   const { status } = roomState;
 
-  const { pendingGarbage } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
+  const { pendingGarbage, getTickCount } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
@@ -33,7 +33,7 @@ export function MultiplayerScreen() {
         </div>
 
         <div className="flex items-end gap-1">
-          <GarbageMeter garbageStack={pendingGarbage} />
+          <GarbageMeter garbageStack={pendingGarbage} getCurrentTick={getTickCount} />
           <div className="flex flex-col gap-1.5">
             <div className="relative">
               <canvas
