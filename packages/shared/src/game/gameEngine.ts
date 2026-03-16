@@ -145,8 +145,16 @@ export class GameEngine {
     const linesCleared = clearLines(this.state.board);
     if (linesCleared > 0) {
       this.state.lines += linesCleared;
-      // Remove any pending garbage from the queue per number of lines cleared
-      
+
+
+      if (this.state.pendingGarbage.length > 0) {
+        console.log('clearing pending garbage');
+        this.clearPendingGarbage(linesCleared);
+        console.log(`pending garbage after ${JSON.stringify(this.state.pendingGarbage)}`);
+      } else {
+        // TODO: Forward garbage to other players if your queue is empty.
+      }
+
     }
 
 
@@ -218,4 +226,21 @@ export class GameEngine {
     const gap = Math.floor(this.garbageRng() * COLS);
     this.state.pendingGarbage.push({ lines: n, triggerFrame: this.tickCount + delayTicks, gap });
   }
+
+
+  clearPendingGarbage(n: number): void {
+
+    // Remove any pending garbage from the queue per number of lines cleared
+    while (n > 0 && this.state.pendingGarbage.length > 0) {
+      const first = this.state.pendingGarbage[0];
+      if (first.lines <= n) {
+        n -= first.lines;
+        this.state.pendingGarbage.shift();
+      } else {
+        first.lines -= n;
+        n = 0;
+      }
+    }
+  }
+
 }
