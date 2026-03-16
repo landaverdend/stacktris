@@ -70,6 +70,6 @@ export type ServerMsg =
   | { type: 'game_start'; seed: number; }
   | { type: 'game_snapshot'; snapshot: GameSnapshot }
   | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
-
+  | { type: 'opponent_board_update'; playerId: string; board: Board }
 
   | { type: 'error'; message: string };

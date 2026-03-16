@@ -6,3 +6,4 @@ TODO:
 - Add garbage meter effects when it's close to populating
 - Game Ending Logic
 - lightning HODL invoice room logic 
+- add opponent board snapshots

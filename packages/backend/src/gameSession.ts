@@ -1,4 +1,4 @@
-import { ClientMsg, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from './types.js';
 import { PlayerGame } from './playerGame.js';
 
@@ -36,9 +36,10 @@ export class GameSession {
 
     // Create PlayerGames AFTER seed is finalized so server and client share the same seed
     for (const playerId of Object.keys(this.players)) {
-      this.playerGames[playerId] = new PlayerGame(this.seed, (lines, triggerFrame) => {
-        this.routeGarbage(playerId, lines, triggerFrame);
-      });
+      const pg = new PlayerGame(this.seed);
+      pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
+      pg.subscribe('pieceLocked', ({ board }) => this.broadcastBoardUpdate(playerId, board));
+      this.playerGames[playerId] = pg;
     }
 
     this.broadcastToAll({ type: 'game_start', seed: this.seed });
@@ -59,6 +60,13 @@ export class GameSession {
       if (id === attackerId) continue;
       game.addGarbage(lines, triggerFrame);
       this.players[id].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
+    }
+  }
+
+  private broadcastBoardUpdate(senderId: string, board: Board): void {
+    for (const id of Object.keys(this.players)) {
+      if (id === senderId) continue;
+      this.players[id].sendFn({ type: 'opponent_board_update', playerId: senderId, board });
     }
   }
 

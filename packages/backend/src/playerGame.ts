@@ -8,12 +8,14 @@ import {
 export class PlayerGame {
 
   private gameEngine: GameEngine;
+  private _frameCount = 0;
+  get frameCount() { return this._frameCount; }
 
-  private frameCount = 0;
+  subscribe: GameEngine['subscribe'];
 
-  constructor(seed: number, onAttack: (lines: number, triggerFrame: number) => void) {
+  constructor(seed: number) {
     this.gameEngine = new GameEngine({ seed });
-    this.gameEngine.subscribe('attack', (lines) => onAttack(lines, this.frameCount));
+    this.subscribe = this.gameEngine.subscribe.bind(this.gameEngine);
   }
 
   addGarbage(lines: number, sentFrame: number): void {
@@ -36,17 +38,17 @@ export class PlayerGame {
     const sorted = [...batch].sort((a, b) => a.frame - b.frame);
 
     for (const input of sorted) {
-      while (this.frameCount < input.frame) {
+      while (this._frameCount < input.frame) {
         this.gameEngine.tick();
-        this.frameCount++;
+        this._frameCount++;
       }
       this.gameEngine.handleInput(input.action);
     }
 
     // Tick the rest of the window so gravity and lock delay fire even with no inputs
-    while (this.frameCount < upToFrame) {
+    while (this._frameCount < upToFrame) {
       this.gameEngine.tick();
-      this.frameCount++;
+      this._frameCount++;
     }
   }
 }

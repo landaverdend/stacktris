@@ -1,4 +1,4 @@
-import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS } from "./board.js";
+import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState, mulberry32, PendingGarbage } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
@@ -23,9 +23,15 @@ export type EngineConfig = {
   initialGameState?: GameState;
 }
 
+export type PieceLockedEvent = {
+  board: Board;
+  linesCleared: number;
+};
+
 export type EngineEventMap = {
   attack: number;
   pendingGarbage: PendingGarbage[];
+  pieceLocked: PieceLockedEvent;
 };
 
 /**
@@ -168,6 +174,8 @@ export class GameEngine {
     }
 
 
+    this.emitter.emit('pieceLocked', { board: this.state.board, linesCleared });
+
     this.spawnNewPiece();
     this.state.holdUsed = false;
   }
@@ -182,7 +190,6 @@ export class GameEngine {
       }
 
     }
-
 
     switch (input) {
       case 'move_left':
