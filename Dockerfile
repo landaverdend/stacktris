@@ -1,5 +1,5 @@
 # ── Stage 1: Build all packages ───────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/frontend/package.json ./packages/frontend/
 
-RUN npm ci
+RUN npm install
 
 # Copy source
 COPY packages/shared ./packages/shared
