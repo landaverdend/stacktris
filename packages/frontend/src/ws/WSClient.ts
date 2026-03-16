@@ -1,3 +1,4 @@
+import { decode, encode } from '@msgpack/msgpack';
 import type { ClientMsg, ServerMsg } from '@stacktris/shared';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -18,12 +19,13 @@ export class WSClient {
     if (this.socket) return;
     this.setStatus('connecting');
     this.socket = new WebSocket(this.url);
+    this.socket.binaryType = 'arraybuffer';
     this.socket.onopen = () => this.setStatus('connected');
     this.socket.onclose = () => { this.socket = null; this.setStatus('disconnected'); };
     this.socket.onerror = () => this.setStatus('error');
     this.socket.onmessage = (e: MessageEvent) => {
       try {
-        const msg = JSON.parse(e.data as string) as ServerMsg;
+        const msg = decode(new Uint8Array(e.data as ArrayBuffer)) as ServerMsg;
         this.handlers.get(msg.type)?.forEach(h => h(msg as any));
       } catch {
         console.error('[WSClient] failed to parse message:', e.data);
@@ -33,7 +35,7 @@ export class WSClient {
 
   send(msg: ClientMsg): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(msg));
+      this.socket.send(encode(msg));
     } else {
       console.warn('[WSClient] send called while not connected');
     }

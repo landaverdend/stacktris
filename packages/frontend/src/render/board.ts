@@ -59,6 +59,7 @@ export function renderBoard(
     if (drop > 0) {
       ctx.globalAlpha = dimmed ? 0.1 : GHOST_ALPHA;
       ctx.fillStyle = COLORS[pieceColorIndex(activePiece.kind)];
+
       for (const [dr, dc] of cells) {
         const r = visRow + drop + dr;
         const c = activePiece.col + dc;
@@ -83,8 +84,6 @@ export function renderBoard(
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-
 const PIECES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
 function pieceColorIndex(kind: string): number {
   return PIECES.indexOf(kind) + 1;
@@ -92,7 +91,6 @@ function pieceColorIndex(kind: string): number {
 
 /**
  * Returns the (dRow, dCol) offsets for a piece's cells at a given rotation.
- * Mirrors the SHAPES table in the Rust backend's piece.rs.
  */
 function pieceOffsets(p: ActivePiece): [number, number][] {
   const shapes: Record<string, [number, number][][]> = {

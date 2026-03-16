@@ -1,3 +1,4 @@
+import { decode, encode } from '@msgpack/msgpack';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage, Server } from 'http';
 import type { ClientMsg, ServerMsg } from '@stacktris/shared';
@@ -34,14 +35,14 @@ export class WSServer {
 
     const sendFn = (msg: ServerMsg) => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(msg));
+        ws.send(encode(msg));
       }
     }
 
     this.roomRegistry.onConnect(sock.playerId, sendFn);
 
     ws.on('message', (data) => {
-      const msg = JSON.parse(data.toString()) as ClientMsg;
+      const msg = decode(data as Buffer) as ClientMsg;
       // Route directly to the room registry
       this.roomRegistry.onMessage(sock.playerId, msg);
     });
