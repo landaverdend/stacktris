@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy workspace manifests for layer caching
-COPY package.json package-lock.json ./
+# Copy workspace manifests (no lockfile — let npm resolve native deps fresh for this platform)
+COPY package.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/frontend/package.json ./packages/frontend/
