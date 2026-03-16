@@ -1,45 +1,44 @@
-# ── Stage 1: Build frontend ───────────────────────────────────────────────────
-FROM node:20-alpine AS frontend-builder
+# ── Stage 1: Build all packages ───────────────────────────────────────────────
+FROM node:20-alpine AS builder
 
-WORKDIR /app/frontend
+WORKDIR /app
 
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy workspace manifests for layer caching
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/backend/package.json ./packages/backend/
+COPY packages/frontend/package.json ./packages/frontend/
+
 RUN npm ci
 
-COPY frontend/ ./
-RUN npm run build
+# Copy source
+COPY packages/shared ./packages/shared
+COPY packages/backend ./packages/backend
+COPY packages/frontend ./packages/frontend
 
-# ── Stage 2: Build Rust backend ───────────────────────────────────────────────
-FROM rust:1.85-slim AS backend-builder
+# Build in dependency order: shared → frontend + backend
+RUN npm run build:shared
+RUN npm run build --workspace=packages/frontend
+RUN npm run build --workspace=packages/backend
 
-WORKDIR /app
-
-# Cache dependency compilation separately from source changes
-COPY backend/Cargo.toml backend/Cargo.lock ./
-RUN mkdir src && echo 'fn main() {}' > src/main.rs
-RUN cargo build --release --bin stacktris
-RUN rm -rf src
-
-# Build the real source
-COPY backend/src ./src
-# Touch main.rs so cargo sees the source as changed
-RUN touch src/main.rs
-RUN cargo build --release --bin stacktris
-
-# ── Stage 3: Minimal runtime image ───────────────────────────────────────────
-FROM debian:bookworm-slim
+# ── Stage 2: Runtime ──────────────────────────────────────────────────────────
+FROM node:20-alpine
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Install only production dependencies
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/backend/package.json ./packages/backend/
+COPY packages/frontend/package.json ./packages/frontend/
 
-COPY --from=backend-builder /app/target/release/stacktris ./stacktris
-COPY --from=frontend-builder /app/frontend/dist ./dist
+RUN npm ci --omit=dev
 
-EXPOSE 3000
+# Copy built artifacts
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
+COPY --from=builder /app/packages/frontend/dist ./packages/frontend/dist
 
-ENV RUST_LOG=info
+EXPOSE 8080
 
-CMD ["./stacktris"]
+CMD ["node", "packages/backend/dist/index.js"]
