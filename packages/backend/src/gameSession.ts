@@ -1,18 +1,24 @@
-import { Board, ClientMsg, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, Emitter, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from './types.js';
 import { PlayerGame } from './playerGame.js';
 
-export class GameSession {
+type GameSessionEventMap = {
+  gameOver: string | null; // winnerId, or null for a draw
+};
 
+export class GameSession {
 
   private players: Record<string, PlayerSlot> = {}
   private playerGames: Record<string, PlayerGame> = {};
+  private alivePlayers: Set<string> = new Set();
+  private gameEnded = false;
 
-  private running = false;
+  private emitter = new Emitter<GameSessionEventMap>();
+  subscribe = this.emitter.subscribe.bind(this.emitter);
 
   private seed: number = Math.floor(Math.random() * 2 ** 32);
 
-  constructor(players: PlayerSlot[], onEnd: (winnerId: string) => void) {
+  constructor(players: PlayerSlot[]) {
     for (const p of players) {
       this.players[p.playerId] = p;
     }
@@ -35,15 +41,17 @@ export class GameSession {
     this.seed = Math.floor(Math.random() * 2 ** 32);
 
     // Create PlayerGames AFTER seed is finalized so server and client share the same seed
+    this.alivePlayers = new Set(Object.keys(this.players));
+
     for (const playerId of Object.keys(this.players)) {
       const pg = new PlayerGame(this.seed);
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
       pg.subscribe('pieceLocked', ({ board }) => this.broadcastBoardUpdate(playerId, board));
+      pg.subscribe('gameOver', () => this.handlePlayerOut(playerId));
       this.playerGames[playerId] = pg;
     }
 
     this.broadcastToAll({ type: 'game_start', seed: this.seed });
-    this.running = true;
 
     // send initial state snapshots to all players
     for (const [playerId, pg] of Object.entries(this.playerGames)) {
@@ -52,13 +60,27 @@ export class GameSession {
     }
   }
 
-  public destroy(): void {
-    this.running = false;
+  public destroy(): void {}
+
+  private handlePlayerOut(playerId: string): void {
+    if (this.gameEnded) return;
+    this.alivePlayers.delete(playerId);
+
+    if (this.alivePlayers.size === 1) {
+      this.gameEnded = true;
+      const winnerId = [...this.alivePlayers][0];
+      this.broadcastToAll({ type: 'game_over', winnerId });
+      this.emitter.emit('gameOver', winnerId);
+    } else if (this.alivePlayers.size === 0) {
+      this.gameEnded = true;
+      this.broadcastToAll({ type: 'game_over', winnerId: null });
+      this.emitter.emit('gameOver', null);
+    }
   }
 
   private routeGarbage(attackerId: string, lines: number, triggerFrame: number): void {
     for (const [id, game] of Object.entries(this.playerGames)) {
-      if (id === attackerId) continue;
+      if (id === attackerId || !this.alivePlayers.has(id)) continue;
       game.addGarbage(lines, triggerFrame);
       this.players[id].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
     }

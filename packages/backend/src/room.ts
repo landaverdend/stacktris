@@ -117,17 +117,15 @@ export class Room {
 
   private startGame() {
     this.fsm.transition('playing');
-    this.game = new GameSession(
-      Array.from(this.players.values()),
-      (winnerId) => this.onGameEnd(winnerId),
-    );
+    this.game = new GameSession(Array.from(this.players.values()));
+    this.game.subscribe('gameOver', (winnerId) => this.onGameEnd(winnerId));
     this.broadcastRoomStateUpdate();
   }
 
-  private onGameEnd(winnerId: string) {
+  private onGameEnd(winnerId: string | null) {
     this.fsm.transition('finished');
     this.game = null;
-    console.log(`[Room] game over in room ${this.id}, winner: ${winnerId}`);
+    console.log(`[Room] game over in room ${this.id}, winner: ${winnerId ?? 'draw'}`);
     this.broadcastRoomStateUpdate();
   }
 

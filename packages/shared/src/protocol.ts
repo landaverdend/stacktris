@@ -72,4 +72,5 @@ export type ServerMsg =
   | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
   | { type: 'opponent_board_update'; playerId: string; board: Board }
 
+  | { type: 'game_over'; winnerId: string | null }
   | { type: 'error'; message: string };

@@ -32,9 +32,11 @@ describe('Room', () => {
   it('reports isFull correctly', () => {
     const room = new Room('room-1', 1000);
     expect(room.isFull).toBe(false);
-    room.addPlayer('player-1', makeSend());
-    expect(room.isFull).toBe(false);
-    room.addPlayer('player-2', makeSend());
+    for (let i = 1; i < MAX_PLAYERS; i++) {
+      room.addPlayer(`player-${i}`, makeSend());
+      expect(room.isFull).toBe(false);
+    }
+    room.addPlayer(`player-${MAX_PLAYERS}`, makeSend());
     expect(room.isFull).toBe(true);
   });
 
