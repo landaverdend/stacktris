@@ -13,7 +13,8 @@ export type EngineConfig = {
   seed?: number;
   initialGameState?: GameState;
 
-  onLinesCleared?: (lines: number) => void;
+  // Callback for when an attack is made. Pass in the number of lines being sent out (for network matches or whatever)
+  onAttack?: (lines: number) => void;
 }
 
 /**
@@ -27,10 +28,12 @@ export class GameEngine {
 
   private tickCount = 0;
   private garbageRng: () => number;
+  private onAttack: ((lines: number) => void) | undefined;
 
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
     this.garbageRng = mulberry32(this.seed);
+    this.onAttack = config?.onAttack;
 
     if (!config) {
       this.state = createGameState(this.seed);
@@ -147,14 +150,10 @@ export class GameEngine {
       this.state.lines += linesCleared;
 
 
-      if (this.state.pendingGarbage.length > 0) {
-        console.log('clearing pending garbage');
-        this.clearPendingGarbage(linesCleared);
-        console.log(`pending garbage after ${JSON.stringify(this.state.pendingGarbage)}`);
-      } else {
-        // TODO: Forward garbage to other players if your queue is empty.
+      const netAttack = this.clearPendingGarbage(linesCleared);
+      if (netAttack > 0) {
+        this.onAttack?.(netAttack);
       }
-
     }
 
 
@@ -227,10 +226,7 @@ export class GameEngine {
     this.state.pendingGarbage.push({ lines: n, triggerFrame: this.tickCount + delayTicks, gap });
   }
 
-
-  clearPendingGarbage(n: number): void {
-
-    // Remove any pending garbage from the queue per number of lines cleared
+  clearPendingGarbage(n: number): number {
     while (n > 0 && this.state.pendingGarbage.length > 0) {
       const first = this.state.pendingGarbage[0];
       if (first.lines <= n) {
@@ -241,6 +237,8 @@ export class GameEngine {
         n = 0;
       }
     }
+
+    return n; // leftover lines not cancelled = net attack
   }
 
 }

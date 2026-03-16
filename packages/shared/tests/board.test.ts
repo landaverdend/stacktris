@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   emptyBoard,
+  applyGarbageLines,
   spawnPiece,
   ROWS, COLS,
 } from '../src/game/board.js';
@@ -22,33 +23,6 @@ describe('emptyBoard', () => {
   });
 });
 
-// ── isValid ───────────────────────────────────────────────────────────────────
-// ── isGrounded ────────────────────────────────────────────────────────────────
-// ── lockPiece ────────────────────────────────────────────────────────────────
-// describe('lockPiece', () => {
-//   it('writes piece value into the board cells', () => {
-//     const board = emptyBoard();
-//     lockPiece(board, piece({ row: 5, col: 0 }));
-//     // T=3, rotation=0 cells: [5+0][0+1]=absent, [5+1][0+0],[5+1][0+1],[5+1][0+2],[5+0][0+1]
-//     // T shape rotation 0: [[0,1],[1,0],[1,1],[1,2]]
-//     expect(board[5][1]).toBe(3);
-//     expect(board[6][0]).toBe(3);
-//     expect(board[6][1]).toBe(3);
-//     expect(board[6][2]).toBe(3);
-//   });
-
-//   it('does not write out-of-bounds cells', () => {
-//     const board = emptyBoard();
-//     expect(() => lockPiece(board, spawnPiece(board, 'I')!)).not.toThrow();
-//   });
-
-//   it('does not overwrite unrelated cells', () => {
-//     const board = emptyBoard();
-//     board[10][0] = 7;
-//     lockPiece(board, piece({ row: 5, col: 4 }));
-//     expect(board[10][0]).toBe(7);
-//   });
-// });
 
 // ── spawnPiece ────────────────────────────────────────────────────────────────
 
@@ -66,5 +40,45 @@ describe('spawnPiece', () => {
     for (const kind of kinds) {
       expect(spawnPiece(emptyBoard(), kind)).not.toBeNull();
     }
+  });
+});
+
+// ── applyGarbageLines ─────────────────────────────────────────────────────────
+
+describe('applyGarbageLines', () => {
+  it('fills the bottom N rows with value 8', () => {
+    const board = emptyBoard();
+    applyGarbageLines(board, 2, 3);
+    expect(board[ROWS - 1].filter(c => c === 8).length).toBe(COLS - 1);
+    expect(board[ROWS - 2].filter(c => c === 8).length).toBe(COLS - 1);
+  });
+
+  it('leaves the gap column as 0', () => {
+    const board = emptyBoard();
+    applyGarbageLines(board, 1, 5);
+    expect(board[ROWS - 1][5]).toBe(0);
+  });
+
+  it('all other columns in the garbage row are 8', () => {
+    const board = emptyBoard();
+    applyGarbageLines(board, 1, 2);
+    const row = board[ROWS - 1];
+    for (let c = 0; c < COLS; c++) {
+      expect(row[c]).toBe(c === 2 ? 0 : 8);
+    }
+  });
+
+  it('shifts existing rows up, discarding the top N rows', () => {
+    const board = emptyBoard();
+    board[5][0] = 7; // sentinel in the middle of the board
+    applyGarbageLines(board, 1, 0);
+    expect(board[4][0]).toBe(7); // shifted up by 1
+  });
+
+  it('adding garbage to an empty board results in N garbage rows and ROWS-N empty rows', () => {
+    const board = emptyBoard();
+    applyGarbageLines(board, 3, 0);
+    const garbageRows = board.filter(row => row.some(c => c === 8));
+    expect(garbageRows.length).toBe(3);
   });
 });
