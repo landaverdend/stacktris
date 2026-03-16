@@ -7,6 +7,7 @@ import { InputAction, PieceKind } from "./types.js";
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 
+export const GARBAGE_DELAY_FRAMES = 60 * 15; // 15 seconds of delay
 
 export type EngineConfig = {
   seed?: number;
@@ -50,6 +51,8 @@ export class GameEngine {
     if (this.state.isGameOver) return;
 
     this.tickCount++;
+
+    this.handlePendingGarbage();
 
     if (this.state.activePiece.isFloored) {
       this.handleLockDelayMode();
@@ -107,6 +110,19 @@ export class GameEngine {
 
   }
 
+
+  /**
+   * Check the garbage queue for any pending garbage and apply it to the board.
+   */
+  handlePendingGarbage() {
+    const ready = this.state.pendingGarbage.filter(g => this.tickCount >= g.triggerFrame);
+    this.state.pendingGarbage = this.state.pendingGarbage.filter(g => this.tickCount < g.triggerFrame);
+    for (const g of ready) {
+      applyGarbageLines(this.state.board, g.lines, g.gap);
+    }
+  }
+
+
   // Grab from the bag, spawn piece onto the board. Optional param to override the kind of piece to spawn (used for holds)
   spawnNewPiece(kind?: PieceKind) {
     const newPiece = spawnPiece(this.state.board, kind ?? this.state.bag.next());
@@ -129,13 +145,10 @@ export class GameEngine {
     const linesCleared = clearLines(this.state.board);
     if (linesCleared > 0) {
       this.state.lines += linesCleared;
+      // Remove any pending garbage from the queue per number of lines cleared
+      
     }
 
-    // // Flush pending garbage onto the board
-    for (const g of this.state.pendingGarbage) {
-      applyGarbageLines(this.state.board, g.lines, g.gap);
-    }
-    this.state.pendingGarbage = [];
 
     this.spawnNewPiece();
     this.state.holdUsed = false;
