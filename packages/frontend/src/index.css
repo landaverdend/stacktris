@@ -121,6 +121,37 @@
     0 0 50px rgba(0, 200, 100, 0.25);
 }
 
+/* ── Reusable glowing border ──────────────────────────────────────────────── */
+/* Usage:
+ *   <div class="nerv-border" />                          amber (default)
+ *   <div class="nerv-border nerv-border-magi" />         green
+ *   <div class="nerv-border nerv-border-alert" />        red
+ *   <div class="nerv-border [--nb-color:rgba(0,85,255,0.85)] [--nb-glow:rgba(0,85,255,0.45)]" /> arbitrary
+ */
+.nerv-border {
+  border: 4px solid var(--nb-color, rgba(247, 147, 26, 0.85));
+  border-radius: 3px;
+  box-shadow:
+    0 0 8px var(--nb-glow, rgba(247, 147, 26, 0.55)),
+    0 0 22px var(--nb-glow, rgba(247, 147, 26, 0.25)),
+    inset 0 0 14px var(--nb-inset, rgba(247, 147, 26, 0.05));
+}
+.nerv-border-magi {
+  --nb-color: rgba(0, 170, 85, 0.85);
+  --nb-glow: rgba(0, 170, 85, 0.2);
+  --nb-inset: rgba(0, 170, 85, 0.05);
+}
+.nerv-border-alert {
+  --nb-color: rgba(220, 38, 38, 0.85);
+  --nb-glow: rgba(220, 38, 38, 0.2);
+  --nb-inset: rgba(220, 38, 38, 0.05);
+}
+.nerv-border-teal {
+  --nb-color: rgba(0, 255, 180, 0.75);
+  --nb-glow: rgba(0, 255, 180, 0.2);
+  --nb-inset: rgba(0, 255, 180, 0.04);
+}
+
 /* ── NERV utility classes ─────────────────────────────────────────────────── */
 @layer utilities {
   /* Corner-bracket tactical frame */

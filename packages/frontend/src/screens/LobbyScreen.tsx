@@ -82,18 +82,18 @@ export function LobbyScreen() {
       </div>
 
       {/* Menu list */}
-      <div className="w-full max-w-sm flex flex-col relative items-center ">
+      <div className="w-full max-w-sm flex flex-col relative items-center gap-3">
         {MENU.map((item, i) => {
           const isOpen = expanded === item.id;
           return (
-            <div key={item.id} className="bg-black w-fit flex flex-col gap-2">
+            <div key={item.id} className="bg-black w-fit flex flex-col ">
               <button
                 onClick={() => handleItem(item.id)}
                 className={cn(
-                  'w-[12em] flex flex-col items-center justify-between border-[4px] border-magi rounded-md transition-colors cursor-pointer px-4 py-4 border'
+                  'w-[12em] flex flex-col items-center justify-between nerv-border nerv-border-teal transition-colors cursor-pointer hover:text-magi'
                 )}>
                 <span
-                  className={`font-display font-bold tracking-[0.03em] ${isOpen ? 'nerv-menu-label-active' : 'nerv-menu-label'}`}>
+                  className={`font-display font-bold text-3xl tracking-[0.03em]`}>
                   {item.label}
                 </span>
                 <span className="font-jp text-[15px] opacity-30 text-magi tracking-[0.03em] font-bold">{item.jp}</span>
