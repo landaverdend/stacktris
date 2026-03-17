@@ -74,8 +74,8 @@ export function LobbyScreen() {
 
       <div className="text-center flex flex-col gap-3 relative z-[3]">
         <div className="nerv-title-box bg-black">
-          <h1 className="nerv-title-text font-display font-bold text-bitcoin tracking-[0.05em]">STACKTRIS</h1>
-          <p className="text-bitcoin font-display text-[20px] tracking-[0.05em] mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
+          <h1 className="nerv-title-text font-display font-bold text-bitcoin tracking-[0.03em]">STACKTRIS</h1>
+          <p className="nerv-sub-text text-bitcoin font-display text-[22px] tracking-[0.05em] mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
         </div>
       </div>
 
