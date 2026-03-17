@@ -27,11 +27,13 @@ export function MultiplayerScreen() {
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
       {/* ── Arena — always mounted, same position ── */}
       <div className="flex items-start gap-3">
-        <div className="flex flex-col gap-1 pt-1">
-          <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">
-            HOLD <span className="opacity-50">// ホールド</span>
-          </p>
-          <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block" />
+        {/* Hold */}
+        <div className="flex flex-col gap-1.5 pt-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">HOLD</span>
+            <span className="font-jp text-[15px] text-nerv-dim">ホールド</span>
+          </div>
+          <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
         </div>
 
         <div className="flex items-end gap-1">
@@ -42,7 +44,7 @@ export function MultiplayerScreen() {
                 ref={boardRef}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
-                className="border border-border-hi bg-pit block"
+                className="block nerv-border bg-pit"
               />
               {status === 'countdown' && <CountdownOverlay />}
               {winnerId !== undefined && <GameOverOverlay winnerId={winnerId} playerId={playerId} />}
@@ -50,13 +52,13 @@ export function MultiplayerScreen() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 pt-1">
-          <div className="flex flex-col gap-1">
-            <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">
-              NEXT <span className="opacity-50">// 次</span>
-            </p>
-            <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block" />
+        {/* Next */}
+        <div className="flex flex-col gap-1.5 pt-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">NEXT</span>
+            <span className="font-jp text-[15px] text-nerv-dim">次</span>
           </div>
+          <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
         </div>
       </div>
 

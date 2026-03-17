@@ -87,7 +87,7 @@ export function GarbageMeter({ garbageStack, getCurrentTick }: Props) {
       width={CELL_SIZE}
       height={CANVAS_HEIGHT}
       style={{ width: CELL_SIZE, height: CANVAS_HEIGHT }}
-      className="block border border-border-hi"
+      className="block border rounded-md border-bitcoin"
     />
   );
 }
