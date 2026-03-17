@@ -183,7 +183,7 @@ export function LobbyScreen() {
         })}
       </div>
 
-      <p className="text-nerv-dim text-[10px] tracking-[0.3em] font-jp">ライトニングネットワーク搭載</p>
+      <p className="text-teal text-[20px] font-bold tracking-[0.03em] font-jp">ライトニングネットワーク搭載</p>
     </div>
   );
 }
