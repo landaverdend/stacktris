@@ -68,7 +68,7 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
         {/* Title */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           <div className="w-full flex flex-col gap-0.5 items-center">
-            <h2 className="font-display text-6xl text-phosphor leading-none font-bold tracking-[0.05em]" style={{ textShadow: '0 0 8px rgba(0,255,180,0.6), 0 0 24px rgba(0,255,180,0.25)' }}>
+            <h2 className="font-display text-6xl text-phosphor leading-none font-bold tracking-[0.05em]" style={{ textShadow: '0 0 6px rgba(200,168,130,0.7), 0 0 20px rgba(200,168,130,0.3)' }}>
               {title}
             </h2>
             <span className="font-jp text-[20px] tracking-[0.05em] font-bold text-magi">{titleJp}</span>

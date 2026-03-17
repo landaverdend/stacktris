@@ -104,15 +104,15 @@ function MultiplayerModal({ open, onClose, onCreateInstead, onJoin }: {
 
   return (
     <NervModal open={open} title="MULTIPLAYER" titleJp="バトル" onClose={onClose}>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-display text-[10px] text-nerv-dim tracking-[0.03em]">OPEN SESSIONS</span>
-          <span className={`text-[9px] font-mono text-bitcoin tracking-widest transition-opacity ${loading ? 'opacity-100' : 'opacity-0'}`}>◌ SYNC</span>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">OPEN SESSIONS</span>
+          <span className={`font-mono text-[11px] text-[rgba(0,255,180,0.5)] transition-opacity ${loading ? 'opacity-100' : 'opacity-0'}`}>◌ SYNC</span>
         </div>
         {rooms.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-3">
-            <p className="text-nerv-dim font-mono text-xs tracking-widest">// NO SESSIONS FOUND</p>
-            <button className="text-bitcoin text-xs tracking-widest hover:opacity-70 transition-opacity font-display cursor-pointer" onClick={onCreateInstead}>
+            <p className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">セッションなし</p>
+            <button className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor hover:opacity-60 transition-opacity cursor-pointer" onClick={onCreateInstead}>
               CREATE ONE →
             </button>
           </div>
@@ -132,16 +132,26 @@ function CreateMatchModal({ open, onClose, onCreate }: {
 
   return (
     <NervModal open={open} title="CREATE MATCH" titleJp="作成" onClose={onClose}>
-      <NervField label="BET AMOUNT" jp="掛け金">
-        <input
-          type="number"
-          className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
-          value={betSats} min={5}
-          onChange={(e) => setBetSats(Number(e.target.value))}
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
-      </NervField>
-      <NervButton onClick={() => onCreate(betSats)}>INITIALIZE SESSION</NervButton>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BET AMOUNT</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
+              value={betSats} min={5}
+              onChange={(e) => setBetSats(Number(e.target.value))}
+            />
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
+          </div>
+        </div>
+        <div className="pt-5">
+          <NervButton onClick={() => onCreate(betSats)}>INITIALIZE SESSION</NervButton>
+        </div>
+      </div>
     </NervModal>
   );
 }
@@ -155,24 +165,38 @@ function JoinRoomModal({ open, onClose, onJoin }: {
 
   return (
     <NervModal open={open} title="JOIN ROOM" titleJp="参加" onClose={onClose}>
-      <NervField label="SESSION ID" jp="セッションID">
-        <input
-          type="text"
-          className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
-          value={roomId} placeholder="XXXXXXXX-XXXX-..."
-          onChange={(e) => setRoomId(e.target.value)}
-        />
-      </NervField>
-      <NervField label="BET AMOUNT" jp="掛け金">
-        <input
-          type="number"
-          className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono"
-          value={betSats} min={1}
-          onChange={(e) => setBetSats(Number(e.target.value))}
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
-      </NervField>
-      <NervButton onClick={() => onJoin(roomId)} disabled={!roomId}>CONNECT TO SESSION</NervButton>
+      <div className="flex flex-col gap-0">
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">SESSION ID</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">セッションID</span>
+          </div>
+          <input
+            type="text"
+            className="w-36 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-sm text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
+            value={roomId} placeholder="XXXX-..."
+            onChange={(e) => setRoomId(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BET AMOUNT</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
+              value={betSats} min={1}
+              onChange={(e) => setBetSats(Number(e.target.value))}
+            />
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
+          </div>
+        </div>
+        <div className="pt-5">
+          <NervButton onClick={() => onJoin(roomId)} disabled={!roomId}>CONNECT TO SESSION</NervButton>
+        </div>
+      </div>
     </NervModal>
   );
 }
@@ -198,7 +222,7 @@ function ControlsModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
             <div className="flex gap-1.5">
               {keys.map((k) => (
-                <kbd key={k} className="px-1 py-0.5 border border-[rgba(0,255,180,0.35)] bg-[rgba(0,255,180,0.04)] font-display font-bold text-[20px] text-[rgba(0,255,180,0.7)] tracking-[0.02em] rounded-md border-2">{k}</kbd>
+                <kbd key={k} className="px-1 py-0.5 border-[rgba(0,255,180,0.35)] bg-[rgba(0,255,180,0.04)] font-display font-bold text-[20px] text-[rgba(0,255,180,0.7)] tracking-[0.02em] rounded-md border-2">{k}</kbd>
               ))}
             </div>
           </div>
@@ -230,23 +254,12 @@ function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
   );
 }
 
-function NervField({ label, jp, children }: { label: string; jp: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5 mb-3">
-      <div className="flex items-baseline gap-2">
-        <label className="font-display text-[10px] text-nerv-dim tracking-[0.3em]">{label}</label>
-        <span className="font-jp text-[9px] text-nerv-dim/40">{jp}</span>
-      </div>
-      <div className="relative">{children}</div>
-    </div>
-  );
-}
 
 function NervButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
     <button
       onClick={onClick} disabled={disabled}
-      className="w-full py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer">
+      className="w-full py-3 border border-[rgba(0,255,180,0.4)] text-phosphor font-display font-bold text-4xl tracking-[0.02em] hover:border-[rgba(0,255,180,0.8)] hover:text-teal transition-colors disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer">
       {children}
     </button>
   );
