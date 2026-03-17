@@ -43,12 +43,6 @@ export class NetworkGame {
       this.gameEngine.addGarbage(msg.lines, msg.triggerFrame);
     })
 
-    this.ws.on('game_over', (msg) => {
-      const message = msg.winnerId
-        ? `Game over! Player ${msg.winnerId} wins!`
-        : 'Game over! Draw!';
-      alert(message);
-    })
   }
 
   get state() {

@@ -5,27 +5,32 @@ const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${wind
 
 const client = new WSClient(WS_URL);
 
-const WSContext = createContext<WSClient | null>(null);
+type WSContextValue = { client: WSClient; playerId: string | null };
+
+const WSContext = createContext<WSContextValue | null>(null);
 
 export function WSProvider({ children }: { children: ReactNode }) {
-  useEffect(() => { client.connect(); }, []);
-  return <WSContext.Provider value={client}>{children}</WSContext.Provider>;
+  const [playerId, setPlayerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    client.connect();
+    client.on('welcome', msg => setPlayerId(msg.player_id));
+  }, []);
+
+  return <WSContext.Provider value={{ client, playerId }}>{children}</WSContext.Provider>;
 }
 
 export function useWS(): WSClient {
   const ctx = useContext(WSContext);
   if (!ctx) throw new Error('useWS must be used within WSProvider');
-  return ctx;
+  return ctx.client;
 }
 
 export function useConnection(): { status: ConnectionStatus; playerId: string | null } {
+  const ctx = useContext(WSContext);
   const [status, setStatus] = useState<ConnectionStatus>(client.getStatus());
-  const [playerId, setPlayerId] = useState<string | null>(null);
 
-  useEffect(() => {
-    client.on('welcome', msg => setPlayerId(msg.player_id));
-    return client.onStatus(setStatus);
-  }, []);
+  useEffect(() => client.onStatus(setStatus), []);
 
-  return { status, playerId };
+  return { status, playerId: ctx?.playerId ?? null };
 }

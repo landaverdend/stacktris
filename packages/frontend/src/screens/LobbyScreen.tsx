@@ -110,7 +110,7 @@ export function LobbyScreen() {
                         <div className="py-5 flex flex-col items-center gap-2">
                           <p className="text-nerv-dim font-mono text-xs tracking-widest">// NO SESSIONS FOUND</p>
                           <button
-                            className="text-bitcoin text-xs tracking-widest hover:opacity-70 transition-opacity font-display"
+                            className="text-bitcoin text-xs tracking-widest hover:opacity-70 transition-opacity font-display cursor-pointer"
                             onClick={() => setExpanded('create')}>
                             CREATE ONE →
                           </button>
@@ -220,7 +220,7 @@ function NervButton({ onClick, children, disabled }: { onClick: () => void; chil
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors disabled:opacity-20 disabled:cursor-not-allowed">
+      className="w-full py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer">
       {children}
     </button>
   );

@@ -20,7 +20,8 @@ export function MultiplayerScreen() {
 
   const { status } = roomState;
 
-  const { pendingGarbage, getTickCount, opponentBoards } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
+  const { pendingGarbage, getTickCount, opponentBoards, winnerId } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
+  const { playerId } = useConnection();
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
@@ -44,6 +45,7 @@ export function MultiplayerScreen() {
                 className="border border-border-hi bg-pit block"
               />
               {status === 'countdown' && <CountdownOverlay />}
+              {winnerId !== undefined && <GameOverOverlay winnerId={winnerId} playerId={playerId} />}
             </div>
           </div>
         </div>
@@ -61,10 +63,10 @@ export function MultiplayerScreen() {
       {/* ── Right panel — lobby or opponent boards ── */}
       {status === 'playing'
         ? <div className="flex flex-wrap gap-4" style={{ maxWidth: 2 * 10 * OPPONENT_CELL_SIZE + 16 }}>
-            {Object.entries(opponentBoards).map(([id, board]) => (
-              <OpponentBoard key={id} board={board} />
-            ))}
-          </div>
+          {Object.entries(opponentBoards).map(([id, board]) => (
+            <OpponentBoard key={id} board={board} />
+          ))}
+        </div>
         : <PlayerLobby />}
     </div>
   );
@@ -157,6 +159,23 @@ function RoomIdBadge({ roomId }: { roomId: string }) {
         </button>
       </div>
       <span className="text-nerv-dim/50 text-[9px] font-jp">共有コード — SHARE WITH OPPONENT</span>
+    </div>
+  );
+}
+
+function GameOverOverlay({ winnerId, playerId }: { winnerId: string | null; playerId: string | null }) {
+  const isWinner = winnerId !== null && winnerId === playerId;
+  const isDraw = winnerId === null;
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70">
+      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE TERMINATED</p>
+      <p className={cn('font-display font-bold leading-none text-5xl tracking-[0.2em]', isWinner ? 'text-magi' : 'text-alert')}>
+        {isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT'}
+      </p>
+      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">
+        {isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}
+      </p>
     </div>
   );
 }
