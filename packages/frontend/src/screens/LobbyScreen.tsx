@@ -73,9 +73,12 @@ export function LobbyScreen() {
       <GlitchOverlay />
       <GenesisBlock />
 
-      <div className="text-center flex flex-col gap-3 relative z-[3]">
+      <div className="text-center flex  relative z-[3]">
         <div className="nerv-title-box bg-black">
-          <GlitchTitle />
+          <div className="flex flex-col">
+            <GlitchTitle />
+            <div style={{ height: '4px', background: '#f7931a', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
+          </div>
           <p className="nerv-sub-text text-bitcoin font-display text-[22px] tracking-[0.05em] mt-1">
             BATTLE TETRIS // ライトニングネットワーク
           </p>

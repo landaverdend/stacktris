@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 // ── Character pools ────────────────────────────────────────────────────────────
 
 const BASE_TEXT = 'STACKTRIS';
-const GLITCH_CHARS = '0123456789ABCDEF#@$%!?';
+const GLITCH_CHARS = '0123456789ABCDEF#_$%!?';
 const ALT_TEXTS = [
   'STACKTRIS',
   'ST4CKT1S',
@@ -97,7 +97,7 @@ export function GlitchTitle() {
 
   return (
     <h1
-      className="nerv-title-text font-display font-bold tracking-[0.03em]"
+      className="nerv-title-text font-display font-bold tracking-[0.03em] leading-none"
       style={{ color: titleColor(color) }}
     >
       {text}
