@@ -82,7 +82,7 @@
 .nerv-title-box {
   border: 4px solid rgba(247, 147, 26, 0.9);
   border-radius: 5px;
-  padding: 0.3em 2em 0.3em 2em;
+  padding: 0.3em 0.5em 0.3em 0.5em;
   box-shadow:
     0 0 8px rgba(247, 147, 26, 0.3),
     0 0 24px rgba(247, 147, 26, 0.3),
@@ -151,6 +151,135 @@
   --nb-glow: rgba(0, 255, 180, 0.2);
   --nb-inset: rgba(0, 255, 180, 0.04);
 }
+
+/* ── NERV Modal ───────────────────────────────────────────────────────────── */
+
+/* Backdrop */
+.nerv-modal-backdrop-in {
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(2px);
+}
+.nerv-modal-backdrop-out {
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+}
+
+/* Modal box border + glow */
+.nerv-modal-box {
+  border: 3px solid rgba(0, 255, 180, 0.7);
+  box-shadow:
+    0 0 12px rgba(0, 255, 180, 0.35),
+    0 0 40px rgba(0, 255, 180, 0.12),
+    0 0 80px rgba(0, 255, 180, 0.04),
+    inset 0 0 20px rgba(0, 255, 180, 0.03);
+  animation: nerv-modal-border-pulse 3s ease-in-out infinite;
+}
+
+@keyframes nerv-modal-border-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(0, 255, 180, 0.3),
+      0 0 36px rgba(0, 255, 180, 0.10),
+      inset 0 0 18px rgba(0, 255, 180, 0.03);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(0, 255, 180, 0.55),
+      0 0 60px rgba(0, 255, 180, 0.18),
+      inset 0 0 28px rgba(0, 255, 180, 0.06);
+  }
+}
+
+/* Open / close transforms */
+.nerv-modal-in {
+  opacity: 1;
+  transform: scaleY(1) translateY(0);
+}
+.nerv-modal-out {
+  opacity: 0;
+  transform: scaleY(0.92) translateY(12px);
+}
+
+/* Title glow */
+.nerv-modal-title-glow {
+  text-shadow:
+    0 0 4px rgba(247, 147, 26, 0.9),
+    0 0 14px rgba(247, 147, 26, 0.5),
+    0 0 32px rgba(247, 147, 26, 0.2);
+}
+
+/* Scan sweep — bright bar that races down on open */
+.nerv-modal-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 10;
+}
+.nerv-modal-sweep::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,255,180,0.7) 50%, transparent 100%);
+  box-shadow: 0 0 12px rgba(0,255,180,0.5);
+  animation: nerv-sweep 0.45s ease-out forwards;
+}
+@keyframes nerv-sweep {
+  from { top: 0; opacity: 1; }
+  to   { top: 100%; opacity: 0.3; }
+}
+
+/* Status bar background */
+.nerv-modal-statusbar {
+  background: rgba(0, 255, 180, 0.03);
+}
+
+/* Active indicator dot */
+.nerv-modal-indicator {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 255, 180, 0.7);
+  box-shadow: 0 0 6px rgba(0, 255, 180, 0.8);
+  animation: nerv-indicator-pulse 1.8s ease-in-out infinite;
+}
+@keyframes nerv-indicator-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* Blinking standby text */
+.nerv-modal-blink {
+  animation: nerv-blink 2.4s step-start infinite;
+}
+@keyframes nerv-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.1; }
+}
+
+/* Close button flicker on hover */
+.nerv-modal-close:hover {
+  animation: nerv-close-flicker 0.15s steps(2, end) 1;
+}
+@keyframes nerv-close-flicker {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* Corner brackets */
+.nerv-modal-corner {
+  position: absolute;
+  width: 14px; height: 14px;
+  border-color: rgba(0, 255, 180, 0.6);
+  border-style: solid;
+  pointer-events: none;
+}
+.nerv-modal-corner-tl { top: -3px; left: -3px; border-width: 2px 0 0 2px; }
+.nerv-modal-corner-tr { top: -3px; right: -3px; border-width: 2px 2px 0 0; }
+.nerv-modal-corner-bl { bottom: -3px; left: -3px; border-width: 0 0 2px 2px; }
+.nerv-modal-corner-br { bottom: -3px; right: -3px; border-width: 0 2px 2px 0; }
 
 /* ── NERV utility classes ─────────────────────────────────────────────────── */
 @layer utilities {
