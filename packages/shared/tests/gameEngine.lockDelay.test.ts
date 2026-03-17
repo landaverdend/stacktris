@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { GameEngine, LOCK_DELAY_FRAMES, MAX_LOCK_RESETS } from '../src/game/gameEngine.js';
 import { createGameState } from '../src/game/state.js';
-import { COLS, ROWS } from '../src/game/board.js';
+import { COLS, ROWS, VISIBLE_ROW_START } from '../src/game/board.js';
 import { ALL_PIECES } from '../src/game/pieces.js';
 import type { PieceKind } from '../src/game/types.js';
 
@@ -179,6 +179,56 @@ describe('per-tetromino: rotation consumes resets', () => {
     expect(next.isFloored).toBe(false);
     expect(next.timeOnFloor).toBe(0);
     expect(engine.getState().board.some(row => row.some(c => c !== 0))).toBe(true);
+  });
+});
+
+// ── Lock-out game over ────────────────────────────────────────────────────────
+//
+// Game over fires when ANY cell of the locking piece is in the invisible buffer
+// zone (row < VISIBLE_ROW_START). A T-piece at row=1 (rotation 0) has one cell
+// at row 1 (buffer) and three cells at rows 2-3 (visible) — this is the partial
+// case that the previous `every` check missed.
+
+describe('lock-out game over', () => {
+  // T rotation-0 offsets: [0,+1], [+1,0], [+1,+1], [+1,+2] relative to anchor.
+  // At anchor row=N, col=3: cells at [N,4], [N+1,3], [N+1,4], [N+1,5].
+  // Moving down would put cells at [N+1,4], [N+2,3], [N+2,4], [N+2,5].
+  // Placing a blocker at board[N+2][3] stops the snap-to-floor loop so the
+  // piece actually locks at the intended row.
+  function makeLockedEngine(row: number) {
+    const state = createGameState(42);
+    state.activePiece.kind = 'T';
+    state.activePiece.rotation = 0;
+    state.activePiece.row = row;
+    state.activePiece.col = 3;
+    state.activePiece.isFloored = true;
+    state.activePiece.timeOnFloor = LOCK_DELAY_FRAMES - 1;
+    // Blocker: prevents snap-to-floor from sliding piece below the target row.
+    state.board[row + 2][3] = 8;
+    const engine = new GameEngine({ initialGameState: state });
+    let fired = false;
+    engine.subscribe('gameOver', () => { fired = true; });
+    engine.tick();
+    return { engine, fired };
+  }
+
+  it('fires when all cells are in the buffer zone (row=0)', () => {
+    // T rot-0 at row=0: cells at rows [0,1,1,1] — all < VISIBLE_ROW_START
+    const { fired } = makeLockedEngine(0);
+    expect(fired).toBe(true);
+  });
+
+  it('fires when only one cell is in the buffer zone (row=1)', () => {
+    // T rot-0 at row=1: cells at rows [1,2,2,2] — only row 1 is in the buffer.
+    // This is the case the old `every` check missed; `some` catches it correctly.
+    const { fired } = makeLockedEngine(1);
+    expect(fired).toBe(true);
+  });
+
+  it('does not fire when all cells are at or below the visible boundary (row=2)', () => {
+    // T rot-0 at row=2: cells at rows [2,3,3,3] — none < VISIBLE_ROW_START
+    const { fired } = makeLockedEngine(2);
+    expect(fired).toBe(false);
   });
 });
 

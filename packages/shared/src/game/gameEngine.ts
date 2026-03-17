@@ -184,9 +184,9 @@ export class GameEngine {
     }
 
 
-    // Lock out: piece locked entirely in the invisible buffer zone
+    // Lock out: any part of the piece is in the invisible buffer zone
     const cells = [...boardCells(this.state.activePiece)];
-    if (cells.every(([r]) => r < VISIBLE_ROW_START)) {
+    if (cells.some(([r]) => r < VISIBLE_ROW_START)) {
       this.state.isGameOver = true;
       this.emitter.emit('gameOver', undefined);
       return;
