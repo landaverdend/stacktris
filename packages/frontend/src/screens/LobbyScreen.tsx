@@ -235,19 +235,26 @@ function ControlsModal({ open, onClose }: { open: boolean; onClose: () => void }
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
-  const age = Math.floor(Date.now()) - room.createdAt;
+  const ageSec = Math.floor((Date.now() - room.createdAt) / 1000);
+  const ageLabel = ageSec < 60 ? `${ageSec}s` : `${Math.floor(ageSec / 60)}m`;
+
   return (
-    <div className="flex items-center justify-between border border-border px-3 py-2">
+    <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(0,255,180,0.08)]">
       <div className="flex flex-col gap-0.5">
-        <span className="text-nerv-dim font-mono text-[10px] tracking-widest">ID:{room.roomId.slice(0, 8).toUpperCase()}</span>
-        <span className="text-nerv-dim/50 font-mono text-[9px]">T+{age}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-bitcoin font-mono text-sm font-bold tracking-wider">
-          {room.betSats.toLocaleString()}<span className="text-nerv-dim text-[10px] font-normal ml-1">SATS</span>
+        <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">
+          {room.roomId.slice(0, 8).toUpperCase()}
         </span>
-        <button onClick={onJoin} className="px-3 py-1 border border-bitcoin text-bitcoin text-[10px] font-display font-bold tracking-widest hover:bg-bitcoin hover:text-black transition-colors cursor-pointer">
-          JOIN
+        <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">{room.playerCount}/8 — {ageLabel}</span>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="flex items-baseline gap-1">
+          <span className="font-display font-bold text-xl tracking-[0.02em] text-bitcoin">{room.betSats.toLocaleString()}</span>
+          <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">sats</span>
+        </div>
+        <button
+          onClick={onJoin}
+          className="font-display font-bold text-xl tracking-[0.02em] text-phosphor/40 hover:text-teal transition-colors cursor-pointer border-l border-[rgba(0,255,180,0.1)] pl-4">
+          JOIN →
         </button>
       </div>
     </div>

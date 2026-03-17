@@ -23,7 +23,7 @@ class RoomStateMachine {
   }
 }
 
-export const MAX_PLAYERS = 4;
+export const MAX_PLAYERS = 8;
 
 export class Room {
   private id: string;
@@ -94,7 +94,7 @@ export class Room {
     const player = this.players.get(playerId);
     if (player) player.ready = ready;
 
-    if (this.checkAllReady()) {
+    if (this.status === 'waiting' && this.checkAllReady()) {
       this.startCountdown();
     } else if (this.status === 'countdown') {
       this.cancelCountdown();

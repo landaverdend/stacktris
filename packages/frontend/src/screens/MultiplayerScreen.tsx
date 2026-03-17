@@ -47,7 +47,7 @@ export function MultiplayerScreen() {
                 className="block nerv-border bg-pit"
               />
               {status === 'countdown' && <CountdownOverlay />}
-              {winnerId !== undefined && (
+              {winnerId !== undefined && status === 'finished' && (
                 roomState.matchWinnerId !== null
                   ? <MatchOverOverlay matchWinnerId={roomState.matchWinnerId} playerId={playerId} />
                   : <RoundOverOverlay winnerId={winnerId} playerId={playerId} />
@@ -68,7 +68,7 @@ export function MultiplayerScreen() {
 
       {/* ── Right panel — lobby or opponent boards ── */}
       {status === 'playing'
-        ? <div className="flex flex-wrap gap-4" style={{ maxWidth: 2 * 10 * OPPONENT_CELL_SIZE + 16 }}>
+        ? <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(3, ${10 * OPPONENT_CELL_SIZE}px)` }}>
           {Object.entries(opponentBoards).map(([id, board]) => {
             const info = roomState.players.find(p => p.playerId === id);
             return <OpponentBoard key={id} board={board} playerName={info?.playerName} />;

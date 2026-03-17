@@ -20,13 +20,13 @@ describe('RoomRegistry', () => {
   describe('create_room', () => {
     it('creates a room and adds the player to it', () => {
       connect(registry, 'p1');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
       expect(registry.roomCount).toBe(1);
     });
 
     it('player is placed in a room after creating one', () => {
       connect(registry, 'p1');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
       expect(registry.roomForPlayer('p1')).toBeDefined();
     });
   });
@@ -35,10 +35,10 @@ describe('RoomRegistry', () => {
     it('second player can join an existing room', () => {
       connect(registry, 'p1');
       connect(registry, 'p2');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
 
       const roomId = registry.roomForPlayer('p1')!;
-      registry.onMessage('p2', { type: 'join_room', room_id: roomId });
+      registry.onMessage('p2', '', { type: 'join_room', room_id: roomId });
 
       expect(registry.roomForPlayer('p2')).toBe(roomId);
     });
@@ -46,7 +46,7 @@ describe('RoomRegistry', () => {
     it('joining a nonexistent room is a no-op', () => {
       connect(registry, 'p1');
       expect(() =>
-        registry.onMessage('p1', { type: 'join_room', room_id: 'does-not-exist' })
+        registry.onMessage('p1', '', { type: 'join_room', room_id: 'does-not-exist' })
       ).not.toThrow();
     });
   });
@@ -54,25 +54,25 @@ describe('RoomRegistry', () => {
   describe('leave_room', () => {
     it('removes the player from the room', () => {
       connect(registry, 'p1');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
-      registry.onMessage('p1', { type: 'leave_room', room_id: '' });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'leave_room', room_id: '' });
       expect(registry.roomForPlayer('p1')).toBeUndefined();
     });
 
     it('removes the room when the last player leaves', () => {
       connect(registry, 'p1');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
-      registry.onMessage('p1', { type: 'leave_room', room_id: '' });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'leave_room', room_id: '' });
       expect(registry.roomCount).toBe(0);
     });
 
     it('keeps the room alive when one of two players leaves', () => {
       connect(registry, 'p1');
       connect(registry, 'p2');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
       const roomId = registry.roomForPlayer('p1')!;
-      registry.onMessage('p2', { type: 'join_room', room_id: roomId });
-      registry.onMessage('p1', { type: 'leave_room', room_id: '' });
+      registry.onMessage('p2', '', { type: 'join_room', room_id: roomId });
+      registry.onMessage('p1', '', { type: 'leave_room', room_id: '' });
       expect(registry.roomCount).toBe(1);
       expect(registry.roomForPlayer('p2')).toBe(roomId);
     });
@@ -80,7 +80,7 @@ describe('RoomRegistry', () => {
     it('leaving when not in a room is a no-op', () => {
       connect(registry, 'p1');
       expect(() =>
-        registry.onMessage('p1', { type: 'leave_room', room_id: '' })
+        registry.onMessage('p1', '', { type: 'leave_room', room_id: '' })
       ).not.toThrow();
     });
   });
@@ -89,7 +89,7 @@ describe('RoomRegistry', () => {
   describe('listRooms', () => {
     it('returns waiting rooms', () => {
       connect(registry, 'p1');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
       expect(registry.listRooms()).toHaveLength(1);
     });
 
@@ -97,11 +97,11 @@ describe('RoomRegistry', () => {
       vi.useFakeTimers();
       connect(registry, 'p1');
       connect(registry, 'p2');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
       const roomId = registry.roomForPlayer('p1')!;
-      registry.onMessage('p2', { type: 'join_room', room_id: roomId });
-      registry.onMessage('p1', { type: 'ready_update', ready: true });
-      registry.onMessage('p2', { type: 'ready_update', ready: true });
+      registry.onMessage('p2', '', { type: 'join_room', room_id: roomId });
+      registry.onMessage('p1', '', { type: 'ready_update', ready: true });
+      registry.onMessage('p2', '', { type: 'ready_update', ready: true });
       vi.advanceTimersByTime(3500);
       expect(registry.listRooms()).toHaveLength(0);
       vi.useRealTimers();
@@ -111,7 +111,7 @@ describe('RoomRegistry', () => {
   describe('onDisconnect', () => {
     it('removes the player from the registry', () => {
       connect(registry, 'p1');
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
       registry.onDisconnect('p1');
       expect(registry.roomForPlayer('p1')).toBeUndefined();
     });
@@ -124,7 +124,7 @@ describe('RoomRegistry', () => {
       connect(registry, 'p1');
 
       // Create a room for the player.
-      registry.onMessage('p1', { type: 'create_room', bet_sats: 0 });
+      registry.onMessage('p1', '', { type: 'create_room', bet_sats: 0 });
 
       // Disconnect the player
       registry.onDisconnect('p1')

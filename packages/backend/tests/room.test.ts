@@ -8,13 +8,13 @@ describe('Room', () => {
   it('adds a player', () => {
     const room = new Room('room-1', 1000);
     const send = makeSend();
-    room.addPlayer('player-1', send);
+    room.addPlayer('player-1', '', send);
     expect(room.playerCount).toBe(1);
   });
 
   it('removes a player', () => {
     const room = new Room('room-1', 1000);
-    room.addPlayer('player-1', makeSend());
+    room.addPlayer('player-1', '', makeSend());
     room.removePlayer('player-1');
     expect(room.playerCount).toBe(0);
   });
@@ -23,27 +23,27 @@ describe('Room', () => {
     const room = new Room('room-1', 1000);
 
     for (let i = 0; i < MAX_PLAYERS; i++) {
-      room.addPlayer(`player-${i}`, makeSend());
+      room.addPlayer(`player-${i}`, '', makeSend());
     }
 
-    expect(() => room.addPlayer('player-3', makeSend())).toThrow();
+    expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
   });
 
   it('reports isFull correctly', () => {
     const room = new Room('room-1', 1000);
     expect(room.isFull).toBe(false);
     for (let i = 1; i < MAX_PLAYERS; i++) {
-      room.addPlayer(`player-${i}`, makeSend());
+      room.addPlayer(`player-${i}`, '', makeSend());
       expect(room.isFull).toBe(false);
     }
-    room.addPlayer(`player-${MAX_PLAYERS}`, makeSend());
+    room.addPlayer(`player-${MAX_PLAYERS}`, '', makeSend());
     expect(room.isFull).toBe(true);
   });
 
   it('reports isEmpty correctly', () => {
     const room = new Room('room-1', 1000);
     expect(room.isEmpty).toBe(true);
-    room.addPlayer('player-1', makeSend());
+    room.addPlayer('player-1', '', makeSend());
     expect(room.isEmpty).toBe(false);
   });
 
@@ -51,28 +51,28 @@ describe('Room', () => {
     it('throws if the room is in countdown', () => {
       vi.useFakeTimers();
       const room = new Room('room-1', 1000);
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
 
       expect(room.status).toBe('countdown');
-      expect(() => room.addPlayer('player-3', makeSend())).toThrow();
+      expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
       vi.useRealTimers();
     });
 
     it('throws if the room is in playing', () => {
       vi.useFakeTimers();
       const room = new Room('room-1', 1000);
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       vi.advanceTimersByTime(3500);
       expect(room.status).toBe('playing');
-      expect(() => room.addPlayer('player-3', makeSend())).toThrow();
+      expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
       vi.useRealTimers();
     });
   });
@@ -81,8 +81,8 @@ describe('Room', () => {
     it('advances to countdown state when all players are ready', () => {
       const room = new Room('room-1', 1000);
 
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
@@ -92,8 +92,8 @@ describe('Room', () => {
 
     it('does not advance to countdown state when not all players are ready', () => {
       const room = new Room('room-1', 1000);
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: false });
@@ -109,8 +109,8 @@ describe('Room', () => {
     it('transitions to playing after countdown expires', () => {
       const room = new Room('room-1', 1000);
 
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
@@ -121,8 +121,8 @@ describe('Room', () => {
 
     it('cancels countdown when a player disconnects', () => {
       const room = new Room('room-1', 1000);
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       expect(room.status).toBe('countdown');
@@ -133,8 +133,8 @@ describe('Room', () => {
 
     it('cancels countdown and returns to waiting when a player unreadies', () => {
       const room = new Room('room-1', 1000);
-      room.addPlayer('player-1', makeSend());
-      room.addPlayer('player-2', makeSend());
+      room.addPlayer('player-1', '', makeSend());
+      room.addPlayer('player-2', '', makeSend());
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       expect(room.status).toBe('countdown');
