@@ -64,6 +64,28 @@
     font-family: var(--font-display);
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    text-shadow:
+      0 0 6px  rgba(247, 147, 26, 0.55),
+      0 0 18px rgba(247, 147, 26, 0.20);
+  }
+
+  /* Amber text glow — phosphor bloom on any bitcoin-colored text */
+  .text-bitcoin {
+    text-shadow:
+      0 0 4px  rgba(247, 147, 26, 0.65),
+      0 0 14px rgba(247, 147, 26, 0.22);
+  }
+
+  /* Dim text gets a faint warm halo to avoid looking flat */
+  .text-nerv-dim {
+    text-shadow: 0 0 6px rgba(122, 64, 16, 0.4);
+  }
+
+  /* Bordered UI panels get a warm inner edge glow */
+  .border-bitcoin {
+    box-shadow:
+      inset 0 0 8px  rgba(247, 147, 26, 0.08),
+            0 0 10px rgba(247, 147, 26, 0.06);
   }
 }
 
