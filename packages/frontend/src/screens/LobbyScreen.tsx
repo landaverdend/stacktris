@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
 import { RoomInfo } from '@stacktris/shared';
+import { cn } from '../lib/utils';
 import { GenesisBlock } from '../components/GenesisBlock';
 import { GlitchOverlay } from '../components/GlitchOverlay';
 import { LightningGraph } from '../components/LightningGraph';
@@ -71,41 +72,31 @@ export function LobbyScreen() {
       <GlitchOverlay />
       <GenesisBlock />
 
-      {/* Title */}
-      <div className="text-center flex flex-col gap-1">
-        <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">ネルフ</p>
-        <h1
-          className="font-display font-bold text-bitcoin tracking-[0.15em]"
-          style={{
-            fontSize: 'clamp(5rem, 5vw, 14rem)',
-            textShadow: [
-              '0 0 2px  rgba(255, 200, 80,  0.95)',   // tight bright core
-              '0 0 8px  rgba(247, 147, 26,  0.90)',   // inner amber bloom
-              '0 0 22px rgba(247, 147, 26,  0.55)',   // mid phosphor spread
-              '0 0 55px rgba(200, 100, 10,  0.25)',   // wide warm halo
-              '0 0 90px rgba(150,  60,  0,  0.12)',   // outermost decay
-            ].join(', '),
-          }}
-        >
-          STACKTRIS
-        </h1>
-        <p className="text-nerv-dim text-[10px] tracking-[0.35em] font-mono mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
+      <div className="text-center flex flex-col gap-3 relative z-[3]">
+        <div className="nerv-title-box bg-black">
+          <h1 className="nerv-title-text font-display font-bold text-bitcoin tracking-[0.05em]">STACKTRIS</h1>
+          <p className="text-nerv-dim text-[10px] tracking-[0.05em] font-mono mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
+        </div>
       </div>
 
       {/* Menu list */}
-      <div className="w-full max-w-xs flex flex-col bg-surface">
+      <div className="w-full max-w-sm flex flex-col bg-black relative z-[3]">
         {MENU.map((item, i) => {
           const isOpen = expanded === item.id;
           return (
             <div key={item.id}>
               <button
                 onClick={() => handleItem(item.id)}
-                className={`w-full flex items-baseline justify-between px-0 py-3 border-b transition-colors group cursor-pointer ${isOpen
-                  ? 'border-bitcoin text-bitcoin'
-                  : 'border-border text-nerv-dim hover:text-bitcoin hover:border-bitcoin/50'
-                  } ${i === 0 ? 'border-t' : ''}`}>
-                <span className="font-display text-sm font-bold tracking-[0.25em]">{item.label}</span>
-                <span className="font-jp text-[9px] opacity-50">{item.jp}</span>
+                className={cn(
+                  'w-full flex items-center justify-between px-4 py-4 border-b transition-colors cursor-pointer bg-black',
+                  isOpen ? 'border-magi' : 'border-border hover:border-magi/60',
+                  i === 0 && 'border-t',
+                )}>
+                <span
+                  className={`font-display font-bold tracking-[0.2em] ${isOpen ? 'nerv-menu-label-active' : 'nerv-menu-label'}`}>
+                  {item.label}
+                </span>
+                <span className="font-jp text-[10px] opacity-30 text-magi">{item.jp}</span>
               </button>
 
               {/* Expanded panel */}
