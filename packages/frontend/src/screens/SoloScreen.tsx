@@ -11,53 +11,82 @@ export function SoloScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
 
-  const [stats, setStats] = useState<GameStats>({ score: 0, lines: 0, level: 0 });
+  const [stats] = useState<GameStats>({ score: 0, lines: 0, level: 0 });
 
   useEffect(() => {
     const game = new LocalGame();
     game.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! });
-
     return () => game.stop();
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+    <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
+      {/* Arena */}
+      <div className="flex items-start gap-3">
+        {/* Hold */}
+        <div className="flex flex-col gap-1.5 pt-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">HOLD</span>
+            <span className="font-jp text-[15px] text-nerv-dim">ホールド</span>
+          </div>
+          <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
+        </div>
 
-      <div className="flex items-center gap-6">
-        <button onClick={() => navigate('/')} className="text-nerv-dim text-xs tracking-widest font-display hover:text-bitcoin transition-colors">
-          ← EXIT
-        </button>
-        <h1 className="font-display text-bitcoin tracking-[0.3em] text-4xl font-bold">SOLO MODE</h1>
+        {/* Board */}
+        <div className="flex flex-col gap-1.5">
+          <canvas
+            ref={boardRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            className="block nerv-border bg-pit"
+          />
+        </div>
+
+        {/* Next */}
+        <div className="flex flex-col gap-1.5 pt-1">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">NEXT</span>
+            <span className="font-jp text-[15px] text-nerv-dim">次</span>
+          </div>
+          <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
+        </div>
       </div>
 
-      <div className="flex items-start gap-4">
-        <div className="flex flex-col gap-1 pt-1">
-          <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">HOLD <span className="opacity-50">// ホールド</span></p>
-          <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block" />
+      {/* Stats panel */}
+      <div className="flex flex-col w-full max-w-sm pt-2 nerv-border nerv-border-teal bg-black">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-display font-bold text-4xl tracking-[0.02em] text-phosphor">SOLO</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">ソロプレイ</span>
+          </div>
         </div>
-        <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="border border-border-hi bg-pit block" />
-        <div className="flex flex-col gap-4 pt-1">
-          <div className="flex flex-col gap-1">
-            <p className="text-nerv-dim text-[9px] tracking-[0.3em] font-mono">NEXT <span className="opacity-50">// 次</span></p>
-            <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block" />
-          </div>
-          <div className="flex flex-col gap-3 font-mono text-nerv-dim">
-            <Stat label="SCORE" jp="スコア" value={stats.score.toLocaleString()} />
-            <Stat label="LINES" jp="ライン" value={String(stats.lines)} />
-            <Stat label="LEVEL" jp="レベル" value={String(stats.level)} />
-          </div>
+
+        <div className="flex flex-col">
+          <StatRow label="SCORE" jp="スコア" value={stats.score.toLocaleString()} />
+          <StatRow label="LINES" jp="ライン" value={String(stats.lines)} />
+          <StatRow label="LEVEL" jp="レベル" value={String(stats.level)} />
+        </div>
+
+        <div className="px-5 py-4 border-t border-[rgba(0,255,180,0.08)]">
+          <button
+            onClick={() => navigate('/')}
+            className="w-full py-2 font-display font-bold text-2xl tracking-[0.02em] border border-[rgba(200,168,130,0.15)] text-phosphor/30 hover:border-alert hover:text-alert transition-colors cursor-pointer">
+            ABORT
+          </button>
         </div>
       </div>
-
     </div>
   );
 }
 
-function Stat({ label, jp, value }: { label: string; jp: string; value: string }) {
+function StatRow({ label, jp, value }: { label: string; jp: string; value: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[9px] tracking-[0.3em]">{label} <span className="opacity-50">// {jp}</span></span>
-      <span className="text-bitcoin text-sm font-bold">{value}</span>
+    <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(0,255,180,0.08)]">
+      <div className="flex items-baseline gap-2">
+        <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">{label}</span>
+        <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">{jp}</span>
+      </div>
+      <span className="font-display font-bold text-2xl tracking-[0.02em] text-magi">{value}</span>
     </div>
   );
 }

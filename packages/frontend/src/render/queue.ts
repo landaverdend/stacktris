@@ -47,10 +47,19 @@ export function renderHold(
   const colorFull = COLORS[KIND_INDEX[holdPiece] ?? 0];
   if (!colorFull) return;
 
-  // Dim the piece when hold is locked out for this piece.
+  // Center the piece within the hold canvas.
+  const minRow = Math.min(...cells.map(([r]) => r));
+  const maxRow = Math.max(...cells.map(([r]) => r));
+  const minCol = Math.min(...cells.map(([, c]) => c));
+  const maxCol = Math.max(...cells.map(([, c]) => c));
+  const pieceH = maxRow - minRow + 1;
+  const pieceW = maxCol - minCol + 1;
+  const offsetRow = (ROWS_PER_PIECE - pieceH) / 2 - minRow;
+  const offsetCol = (COLS - pieceW) / 2 - minCol;
+
   ctx.fillStyle = dimmed ? '#555' : colorFull;
   for (const [dr, dc] of cells) {
-    ctx.fillRect(dc * CELL + 1, dr * CELL + 1, CELL - 2, CELL - 2);
+    ctx.fillRect((dc + offsetCol) * CELL + 1, (dr + offsetRow) * CELL + 1, CELL - 2, CELL - 2);
   }
 }
 
@@ -66,11 +75,18 @@ export function renderQueue(ctx: CanvasRenderingContext2D, nextPieces: string[])
     const color = COLORS[KIND_INDEX[kind] ?? 0];
     if (!color) continue;
 
+    const minRow = Math.min(...cells.map(([r]) => r));
+    const maxRow = Math.max(...cells.map(([r]) => r));
+    const minCol = Math.min(...cells.map(([, c]) => c));
+    const maxCol = Math.max(...cells.map(([, c]) => c));
+    const offsetRow = (ROWS_PER_PIECE - (maxRow - minRow + 1)) / 2 - minRow;
+    const offsetCol = (COLS - (maxCol - minCol + 1)) / 2 - minCol;
+
     ctx.fillStyle = color;
     for (const [dr, dc] of cells) {
       ctx.fillRect(
-        dc * CELL + 1,
-        slotTop + dr * CELL + 1,
+        (dc + offsetCol) * CELL + 1,
+        slotTop + (dr + offsetRow) * CELL + 1,
         CELL - 2,
         CELL - 2,
       );

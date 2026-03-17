@@ -16,14 +16,21 @@ const WSContext = createContext<WSContextValue | null>(null);
 
 export function WSProvider({ children }: { children: ReactNode }) {
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [playerName, setPlayerNameState] = useState<string | null>(null);
+  const [playerName, setPlayerNameState] = useState<string | null>(
+    () => localStorage.getItem('playerName')
+  );
 
   useEffect(() => {
     client.connect();
-    client.on('welcome', msg => setPlayerId(msg.player_id));
+    client.on('welcome', (msg) => {
+      setPlayerId(msg.player_id);
+      const saved = localStorage.getItem('playerName');
+      if (saved) client.send({ type: 'set_player_name', name: saved });
+    });
   }, []);
 
   const setPlayerName = (name: string) => {
+    localStorage.setItem('playerName', name);
     client.send({ type: 'set_player_name', name });
     setPlayerNameState(name);
   };
