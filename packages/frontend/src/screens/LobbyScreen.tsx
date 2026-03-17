@@ -193,12 +193,12 @@ function ControlsModal({ open, onClose }: { open: boolean; onClose: () => void }
         {controls.map(({ keys, action, jp }) => (
           <div key={action} className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)] last:border-0">
             <div className="flex items-baseline gap-2">
-              <span className="font-display text-sm tracking-widest text-phosphor">{action}</span>
-              <span className="font-jp text-[10px] text-[rgba(0,255,180,0.3)]">{jp}</span>
+              <span className="font-display text-4xl tracking-[0.02em] text-phosphor font-bold">{action}</span>
+              <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">{jp}</span>
             </div>
             <div className="flex gap-1.5">
               {keys.map((k) => (
-                <kbd key={k} className="px-2 py-0.5 border border-[rgba(0,255,180,0.35)] bg-[rgba(0,255,180,0.04)] font-mono text-[11px] text-[rgba(0,255,180,0.7)] tracking-widest">{k}</kbd>
+                <kbd key={k} className="px-1 py-0.5 border border-[rgba(0,255,180,0.35)] bg-[rgba(0,255,180,0.04)] font-display font-bold text-[20px] text-[rgba(0,255,180,0.7)] tracking-[0.02em] rounded-md border-2">{k}</kbd>
               ))}
             </div>
           </div>
