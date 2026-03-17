@@ -26,7 +26,7 @@ const SYS_STRINGS = [
   () => `PKT#${ri(0, 99999)}`,
   () => `${ri(0, 255)}.${ri(0, 255)}.${ri(0, 255)}.${ri(0, 255)}`,
   () => `SYNC ${rn(0, 100).toFixed(1)}%`,
-  () => `MAGI-0${ri(1, 4)}`,
+  () => `BTC-0${ri(1, 4)}`,
   () => `UID:${hex(ri(0, 0xffff))}${hex(ri(0, 0xffff))}`,
   () => `[${ri(0, 9999).toString().padStart(4, '0')}]`,
   () => Array.from({ length: ri(6, 12) }, () => ri(0, 1)).join(''),

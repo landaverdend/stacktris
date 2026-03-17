@@ -13,7 +13,7 @@ export function NavBar() {
           STACKTRIS
         </span>
         <span className="text-nerv-dim text-[10px] tracking-widest hidden sm:inline font-jp">
-          システム // MAGI-01
+          システム // BTC-01
         </span>
       </div>
 

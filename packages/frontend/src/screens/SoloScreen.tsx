@@ -27,7 +27,7 @@ export function SoloScreen() {
         <button onClick={() => navigate('/')} className="text-nerv-dim text-xs tracking-widest font-display hover:text-bitcoin transition-colors">
           ← EXIT
         </button>
-        <span className="font-display text-bitcoin tracking-[0.3em] text-sm">SOLO MODE</span>
+        <h1 className="font-display text-bitcoin tracking-[0.3em] text-4xl font-bold">SOLO MODE</h1>
       </div>
 
       <div className="flex items-start gap-4">

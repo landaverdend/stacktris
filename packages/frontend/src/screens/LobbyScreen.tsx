@@ -74,7 +74,21 @@ export function LobbyScreen() {
       {/* Title */}
       <div className="text-center flex flex-col gap-1">
         <p className="text-nerv-dim text-[10px] tracking-[0.4em] font-mono">ネルフ</p>
-        <h1 className="font-display text-6xl font-bold text-bitcoin tracking-[0.15em]">STACKTRIS</h1>
+        <h1
+          className="font-display font-bold text-bitcoin tracking-[0.15em]"
+          style={{
+            fontSize: 'clamp(5rem, 5vw, 14rem)',
+            textShadow: [
+              '0 0 2px  rgba(255, 200, 80,  0.95)',   // tight bright core
+              '0 0 8px  rgba(247, 147, 26,  0.90)',   // inner amber bloom
+              '0 0 22px rgba(247, 147, 26,  0.55)',   // mid phosphor spread
+              '0 0 55px rgba(200, 100, 10,  0.25)',   // wide warm halo
+              '0 0 90px rgba(150,  60,  0,  0.12)',   // outermost decay
+            ].join(', '),
+          }}
+        >
+          STACKTRIS
+        </h1>
         <p className="text-nerv-dim text-[10px] tracking-[0.35em] font-mono mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
       </div>
 
@@ -87,8 +101,8 @@ export function LobbyScreen() {
               <button
                 onClick={() => handleItem(item.id)}
                 className={`w-full flex items-baseline justify-between px-0 py-3 border-b transition-colors group cursor-pointer ${isOpen
-                    ? 'border-bitcoin text-bitcoin'
-                    : 'border-border text-nerv-dim hover:text-bitcoin hover:border-bitcoin/50'
+                  ? 'border-bitcoin text-bitcoin'
+                  : 'border-border text-nerv-dim hover:text-bitcoin hover:border-bitcoin/50'
                   } ${i === 0 ? 'border-t' : ''}`}>
                 <span className="font-display text-sm font-bold tracking-[0.25em]">{item.label}</span>
                 <span className="font-jp text-[9px] opacity-50">{item.jp}</span>
