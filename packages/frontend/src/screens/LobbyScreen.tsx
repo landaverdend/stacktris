@@ -11,8 +11,6 @@ import { NervModal } from '../components/NervModal';
 
 const API_BASE = `${window.location.protocol}//${window.location.host}`;
 
-type MenuItem = 'battle' | 'create' | 'join' | 'controls';
-
 const MENU = [
   { id: 'solo', label: 'SOLO MODE', jp: 'ソロプレイ' },
   { id: 'battle', label: 'MULTIPLAYER', jp: 'バトル' },
@@ -21,58 +19,22 @@ const MENU = [
   { id: 'controls', label: 'CONTROLS', jp: '操作方法' },
 ] as const;
 
-const MODAL_ITEMS = new Set<string>(['battle', 'create', 'join', 'controls']);
-
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { createRoom, joinRoom } = useRoom();
 
-  const [betSats, setBetSats] = useState(1000);
-  const [joinRoomId, setJoinRoomId] = useState('');
-
-  const [modal, setModal] = useState<MenuItem | null>(null);
-
-  const [rooms, setRooms] = useState<RoomInfo[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-
-  useEffect(() => {
-    if (modal !== 'battle') return;
-    const fetch_ = async () => {
-      setLoadingRooms(true);
-      try {
-        const res = await fetch(`${API_BASE}/rooms`);
-        if (res.ok) setRooms((await res.json()) as RoomInfo[]);
-      } catch {
-        /* backend not up */
-      } finally {
-        setLoadingRooms(false);
-      }
-    };
-    fetch_();
-    const iv = setInterval(fetch_, 5_000);
-    return () => clearInterval(iv);
-  }, [modal]);
+  const [modal, setModal] = useState<'battle' | 'create' | 'join' | 'controls' | null>(null);
+  const close = () => setModal(null);
 
   function handleItem(id: (typeof MENU)[number]['id']) {
-    if (id === 'solo') {
-      navigate('/solo');
-      return;
-    }
-    if (MODAL_ITEMS.has(id)) {
-      setModal(id as MenuItem);
-    }
+    if (id === 'solo') { navigate('/solo'); return; }
+    setModal(id as typeof modal);
   }
 
   function handleJoinRoom(roomId: string) {
-    if (roomId) {
-      joinRoom(roomId);
-      navigate(`/room/${roomId}`);
-    } else {
-      alert('Please enter a room ID');
-    }
+    if (roomId) { joinRoom(roomId); navigate(`/room/${roomId}`); }
+    else alert('Please enter a room ID');
   }
-
-  const activeItem = modal ? MENU.find((m) => m.id === modal) : null;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-10 px-4">
@@ -80,7 +42,7 @@ export function LobbyScreen() {
       <GlitchOverlay />
       <GenesisBlock />
 
-      <div className="text-center flex  relative z-[3]">
+      <div className="text-center flex relative z-3">
         <div className="nerv-title-box bg-black">
           <div className="flex flex-col">
             <GlitchTitle />
@@ -92,18 +54,13 @@ export function LobbyScreen() {
         </div>
       </div>
 
-      {/* Menu list */}
       <div className="w-full max-w-sm flex flex-col relative items-center gap-3 z-3">
         {MENU.map((item) => (
           <div key={item.id} className="bg-black w-fit flex flex-col">
             <button
               onClick={() => handleItem(item.id)}
-              className={cn(
-                'w-[12em] flex flex-col items-center justify-between nerv-border nerv-border-teal transition-colors cursor-pointer hover:opacity-70 '
-              )}>
-              <span className="font-display font-bold text-3xl tracking-[0.03em] text-phosphor">
-                {item.label}
-              </span>
+              className={cn('w-[12em] flex flex-col items-center justify-between nerv-border nerv-border-teal transition-colors cursor-pointer hover:opacity-70')}>
+              <span className="font-display font-bold text-3xl tracking-[0.03em] text-phosphor">{item.label}</span>
               <span className="font-jp text-[15px] opacity-30 text-magi tracking-[0.03em] font-bold">{item.jp}</span>
             </button>
           </div>
@@ -112,121 +69,149 @@ export function LobbyScreen() {
 
       <p className="text-teal text-[20px] font-bold tracking-[0.03em] font-jp relative z-3">ライトニングネットワーク搭載</p>
 
-      {/* Modal */}
-      <NervModal
-        open={modal !== null}
-        title={activeItem?.label ?? ''}
-        titleJp={activeItem?.jp ?? ''}
-        onClose={() => setModal(null)}
-      >
-        {modal === 'battle' && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-display text-[10px] text-nerv-dim tracking-[0.03em]">OPEN SESSIONS</span>
-              <span className={`text-[9px] font-mono text-bitcoin tracking-widest transition-opacity ${loadingRooms ? 'opacity-100' : 'opacity-0'}`}>
-                ◌ SYNC
-              </span>
-            </div>
-            {rooms.length === 0 ? (
-              <div className="py-8 flex flex-col items-center gap-3">
-                <p className="text-nerv-dim font-mono text-xs tracking-widest">// NO SESSIONS FOUND</p>
-                <button
-                  className="text-bitcoin text-xs tracking-widest hover:opacity-70 transition-opacity font-display cursor-pointer"
-                  onClick={() => setModal('create')}>
-                  CREATE ONE →
-                </button>
-              </div>
-            ) : (
-              rooms.map((r) => <RoomRow key={r.roomId} room={r} onJoin={() => handleJoinRoom(r.roomId)} />)
-            )}
-          </div>
-        )}
-
-        {modal === 'create' && (
-          <>
-            <NervField label="BET AMOUNT" jp="掛け金">
-              <input
-                type="number"
-                className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
-                value={betSats}
-                min={5}
-                onChange={(e) => setBetSats(Number(e.target.value))}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">
-                SATS
-              </span>
-            </NervField>
-            <div className="mt-3">
-              <NervButton onClick={() => createRoom(betSats)}>INITIALIZE SESSION</NervButton>
-            </div>
-          </>
-        )}
-
-        {modal === 'join' && (
-          <>
-            <NervField label="SESSION ID" jp="セッションID">
-              <input
-                type="text"
-                className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
-                value={joinRoomId}
-                placeholder="XXXXXXXX-XXXX-..."
-                onChange={(e) => setJoinRoomId(e.target.value)}
-              />
-            </NervField>
-            <NervField label="BET AMOUNT" jp="掛け金">
-              <input
-                type="number"
-                className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono"
-                value={betSats}
-                min={1}
-                onChange={(e) => setBetSats(Number(e.target.value))}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">
-                SATS
-              </span>
-            </NervField>
-            <div className="mt-3">
-              <NervButton onClick={() => handleJoinRoom(joinRoomId)} disabled={!joinRoomId}>
-                CONNECT TO SESSION
-              </NervButton>
-            </div>
-          </>
-        )}
-
-        {modal === 'controls' && (
-          <div className="flex flex-col gap-1">
-            {[
-              { keys: ['←', '→'], action: 'MOVE', jp: '移動' },
-              { keys: ['↓'], action: 'SOFT DROP', jp: 'ソフトドロップ' },
-              { keys: ['↑', 'X'], action: 'ROTATE CW', jp: '時計回り' },
-              { keys: ['Z'], action: 'ROTATE CCW', jp: '反時計回り' },
-              { keys: ['SPACE'], action: 'HARD DROP', jp: 'ハードドロップ' },
-              { keys: ['C'], action: 'HOLD', jp: 'ホールド' },
-            ].map(({ keys, action, jp }) => (
-              <div key={action} className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)] last:border-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display text-sm tracking-widest text-[#c8a882]">{action}</span>
-                  <span className="font-jp text-[10px] text-[rgba(0,255,180,0.3)]">{jp}</span>
-                </div>
-                <div className="flex gap-1.5">
-                  {keys.map((k) => (
-                    <kbd key={k} className="px-2 py-0.5 border border-[rgba(0,255,180,0.35)] bg-[rgba(0,255,180,0.04)] font-mono text-[11px] text-[rgba(0,255,180,0.7)] tracking-widest">
-                      {k}
-                    </kbd>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </NervModal>
+      <MultiplayerModal open={modal === 'battle'} onClose={close} onCreateInstead={() => setModal('create')} onJoin={handleJoinRoom} />
+      <CreateMatchModal open={modal === 'create'} onClose={close} onCreate={createRoom} />
+      <JoinRoomModal open={modal === 'join'} onClose={close} onJoin={handleJoinRoom} />
+      <ControlsModal open={modal === 'controls'} onClose={close} />
     </div>
   );
 }
 
+// ── Sub-modals ────────────────────────────────────────────────────────────────
+
+function MultiplayerModal({ open, onClose, onCreateInstead, onJoin }: {
+  open: boolean; onClose: () => void;
+  onCreateInstead: () => void;
+  onJoin: (id: string) => void;
+}) {
+  const [rooms, setRooms] = useState<RoomInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetch_ = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/rooms`);
+        if (res.ok) setRooms((await res.json()) as RoomInfo[]);
+      } catch { /* backend not up */ }
+      finally { setLoading(false); }
+    };
+    fetch_();
+    const iv = setInterval(fetch_, 5_000);
+    return () => clearInterval(iv);
+  }, [open]);
+
+  return (
+    <NervModal open={open} title="MULTIPLAYER" titleJp="バトル" onClose={onClose}>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between mb-1">
+          <span className="font-display text-[10px] text-nerv-dim tracking-[0.03em]">OPEN SESSIONS</span>
+          <span className={`text-[9px] font-mono text-bitcoin tracking-widest transition-opacity ${loading ? 'opacity-100' : 'opacity-0'}`}>◌ SYNC</span>
+        </div>
+        {rooms.length === 0 ? (
+          <div className="py-8 flex flex-col items-center gap-3">
+            <p className="text-nerv-dim font-mono text-xs tracking-widest">// NO SESSIONS FOUND</p>
+            <button className="text-bitcoin text-xs tracking-widest hover:opacity-70 transition-opacity font-display cursor-pointer" onClick={onCreateInstead}>
+              CREATE ONE →
+            </button>
+          </div>
+        ) : (
+          rooms.map((r) => <RoomRow key={r.roomId} room={r} onJoin={() => onJoin(r.roomId)} />)
+        )}
+      </div>
+    </NervModal>
+  );
+}
+
+function CreateMatchModal({ open, onClose, onCreate }: {
+  open: boolean; onClose: () => void;
+  onCreate: (sats: number) => void;
+}) {
+  const [betSats, setBetSats] = useState(1000);
+
+  return (
+    <NervModal open={open} title="CREATE MATCH" titleJp="作成" onClose={onClose}>
+      <NervField label="BET AMOUNT" jp="掛け金">
+        <input
+          type="number"
+          className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
+          value={betSats} min={5}
+          onChange={(e) => setBetSats(Number(e.target.value))}
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
+      </NervField>
+      <NervButton onClick={() => onCreate(betSats)}>INITIALIZE SESSION</NervButton>
+    </NervModal>
+  );
+}
+
+function JoinRoomModal({ open, onClose, onJoin }: {
+  open: boolean; onClose: () => void;
+  onJoin: (id: string) => void;
+}) {
+  const [roomId, setRoomId] = useState('');
+  const [betSats, setBetSats] = useState(1000);
+
+  return (
+    <NervModal open={open} title="JOIN ROOM" titleJp="参加" onClose={onClose}>
+      <NervField label="SESSION ID" jp="セッションID">
+        <input
+          type="text"
+          className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono tracking-wider"
+          value={roomId} placeholder="XXXXXXXX-XXXX-..."
+          onChange={(e) => setRoomId(e.target.value)}
+        />
+      </NervField>
+      <NervField label="BET AMOUNT" jp="掛け金">
+        <input
+          type="number"
+          className="w-full bg-surface-2 border border-border-hi text-bitcoin px-3 py-2.5 text-sm outline-none focus:border-bitcoin transition-colors font-mono"
+          value={betSats} min={1}
+          onChange={(e) => setBetSats(Number(e.target.value))}
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-nerv-dim text-xs pointer-events-none font-mono">SATS</span>
+      </NervField>
+      <NervButton onClick={() => onJoin(roomId)} disabled={!roomId}>CONNECT TO SESSION</NervButton>
+    </NervModal>
+  );
+}
+
+function ControlsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const controls = [
+    { keys: ['←', '→'], action: 'MOVE', jp: '移動' },
+    { keys: ['↓'], action: 'SOFT DROP', jp: 'ソフトドロップ' },
+    { keys: ['↑', 'X'], action: 'ROTATE CW', jp: '時計回り' },
+    { keys: ['Z'], action: 'ROTATE CCW', jp: '反時計回り' },
+    { keys: ['SPACE'], action: 'HARD DROP', jp: 'ハードドロップ' },
+    { keys: ['C'], action: 'HOLD', jp: 'ホールド' },
+  ];
+
+  return (
+    <NervModal open={open} title="CONTROLS" titleJp="操作方法" onClose={onClose}>
+      <div className="flex flex-col gap-1">
+        {controls.map(({ keys, action, jp }) => (
+          <div key={action} className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)] last:border-0">
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-sm tracking-widest text-phosphor">{action}</span>
+              <span className="font-jp text-[10px] text-[rgba(0,255,180,0.3)]">{jp}</span>
+            </div>
+            <div className="flex gap-1.5">
+              {keys.map((k) => (
+                <kbd key={k} className="px-2 py-0.5 border border-[rgba(0,255,180,0.35)] bg-[rgba(0,255,180,0.04)] font-mono text-[11px] text-[rgba(0,255,180,0.7)] tracking-widest">{k}</kbd>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </NervModal>
+  );
+}
+
+// ── Shared primitives ─────────────────────────────────────────────────────────
+
 function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
   const age = Math.floor(Date.now()) - room.createdAt;
-
   return (
     <div className="flex items-center justify-between border border-border px-3 py-2">
       <div className="flex flex-col gap-0.5">
@@ -235,12 +220,9 @@ function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
       </div>
       <div className="flex items-center gap-3">
         <span className="text-bitcoin font-mono text-sm font-bold tracking-wider">
-          {room.betSats.toLocaleString()}
-          <span className="text-nerv-dim text-[10px] font-normal ml-1">SATS</span>
+          {room.betSats.toLocaleString()}<span className="text-nerv-dim text-[10px] font-normal ml-1">SATS</span>
         </span>
-        <button
-          onClick={onJoin}
-          className="px-3 py-1 border border-bitcoin text-bitcoin text-[10px] font-display font-bold tracking-widest hover:bg-bitcoin hover:text-black transition-colors cursor-pointer">
+        <button onClick={onJoin} className="px-3 py-1 border border-bitcoin text-bitcoin text-[10px] font-display font-bold tracking-widest hover:bg-bitcoin hover:text-black transition-colors cursor-pointer">
           JOIN
         </button>
       </div>
@@ -263,8 +245,7 @@ function NervField({ label, jp, children }: { label: string; jp: string; childre
 function NervButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
+      onClick={onClick} disabled={disabled}
       className="w-full py-3 border border-bitcoin text-bitcoin font-display font-bold text-sm tracking-[0.2em] hover:bg-bitcoin hover:text-black transition-colors disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer">
       {children}
     </button>
