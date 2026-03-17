@@ -190,10 +190,10 @@ export function GenesisBlock() {
       className="fixed pointer-events-none select-none"
       style={{ top: '72px', right: '12px', zIndex: 3 }}
     >
-      <div className="flex flex-col" style={{ fontFamily: '"Share Tech Mono", monospace', fontSize: '7.5px', lineHeight: '1.45' }}>
+      <div className="flex flex-col" style={{ fontFamily: '"Share Tech Mono", monospace', fontSize: 'clamp(6px, 0.65vw, 10px)', lineHeight: '1.45' }}>
 
         {/* Header */}
-        <div style={{ color: 'rgba(247,147,26,0.35)', letterSpacing: '0.12em', marginBottom: '4px', fontSize: '7px' }}>
+        <div style={{ color: 'rgba(247,147,26,0.35)', letterSpacing: '0.12em', marginBottom: '4px', fontSize: 'clamp(5px, 0.6vw, 9px)' }}>
           {blockLabel}
         </div>
 
@@ -211,7 +211,7 @@ export function GenesisBlock() {
         })}
 
         {/* Footer */}
-        <div style={{ color: 'rgba(0,170,85,0.25)', letterSpacing: '0.1em', marginTop: '4px', fontSize: '7px' }}>
+        <div style={{ color: 'rgba(0,170,85,0.25)', letterSpacing: '0.1em', marginTop: '4px', fontSize: 'clamp(5px, 0.6vw, 9px)' }}>
           ブロック0 // 創世記 // 2009.01.03
         </div>
 

@@ -75,28 +75,28 @@ export function LobbyScreen() {
       <div className="text-center flex flex-col gap-3 relative z-[3]">
         <div className="nerv-title-box bg-black">
           <h1 className="nerv-title-text font-display font-bold text-bitcoin tracking-[0.03em]">STACKTRIS</h1>
-          <p className="nerv-sub-text text-bitcoin font-display text-[22px] tracking-[0.05em] mt-1">BATTLE TETRIS // ライトニングネットワーク</p>
+          <p className="nerv-sub-text text-bitcoin font-display text-[22px] tracking-[0.05em] mt-1">
+            BATTLE TETRIS // ライトニングネットワーク
+          </p>
         </div>
       </div>
 
       {/* Menu list */}
-      <div className="w-full max-w-sm flex flex-col bg-black relative z-[3]">
+      <div className="w-full max-w-sm flex flex-col relative items-center ">
         {MENU.map((item, i) => {
           const isOpen = expanded === item.id;
           return (
-            <div key={item.id}>
+            <div key={item.id} className="bg-black w-fit flex flex-col gap-2">
               <button
                 onClick={() => handleItem(item.id)}
                 className={cn(
-                  'w-full flex items-center justify-between px-4 py-4 border-b transition-colors cursor-pointer bg-black',
-                  isOpen ? 'border-magi' : 'border-border hover:border-magi/60',
-                  i === 0 && 'border-t',
+                  'w-[12em] flex flex-col items-center justify-between border-[4px] border-magi rounded-md transition-colors cursor-pointer px-4 py-4 border'
                 )}>
                 <span
-                  className={`font-display font-bold tracking-[0.2em] ${isOpen ? 'nerv-menu-label-active' : 'nerv-menu-label'}`}>
+                  className={`font-display font-bold tracking-[0.03em] ${isOpen ? 'nerv-menu-label-active' : 'nerv-menu-label'}`}>
                   {item.label}
                 </span>
-                <span className="font-jp text-[10px] opacity-30 text-magi">{item.jp}</span>
+                <span className="font-jp text-[15px] opacity-30 text-magi tracking-[0.03em] font-bold">{item.jp}</span>
               </button>
 
               {/* Expanded panel */}
@@ -105,7 +105,7 @@ export function LobbyScreen() {
                   {item.id === 'battle' && (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] text-nerv-dim tracking-[0.3em]">OPEN SESSIONS</span>
+                        <span className="font-display text-[10px] text-nerv-dim tracking-[0.03em]">OPEN SESSIONS</span>
                         <span
                           className={`text-[9px] font-mono text-bitcoin tracking-widest transition-opacity ${loadingRooms ? 'opacity-100' : 'opacity-0'}`}>
                           ◌ SYNC
