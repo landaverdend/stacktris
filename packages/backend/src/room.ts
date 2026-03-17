@@ -55,12 +55,12 @@ export class Room {
     };
   }
 
-  public addPlayer(playerId: string, sendFn: SendFn) {
+  public addPlayer(playerId: string, playerName: string, sendFn: SendFn) {
     if (this.isFull) throw new Error(`Room ${this.id} is already full`);
     if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
-    console.log(`[Room] added player ${playerId} to room ${this.id}`);
-    this.players.set(playerId, { playerId, sendFn, ready: false });
+    console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
+    this.players.set(playerId, { playerId, playerName, sendFn, ready: false });
     this.broadcastRoomStateUpdate();
   }
 
@@ -131,7 +131,7 @@ export class Room {
 
   private broadcastRoomStateUpdate() {
     const playerInfoArray: PlayerInfo[] = Array.from(this.players.values())
-      .map(p => ({ playerId: p.playerId, ready: p.ready }));
+      .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready }));
 
     this.players.forEach(player => {
       player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status } });

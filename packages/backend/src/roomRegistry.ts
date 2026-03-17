@@ -24,15 +24,15 @@ export class RoomRegistry {
     sendFn({ type: 'welcome', player_id: playerId });
   }
 
-  public onMessage(playerId: string, msg: ClientMsg): void {
+  public onMessage(playerId: string, playerName: string, msg: ClientMsg): void {
     switch (msg.type) {
       case 'create_room':
         console.log('[RoomManager] create_room: ', msg);
-        this.createRoom(playerId, msg.bet_sats);
+        this.createRoom(playerId, playerName, msg.bet_sats);
         break;
       case 'join_room':
         console.log('[RoomManager] join_room: ', msg);
-        this.joinRoom(playerId, msg.room_id);
+        this.joinRoom(playerId, playerName, msg.room_id);
         break;
       case 'leave_room':
         console.log('[RoomManager] leave_room: ', msg);
@@ -49,23 +49,23 @@ export class RoomRegistry {
     }
   }
 
-  private createRoom(playerId: string, betSats: number): void {
+  private createRoom(playerId: string, playerName: string, betSats: number): void {
     const roomId = crypto.randomUUID();
     const room = new Room(roomId, betSats);
 
     this.rooms.set(roomId, room);
-    room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
+    room.addPlayer(playerId, playerName, this.playerIdToSendFn.get(playerId)!);
     this.playerIdToRoom.set(playerId, roomId);
 
     // Ping back to the player with the room status and id.
     this.playerIdToSendFn.get(playerId)!({ type: 'room_created', room_id: roomId });
   }
 
-  private joinRoom(playerId: string, roomId: string): void {
+  private joinRoom(playerId: string, playerName: string, roomId: string): void {
     try {
       const room = this.rooms.get(roomId);
       if (room) {
-        room.addPlayer(playerId, this.playerIdToSendFn.get(playerId)!);
+        room.addPlayer(playerId, playerName, this.playerIdToSendFn.get(playerId)!);
         this.playerIdToRoom.set(playerId, roomId);
       }
     } catch (error) {

@@ -65,9 +65,10 @@ export function MultiplayerScreen() {
       {/* ── Right panel — lobby or opponent boards ── */}
       {status === 'playing'
         ? <div className="flex flex-wrap gap-4" style={{ maxWidth: 2 * 10 * OPPONENT_CELL_SIZE + 16 }}>
-          {Object.entries(opponentBoards).map(([id, board]) => (
-            <OpponentBoard key={id} board={board} />
-          ))}
+          {Object.entries(opponentBoards).map(([id, board]) => {
+            const info = roomState.players.find(p => p.playerId === id);
+            return <OpponentBoard key={id} board={board} playerName={info?.playerName} />;
+          })}
         </div>
         : <PlayerLobby />}
     </div>
@@ -139,7 +140,7 @@ function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
     <div className="flex items-center justify-between px-5 py-2.5 border-b border-[rgba(0,255,180,0.08)]">
       <div className="flex items-baseline gap-2">
         <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">
-          {player.playerId.slice(0, 8).toUpperCase()}
+          {player.playerName || player.playerId.slice(0, 8).toUpperCase()}
         </span>
         {isYou && <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">あなた</span>}
       </div>

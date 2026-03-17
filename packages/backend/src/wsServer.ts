@@ -4,9 +4,10 @@ import type { IncomingMessage, Server } from 'http';
 import type { ClientMsg, ServerMsg } from '@stacktris/shared';
 import { RoomRegistry } from './roomRegistry.js';
 
-/** A WebSocket with an attached stable player ID. */
+/** A WebSocket with an attached stable player ID and display name. */
 export interface PlayerSocket extends WebSocket {
   playerId: string;
+  playerName: string;
 }
 
 
@@ -30,6 +31,7 @@ export class WSServer {
   private onConnection(ws: WebSocket, _req: IncomingMessage): void {
     const sock = ws as PlayerSocket;
     sock.playerId = crypto.randomUUID();
+    sock.playerName = '';
 
     console.log(`[WSServer] connected: ${sock.playerId}`);
 
@@ -42,9 +44,13 @@ export class WSServer {
     this.roomRegistry.onConnect(sock.playerId, sendFn);
 
     ws.on('message', (data) => {
-      const msg = decode(data as Buffer) as ClientMsg;
-      // Route directly to the room registry
-      this.roomRegistry.onMessage(sock.playerId, msg);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = decode(data as Buffer) as any;
+      if (raw.type === 'set_player_name') {
+        sock.playerName = raw.name ?? '';
+        return;
+      }
+      this.roomRegistry.onMessage(sock.playerId, sock.playerName, raw as ClientMsg);
     });
 
     ws.on('close', () => {
