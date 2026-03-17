@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/RoomContext';
-import { PlayerInfo, COUNTDOWN_SECONDS } from '@stacktris/shared';
+import { PlayerInfo, COUNTDOWN_SECONDS, WINS_TO_MATCH } from '@stacktris/shared';
 import { cn } from '../lib/utils';
 import { useConnection } from '../ws/WSContext';
 import { useMultiplayerGameSession } from '../hooks/useMultiplayerGameSession';
@@ -47,7 +47,11 @@ export function MultiplayerScreen() {
                 className="block nerv-border bg-pit"
               />
               {status === 'countdown' && <CountdownOverlay />}
-              {winnerId !== undefined && <GameOverOverlay winnerId={winnerId} playerId={playerId} />}
+              {winnerId !== undefined && (
+                roomState.matchWinnerId !== null
+                  ? <MatchOverOverlay matchWinnerId={roomState.matchWinnerId} playerId={playerId} />
+                  : <RoundOverOverlay winnerId={winnerId} playerId={playerId} />
+              )}
             </div>
           </div>
         </div>
@@ -82,6 +86,10 @@ function PlayerLobby({ }: PlayerLobbyProps) {
 
   const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (roomState.status === 'waiting') setIsReady(false);
+  }, [roomState.status]);
 
   const handleLeave = () => {
     leaveRoom();
@@ -136,6 +144,7 @@ function PlayerLobby({ }: PlayerLobbyProps) {
 }
 
 function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
+  const pips = Array.from({ length: WINS_TO_MATCH }, (_, i) => i < player.wins ? '■' : '□').join('');
   return (
     <div className="flex items-center justify-between px-5 py-2.5 border-b border-[rgba(0,255,180,0.08)]">
       <div className="flex items-baseline gap-2">
@@ -144,9 +153,12 @@ function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
         </span>
         {isYou && <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">あなた</span>}
       </div>
-      <span className={cn('font-display font-bold text-xl tracking-[0.02em]', player.ready ? 'text-magi' : 'text-phosphor/30')}>
-        {player.ready ? '■ READY' : '◌ WAITING'}
-      </span>
+      <div className="flex items-center gap-3">
+        <span className="font-display text-sm tracking-widest text-magi">{pips}</span>
+        <span className={cn('font-display font-bold text-xl tracking-[0.02em]', player.ready ? 'text-magi' : 'text-phosphor/30')}>
+          {player.ready ? '■ READY' : '◌ WAITING'}
+        </span>
+      </div>
     </div>
   );
 }
@@ -178,14 +190,31 @@ function RoomIdBadge({ roomId }: { roomId: string }) {
   );
 }
 
-function GameOverOverlay({ winnerId, playerId }: { winnerId: string | null; playerId: string | null }) {
+function RoundOverOverlay({ winnerId, playerId }: { winnerId: string | null; playerId: string | null }) {
   const isWinner = winnerId !== null && winnerId === playerId;
   const isDraw = winnerId === null;
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70">
-      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE TERMINATED</p>
-      <p className={cn('font-display font-bold leading-none text-5xl tracking-[0.2em]', isWinner ? 'text-magi' : 'text-alert')}>
+      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// ROUND TERMINATED</p>
+      <p className={cn('font-display font-bold leading-none text-5xl tracking-[0.2em]', isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert')}>
+        {isDraw ? 'DRAW' : isWinner ? 'ROUND WIN' : 'ROUND LOSS'}
+      </p>
+      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">
+        {isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}
+      </p>
+    </div>
+  );
+}
+
+function MatchOverOverlay({ matchWinnerId, playerId }: { matchWinnerId: string | null; playerId: string | null }) {
+  const isWinner = matchWinnerId !== null && matchWinnerId === playerId;
+  const isDraw = matchWinnerId === null;
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
+      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE TERMINATED</p>
+      <p className={cn('font-display font-bold leading-none text-5xl tracking-[0.2em]', isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert')}>
         {isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT'}
       </p>
       <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">
@@ -207,7 +236,7 @@ function CountdownOverlay() {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// COMBAT SEQUENCE INITIATING</p>
+      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE INITIATING</p>
       <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
         {countdownDisplay}
       </p>

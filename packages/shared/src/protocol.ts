@@ -49,8 +49,10 @@ export interface PlayerInfo {
   playerId: string;
   playerName: string;
   ready: boolean;
+  wins: number;
 }
 
+export const WINS_TO_MATCH = 3;
 
 export type RoomStatus = "waiting" | "countdown" | "playing" | "finished"
 
@@ -58,6 +60,7 @@ export interface RoomState {
   roomId: string;
   players: PlayerInfo[];
   status: RoomStatus;
+  matchWinnerId: string | null;
 }
 
 // ── Server → Client ───────────────────────────────────────────────────────────

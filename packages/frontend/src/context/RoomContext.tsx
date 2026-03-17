@@ -23,7 +23,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   const { status: connectionStatus } = useConnection();
 
-  const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '', status: 'waiting' });
+  const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '', status: 'waiting', matchWinnerId: null });
 
   useEffect(() => {
     const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {

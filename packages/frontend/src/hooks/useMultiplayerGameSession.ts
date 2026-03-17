@@ -23,6 +23,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       if (!board.current || !queue.current || !hold.current) return;
 
       setWinnerId(undefined);
+      setOpponentBoards({});
       gameSession.current = new NetworkGame(msg.seed, ws);
       unsubGarbage.current = gameSession.current.subscribeGarbage(setPendingGarbage);
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });

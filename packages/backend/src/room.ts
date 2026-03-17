@@ -1,4 +1,4 @@
-import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus } from "@stacktris/shared";
+import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus, WINS_TO_MATCH } from "@stacktris/shared";
 import { GameSession } from "./gameSession.js";
 import { PlayerSlot, SendFn } from "./types.js";
 
@@ -7,7 +7,7 @@ const VALID_TRANSITIONS: Record<RoomStatus, RoomStatus[]> = {
   waiting: ['countdown'],
   countdown: ['waiting', 'playing'],
   playing: ['finished'],
-  finished: [],
+  finished: ['waiting'],
 };
 
 class RoomStateMachine {
@@ -30,6 +30,8 @@ export class Room {
   private createdAt: number = Date.now();
   private betSats: number;
   private players: Map<string, PlayerSlot> = new Map();
+  private wins: Map<string, number> = new Map();
+  private matchWinnerId: string | null = null;
 
   private fsm = new RoomStateMachine();
   private countdownTimer: NodeJS.Timeout | null = null;
@@ -61,6 +63,7 @@ export class Room {
 
     console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
     this.players.set(playerId, { playerId, playerName, sendFn, ready: false });
+    this.wins.set(playerId, 0);
     this.broadcastRoomStateUpdate();
   }
 
@@ -125,16 +128,34 @@ export class Room {
   private onGameEnd(winnerId: string | null) {
     this.fsm.transition('finished');
     this.game = null;
-    console.log(`[Room] game over in room ${this.id}, winner: ${winnerId ?? 'draw'}`);
+
+    if (winnerId) {
+      const w = (this.wins.get(winnerId) ?? 0) + 1;
+      this.wins.set(winnerId, w);
+      if (w >= WINS_TO_MATCH) {
+        this.matchWinnerId = winnerId;
+      }
+    }
+
+    console.log(`[Room] round over in room ${this.id}, winner: ${winnerId ?? 'draw'}, match winner: ${this.matchWinnerId ?? 'none'}`);
     this.broadcastRoomStateUpdate();
+
+    // If match is still going, reset to waiting after a short delay so players can ready up again.
+    if (!this.matchWinnerId) {
+      setTimeout(() => {
+        this.players.forEach(p => { p.ready = false; });
+        this.fsm.transition('waiting');
+        this.broadcastRoomStateUpdate();
+      }, 3000);
+    }
   }
 
   private broadcastRoomStateUpdate() {
     const playerInfoArray: PlayerInfo[] = Array.from(this.players.values())
-      .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready }));
+      .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status } });
+      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId } });
     });
   }
 }
