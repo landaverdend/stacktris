@@ -86,7 +86,7 @@ export function LobbyScreen() {
             <GlitchTitle />
             <div className="bg-bitcoin" style={{ height: '4px', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
           </div>
-          <p className="nerv-sub-text text-teal font-display text-[22px] tracking-[0.05em] mt-1">
+          <p className="nerv-sub-text text-phosphor font-display text-[22px] tracking-[0.05em] mt-1">
             BATTLE TETRIS // ライトニングネットワーク
           </p>
         </div>
@@ -99,9 +99,9 @@ export function LobbyScreen() {
             <button
               onClick={() => handleItem(item.id)}
               className={cn(
-                'w-[12em] flex flex-col items-center justify-between nerv-border nerv-border-teal transition-colors cursor-pointer hover:text-magi'
+                'w-[12em] flex flex-col items-center justify-between nerv-border nerv-border-teal transition-colors cursor-pointer hover:opacity-70 '
               )}>
-              <span className="font-display font-bold text-3xl tracking-[0.03em]">
+              <span className="font-display font-bold text-3xl tracking-[0.03em] text-phosphor">
                 {item.label}
               </span>
               <span className="font-jp text-[15px] opacity-30 text-magi tracking-[0.03em] font-bold">{item.jp}</span>

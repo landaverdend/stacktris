@@ -68,14 +68,15 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
         {/* Title */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           <div className="w-full flex flex-col gap-0.5 items-center">
-            <h2 className="font-display text-6xl leading-none text-teal font-bold tracking-[0.05em]" style={{ textShadow: '0 0 8px rgba(0,170,85,0.7), 0 0 24px rgba(0,170,85,0.3)' }}>
+            <h2 className="font-display text-6xl text-phosphor leading-none font-bold tracking-[0.05em]" style={{ textShadow: '0 0 8px rgba(0,255,180,0.6), 0 0 24px rgba(0,255,180,0.25)' }}>
               {title}
             </h2>
-            <span className="font-jp text-[20px] text-teal tracking-[0.05em] font-bold">{titleJp}</span>
+            <span className="font-jp text-[20px] tracking-[0.05em] font-bold text-magi">{titleJp}</span>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center self-start text-teal font-display text-xl font-bold hover:border-[rgba(0,255,180,0.8)] hover:text-[rgba(0,255,180,1)] transition-all duration-150 cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center self-start font-display text-xl font-bold transition-opacity duration-150 cursor-pointer opacity-40 hover:opacity-100"
+            style={{ color: '#00ffb4' }}
             aria-label="Close"
           >
             ✕
@@ -83,7 +84,7 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
         </div>
 
         {/* Divider */}
-        <div className="self-center w-8/10 bg-bitcoin" style={{ height: '4px', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
+        <div className="self-center w-8/10 bg-phosphor" style={{ height: '4px', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
 
         {/* Content */}
         <div className="px-6 pb-6">

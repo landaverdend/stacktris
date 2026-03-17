@@ -7,6 +7,8 @@
   --color-nerv-faint: #1f0d03;
   --color-alert: #cc2200;
   --color-magi: #00aa55; /* MAGI green — online/active */
+  --color-teal: #00ffb4; /* NERV teal — UI accent */
+  --color-phosphor: #c8a882; /* warm beige — default text */
 
   --color-pit: #050505;
   --color-surface: #0c0600;
@@ -190,14 +192,15 @@
   }
 }
 
-/* Open / close transforms */
+/* Open / close */
 .nerv-modal-in {
   opacity: 1;
-  transform: scaleY(1) translateY(0);
+  transform: translateY(0);
 }
 .nerv-modal-out {
   opacity: 0;
-  transform: scaleY(0.92) translateY(12px);
+  transform: translateY(0);
+  pointer-events: none;
 }
 
 /* Title glow */
