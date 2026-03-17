@@ -83,7 +83,6 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
         </div>
 
         {/* Divider */}
-        {/* <div className="mx-6 mb-5 mt-3 h-[2px] bg-teal" /> */}
         <div className="self-center w-8/10 bg-bitcoin" style={{ height: '4px', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
 
         {/* Content */}
