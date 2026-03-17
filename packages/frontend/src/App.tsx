@@ -10,8 +10,8 @@ import { NameEntryScreen } from './screens/NameEntryScreen';
 import { useConnection } from './ws/WSContext';
 
 function AppInner() {
-  const { status, playerName } = useConnection();
-  const showNameEntry = status === 'connected' && playerName === null;
+  const { playerName } = useConnection();
+  const showNameEntry = playerName === null;
 
   return (
     <>
