@@ -1,6 +1,6 @@
 import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
-import { createGameState, GameState, mulberry32, PendingGarbage } from "./state.js";
+import { createGameState, GameState, GRAVITY_TABLE, mulberry32, PendingGarbage } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
 import { boardCells } from "./pieces.js";
@@ -21,6 +21,7 @@ export const GARBAGE_TABLE: Record<number, number> = {
 
 export type EngineConfig = {
   seed?: number;
+  startLevel?: number;
   initialGameState?: GameState;
 }
 
@@ -42,6 +43,7 @@ export type EngineEventMap = {
 export class GameEngine {
 
   private seed: number;
+  private startLevel: number;
   private state: GameState;
   private tickCount = 0;
   private garbageRng: () => number;
@@ -51,6 +53,7 @@ export class GameEngine {
 
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
+    this.startLevel = config?.startLevel ?? 0;
     this.garbageRng = mulberry32(this.seed);
 
     if (!config) {
@@ -175,6 +178,7 @@ export class GameEngine {
     const linesCleared = clearLines(this.state.board);
     if (linesCleared > 0) {
       this.state.lines += linesCleared;
+      this.applyLevelProgression();
 
       const attack = GARBAGE_TABLE[linesCleared] ?? 0;
       const netAttack = this.clearPendingGarbage(attack);
@@ -182,7 +186,6 @@ export class GameEngine {
         this.emitter.emit('attack', netAttack);
       }
     }
-
 
     // Lock out: any part of the piece is in the invisible buffer zone
     const cells = [...boardCells(this.state.activePiece)];
@@ -276,6 +279,18 @@ export class GameEngine {
     }
     this.setPendingGarbage(queue);
     return n; // leftover lines not cancelled = net attack
+  }
+
+  private applyLevelProgression(): void {
+    if (this.state.gravityMode !== 'solo') return;
+
+    const threshold = this.startLevel * 10 + 10;
+    const newLevel = this.state.lines < threshold
+      ? this.startLevel
+      : this.startLevel + 1 + Math.floor((this.state.lines - threshold) / 10);
+
+    this.state.level = newLevel;
+    this.state.gravity = GRAVITY_TABLE[Math.min(newLevel + 1, 20)] ?? GRAVITY_TABLE[20];
   }
 
   private setPendingGarbage(val: PendingGarbage[]): void {
