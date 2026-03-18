@@ -28,15 +28,20 @@ export const MAX_PLAYERS = 8;
 export class Room {
   private id: string;
   private createdAt: number = Date.now();
+
   private betSats: number;
+
   private players: Map<string, PlayerSlot> = new Map();
   private wins: Map<string, number> = new Map();
-  private matchWinnerId: string | null = null;
 
+  private matchWinnerId: string | null = null;
   private fsm = new RoomStateMachine();
+
   private countdownTimer: NodeJS.Timeout | null = null;
   private readonly COUNTDOWN_DURATION = COUNTDOWN_SECONDS * 1000;
   private game: GameSession | null = null;
+
+  private _isSessionStarted = false; // Whether or not the game has started, independent of the room status. Enabled on first match start.
 
   constructor(id: string, betSats: number) {
     this.id = id;
@@ -47,6 +52,7 @@ export class Room {
   get playerCount() { return this.players.size; }
   get isFull() { return this.players.size >= MAX_PLAYERS; }
   get isEmpty() { return this.players.size === 0; }
+  get isSessionStarted() { return this._isSessionStarted; }
 
   get roomInfo(): RoomInfo {
     return {
@@ -119,6 +125,7 @@ export class Room {
   }
 
   private startGame() {
+    this._isSessionStarted = true;
     this.fsm.transition('playing');
     this.game = new GameSession(Array.from(this.players.values()));
     this.game.subscribe('gameOver', (winnerId) => this.onGameEnd(winnerId));

@@ -1,5 +1,5 @@
 import { ClientMsg, RoomInfo } from '@stacktris/shared';
-import { Room } from './room.js';
+import { MAX_PLAYERS, Room } from './room.js';
 import { SendFn } from './types.js';
 
 export class RoomRegistry {
@@ -10,7 +10,7 @@ export class RoomRegistry {
   private rooms: Map<string, Room> = new Map();
   private playerIdToRoom = new Map<string, string>();
 
-  constructor() {}
+  constructor() { }
 
   get roomCount() {
     return this.rooms.size;
@@ -102,9 +102,15 @@ export class RoomRegistry {
     }
   }
 
+  /**
+   * Don't show rooms that:
+   * - Are in progress
+   * - Are full
+   * @returns List of rooms that are waiting to start a new match.
+   */
   public listRooms(): RoomInfo[] {
     return Array.from(this.rooms.values())
-      .filter((room) => room.status === 'waiting')
+      .filter((room) => room.playerCount < MAX_PLAYERS && !room.isSessionStarted)
       .map((room) => room.roomInfo);
   }
 }

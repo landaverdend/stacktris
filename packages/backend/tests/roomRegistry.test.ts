@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RoomRegistry } from '../src/roomRegistry.js';
 import { SendFn } from '../src/types.js';
+import { MAX_PLAYERS } from '../src/room.js';
 
 const makeSend = (): SendFn => vi.fn();
 
@@ -106,6 +107,37 @@ describe('RoomRegistry', () => {
       expect(registry.listRooms()).toHaveLength(0);
       vi.useRealTimers();
     });
+
+    it('does not return rooms that are full', () => {
+      connect(registry, 'first');
+      registry.onMessage('first', '', { type: 'create_room', bet_sats: 0 });
+      const roomId = registry.roomForPlayer('first')!;
+      for (let i = 0; i < MAX_PLAYERS - 1; i++) {
+        connect(registry, `p${i}`);
+        registry.onMessage(`p${i}`, '', { type: 'join_room', room_id: roomId });
+      }
+      expect(registry.listRooms()).toHaveLength(0);
+    })
+
+    it('does not return a room that is mid-match', () => {
+      vi.useFakeTimers();
+      connect(registry, 'first');
+      registry.onMessage('first', '', { type: 'create_room', bet_sats: 0 });
+
+      const roomId = registry.roomForPlayer('first')!;
+      connect(registry, 'second');
+
+      registry.onMessage('second', '', { type: 'join_room', room_id: roomId });
+
+      // Both players ready up
+      // Game starts
+      registry.onMessage('first', '', { type: 'ready_update', ready: true });
+      registry.onMessage('second', '', { type: 'ready_update', ready: true });
+
+      vi.advanceTimersByTime(5000);
+      expect(registry.listRooms()).toHaveLength(0);
+    })
+
   });
 
   describe('onDisconnect', () => {
