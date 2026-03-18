@@ -6,6 +6,29 @@ export { LockDelay } from './pieces.js';
 
 export const QUEUE_SIZE = 5;
 
+export const GRAVITY_TABLE: Record<number, number> = {
+  1: 0.02,
+  2: 0.04,
+  3: 0.06,
+  4: 0.08,
+  5: 0.1,
+  6: 0.12,
+  7: 0.14,
+  8: 0.16,
+  9: 0.18,
+  10: 0.2,
+  11: 0.22,
+  12: 0.24,
+  13: 0.26,
+  14: 0.28,
+  15: 0.3,
+  16: 0.32,
+  17: 0.34,
+  18: 0.36,
+  19: 0.38,
+  20: 0.4,
+}
+
 export interface GameState {
   board: Board;
   activePiece: ActivePiece;
@@ -13,6 +36,8 @@ export interface GameState {
 
   gravity: number;
   gravityAccumulator: number;
+  gravityMode: 'solo' | 'multiplayer'; // Whether gravity is affected by time or by lines cleared.
+
 
   holdPiece: PieceKind | null;
   holdUsed: boolean;
@@ -20,7 +45,7 @@ export interface GameState {
   // Player stats
   // score: number;
   lines: number;
-  // level: number;
+  level: number;
   // combo: number;
   pendingGarbage: PendingGarbage[];
 
@@ -28,7 +53,7 @@ export interface GameState {
 }
 
 
-export function createGameState(seed: number): GameState {
+export function createGameState(seed: number, gravityMode: 'solo' | 'multiplayer' = 'solo'): GameState {
 
   const bag = new SeededPieceBag(seed);
   const board = emptyBoard();
@@ -42,12 +67,15 @@ export function createGameState(seed: number): GameState {
     holdPiece: null,
     holdUsed: false,
 
+    gravityMode,
+
     // Gravity settings 
-    gravity: 0.02, // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
+    gravity: GRAVITY_TABLE[1], // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
     gravityAccumulator: 0, // rewinds when threshold of 1 is reached.
 
 
     lines: 0,
+    level: 0,
     pendingGarbage: [],
 
     isGameOver: false,

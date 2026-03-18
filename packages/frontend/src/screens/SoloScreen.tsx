@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
-import { GameStats, LocalGame } from '../game/LocalGame';
+import { LocalGame } from '../game/LocalGame';
+
 
 export function SoloScreen() {
   const navigate = useNavigate();
@@ -11,11 +12,19 @@ export function SoloScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
 
-  const [stats] = useState<GameStats>({ score: 0, lines: 0, level: 0 });
+  const [score] = useState(0);
+  const [lines, setLines] = useState(0);
+  const [level, setLevel] = useState(0);
 
   useEffect(() => {
     const game = new LocalGame();
     game.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! });
+
+    game.subscribe('pieceLocked', () => {
+      setLines(game.state.lines);
+      setLevel(game.state.level);
+    });
+
     return () => game.stop();
   }, []);
 
@@ -62,9 +71,9 @@ export function SoloScreen() {
         </div>
 
         <div className="flex flex-col">
-          <StatRow label="SCORE" jp="スコア" value={stats.score.toLocaleString()} />
-          <StatRow label="LINES" jp="ライン" value={String(stats.lines)} />
-          <StatRow label="LEVEL" jp="レベル" value={String(stats.level)} />
+          <StatRow label="SCORE" jp="スコア" value={score.toLocaleString()} />
+          <StatRow label="LINES" jp="ライン" value={String(lines)} />
+          <StatRow label="LEVEL" jp="レベル" value={String(level)} />
         </div>
 
         <div className="px-5 py-4 border-t border-[rgba(0,255,180,0.08)]">

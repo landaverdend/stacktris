@@ -1,4 +1,4 @@
-import { GameEngine, GameState } from '@stacktris/shared';
+import { EngineEventMap, GameEngine, GameState } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
 import { TICK_MS } from './NetworkGame';
@@ -32,8 +32,8 @@ export class LocalGame {
       this.gameEngine.handleInput(action);
     });
 
-    this.gameEngine.subscribe('gameOver', () => {
-      alert('Game Over')
+    this.subscribe('gameOver', () => {
+      alert('Game Over');
     })
 
   }
@@ -75,5 +75,10 @@ export class LocalGame {
   stop(): void {
     cancelAnimationFrame(this.rafId);
     this.inputHandler.detach();
+  }
+
+  // Wrapper...
+  subscribe(event: keyof EngineEventMap, fn: (event: EngineEventMap[keyof EngineEventMap]) => void): () => void {
+    return this.gameEngine.subscribe(event, fn);
   }
 }

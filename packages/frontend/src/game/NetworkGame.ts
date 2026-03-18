@@ -28,7 +28,6 @@ export class NetworkGame {
   constructor(seed: number, private readonly ws: WSClient) {
     this.gameEngine = new GameEngine({ seed });
 
-
     this.inputHandler = new InputHandler(action => {
       this.inputBuffer.push({ action, frame: this.frameCount });
       this.gameEngine.handleInput(action);
@@ -36,7 +35,6 @@ export class NetworkGame {
 
     this.ws.on('game_snapshot', (msg: ServerMsg) => {
       // this.gameEngine.setState(snapshot);
-      console.log('NetworkGame game snapshot', msg);
     })
 
     this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number }) => {
