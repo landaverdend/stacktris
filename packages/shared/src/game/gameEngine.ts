@@ -212,44 +212,39 @@ export class GameEngine {
   }
 
   handleInput(input: InputAction) {
-    if (this.state.activePiece.isFloored) {
-      // Take off a reset from the total amoutn remaining.
-      this.state.activePiece.totalResets++;
-
-      if (this.state.activePiece.totalResets < MAX_LOCK_RESETS) {
-        this.state.activePiece.timeOnFloor = 0;
-      }
-
-    }
+    let moved = false;
 
     switch (input) {
       case 'move_left':
         if (canMoveLeft(this.state.board, this.state.activePiece)) {
-          applyMovement(this.state.activePiece, 'move_left')
+          applyMovement(this.state.activePiece, 'move_left');
+          moved = true;
         }
         break;
 
       case 'move_right':
         if (canMoveRight(this.state.board, this.state.activePiece)) {
-          applyMovement(this.state.activePiece, 'move_right')
+          applyMovement(this.state.activePiece, 'move_right');
+          moved = true;
         }
         break;
       // TODO: if they are already on the ground, lock the piece into place.
       case 'soft_drop':
         if (canMoveDown(this.state.board, this.state.activePiece)) {
-          applyMovement(this.state.activePiece, 'move_down')
+          applyMovement(this.state.activePiece, 'move_down');
+          moved = true;
         }
         break;
       case 'rotate_cw':
-        tryRotate(this.state.board, this.state.activePiece, true);
+        moved = tryRotate(this.state.board, this.state.activePiece, true);
         break;
       case 'rotate_ccw':
-        tryRotate(this.state.board, this.state.activePiece, false);
+        moved = tryRotate(this.state.board, this.state.activePiece, false);
         break;
       case 'hard_drop':
         sonicDrop(this.state.board, this.state.activePiece);
         this.handleLock();
-        break;
+        return; // no reset logic needed after a hard drop
 
       // Hold the current piece and spawn a new one
       case 'hold':
@@ -265,9 +260,15 @@ export class GameEngine {
           this.spawnNewPiece(temp);
         }
         this.state.holdUsed = true;
-        break;
+        return; // no reset logic needed after a hold
     }
 
+    if (moved && this.state.activePiece.isFloored) {
+      this.state.activePiece.totalResets++;
+      if (this.state.activePiece.totalResets < MAX_LOCK_RESETS) {
+        this.state.activePiece.timeOnFloor = 0;
+      }
+    }
   }
 
   addGarbage(n: number, triggerFrame: number): void {
