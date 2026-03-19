@@ -7,7 +7,12 @@ export { LockDelay } from './pieces.js';
 export const QUEUE_SIZE = 5;
 
 export function gravityForLevel(level: number): number {
-  return 0.02 * level;
+  const capped = Math.min(level, 40);
+  if (capped <= 15) {
+    return 0.02 * capped;
+  }
+  // Exponential ramp above level 15 — adjust the base (1.5) to tune aggressiveness
+  return 0.30 * Math.pow(1.65, capped - 15);
 }
 
 export interface GameState {
