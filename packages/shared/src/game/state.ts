@@ -6,27 +6,8 @@ export { LockDelay } from './pieces.js';
 
 export const QUEUE_SIZE = 5;
 
-export const GRAVITY_TABLE: Record<number, number> = {
-  1: 0.02,
-  2: 0.04,
-  3: 0.06,
-  4: 0.08,
-  5: 0.1,
-  6: 0.12,
-  7: 0.14,
-  8: 0.16,
-  9: 0.18,
-  10: 0.2,
-  11: 0.22,
-  12: 0.24,
-  13: 0.26,
-  14: 0.28,
-  15: 0.3,
-  16: 0.32,
-  17: 0.34,
-  18: 0.36,
-  19: 0.38,
-  20: 0.4,
+export function gravityForLevel(level: number): number {
+  return 0.02 * level;
 }
 
 export interface GameState {
@@ -69,8 +50,8 @@ export function createGameState(seed: number, gravityMode: 'solo' | 'multiplayer
 
     gravityMode,
 
-    // Gravity settings 
-    gravity: GRAVITY_TABLE[1], // 0.02 * 50 frames = 1 row => ~0.83 seconds to fall 1 row 
+    // Gravity settings
+    gravity: gravityForLevel(1),
     gravityAccumulator: 0, // rewinds when threshold of 1 is reached.
 
 

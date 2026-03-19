@@ -1,6 +1,6 @@
 import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
-import { createGameState, GameState, GRAVITY_TABLE, mulberry32, PendingGarbage } from "./state.js";
+import { createGameState, GameState, gravityForLevel, mulberry32, PendingGarbage } from "./state.js";
 import { InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
 import { boardCells } from "./pieces.js";
@@ -64,7 +64,7 @@ export class GameEngine {
 
     if (this.startLevel > 0 && !config?.initialGameState) {
       this.state.level = this.startLevel;
-      this.state.gravity = GRAVITY_TABLE[Math.min(this.startLevel + 1, 20)] ?? GRAVITY_TABLE[20];
+      this.state.gravity = gravityForLevel(this.startLevel);
     }
   }
 
@@ -74,7 +74,7 @@ export class GameEngine {
 
   setGravityLevel(level: number): void {
     this.state.level = level;
-    this.state.gravity = GRAVITY_TABLE[Math.min(level + 1, 20)] ?? GRAVITY_TABLE[20];
+    this.state.gravity = gravityForLevel(level);
   }
 
   /**
@@ -300,7 +300,7 @@ export class GameEngine {
       : this.startLevel + 1 + Math.floor((this.state.lines - threshold) / 10);
 
     this.state.level = newLevel;
-    this.state.gravity = GRAVITY_TABLE[Math.min(newLevel + 1, 20)] ?? GRAVITY_TABLE[20];
+    this.state.gravity = gravityForLevel(newLevel);
   }
 
   private setPendingGarbage(val: PendingGarbage[]): void {

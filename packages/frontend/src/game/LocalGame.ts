@@ -26,7 +26,7 @@ export class LocalGame {
   private simTime = 0;
 
   constructor() {
-    this.gameEngine = new GameEngine({ startLevel: 20 });
+    this.gameEngine = new GameEngine({ startLevel: 0 });
 
     this.inputHandler = new InputHandler(action => {
       this.gameEngine.handleInput(action);
