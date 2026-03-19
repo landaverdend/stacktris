@@ -78,7 +78,7 @@ export class Room {
     this.players.delete(playerId);
 
     if (this.status === 'countdown') this.cancelCountdown();
-    if (this.status === 'playing') { this.game?.destroy(); this.game = null; }
+    if (this.status === 'playing') this.game?.removePlayer(playerId);
 
     this.broadcastRoomStateUpdate();
   }

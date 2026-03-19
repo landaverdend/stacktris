@@ -45,11 +45,11 @@ const { GameSession } = await import('../src/gameSession.js');
 
 const makeSend = (): SendMock => vi.fn();
 
-function makeSlots(ids: string[]): { slots: { playerId: string; sendFn: SendMock; ready: boolean }[]; sends: Record<string, SendMock> } {
+function makeSlots(ids: string[]): { slots: { playerId: string; playerName: string; sendFn: SendMock; ready: boolean }[]; sends: Record<string, SendMock> } {
   const sends: Record<string, SendMock> = {};
   const slots = ids.map(id => {
     sends[id] = makeSend();
-    return { playerId: id, sendFn: sends[id], ready: true };
+    return { playerId: id, playerName: id, sendFn: sends[id], ready: true };
   });
   return { slots, sends };
 }
@@ -166,17 +166,162 @@ describe('GameSession — game over', () => {
 
     const [pg1, pg2, pg3] = MockPlayerGame.instances;
 
-    // Eliminate p2
+    // Eliminate p2 (p1's first target)
     pg2.emit('gameOver');
 
     vi.clearAllMocks();
 
-    // p1 sends an attack — should only reach p3, not the eliminated p2
+    // p1 attacks — p2 is dead so the cycle skips to p3
     pg1.emit('attack', 2);
 
     expect(pg3.addGarbage).toHaveBeenCalled();
     expect(pg2.addGarbage).not.toHaveBeenCalled();
     expect(sentTypes(sends['p3'])).toContain('game_garbage_incoming');
     expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+  });
+});
+
+// ── PPT-style targeting ───────────────────────────────────────────────────────
+
+describe('GameSession — garbage targeting', () => {
+  beforeEach(() => {
+    MockPlayerGame.instances = [];
+    vi.clearAllMocks();
+  });
+
+  it('sends garbage to exactly one player, not all', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2', 'p3']);
+    new GameSession(slots);
+
+    const [pg1] = MockPlayerGame.instances;
+    pg1.emit('attack', 2);
+
+    const receivers = ['p2', 'p3'].filter(id => sentTypes(sends[id]).includes('game_garbage_incoming'));
+    expect(receivers).toHaveLength(1);
+  });
+
+  it('cycles the target on successive attacks', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2', 'p3']);
+    new GameSession(slots);
+
+    const [pg1] = MockPlayerGame.instances;
+
+    pg1.emit('attack', 2);
+    const first = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+
+    vi.clearAllMocks();
+
+    pg1.emit('attack', 2);
+    const second = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+
+    expect(second).not.toBe(first);
+  });
+
+  it('cycles back around after reaching the end of the player order', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2', 'p3']);
+    new GameSession(slots);
+
+    const [pg1] = MockPlayerGame.instances;
+
+    pg1.emit('attack', 1); // first target
+    const first = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+    vi.clearAllMocks();
+
+    pg1.emit('attack', 1); // second target
+    vi.clearAllMocks();
+
+    pg1.emit('attack', 1); // should wrap back to first target
+    const third = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+
+    expect(third).toBe(first);
+  });
+
+  it('in a 2-player game always targets the opponent', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2']);
+    new GameSession(slots);
+
+    const [pg1] = MockPlayerGame.instances;
+
+    pg1.emit('attack', 2);
+    expect(sentTypes(sends['p2'])).toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p1'])).not.toContain('game_garbage_incoming');
+
+    vi.clearAllMocks();
+
+    pg1.emit('attack', 2);
+    expect(sentTypes(sends['p2'])).toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p1'])).not.toContain('game_garbage_incoming');
+  });
+
+  it('sends no garbage when the attacker is the last alive player', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2']);
+    new GameSession(slots);
+
+    const [pg1, pg2] = MockPlayerGame.instances;
+    pg2.emit('gameOver');
+
+    vi.clearAllMocks();
+
+    pg1.emit('attack', 4);
+    expect(sentTypes(sends['p1'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+  });
+
+  it('removePlayer cleans up the player so they no longer receive garbage', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2', 'p3']);
+    const session = new GameSession(slots);
+
+    const [pg1] = MockPlayerGame.instances;
+
+    // p2 disconnects mid-game
+    session.removePlayer('p2');
+
+    vi.clearAllMocks();
+
+    // p1 attacks — p2 is gone so p3 should be the target
+    pg1.emit('attack', 2);
+
+    expect(sentTypes(sends['p3'])).toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+  });
+
+  it('removePlayer triggers game_over when only one player remains', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2', 'p3']);
+    const session = new GameSession(slots);
+
+    const onGameOver = vi.fn();
+    session.subscribe('gameOver', onGameOver);
+
+    session.removePlayer('p1');
+    expect(onGameOver).not.toHaveBeenCalled();
+
+    session.removePlayer('p2');
+    expect(onGameOver).toHaveBeenCalledOnce();
+    expect(onGameOver).toHaveBeenCalledWith('p3');
+
+    for (const send of Object.values(sends)) {
+      const msg = sentMessages(send).find(m => m.type === 'game_over');
+      expect(msg).toMatchObject({ type: 'game_over', winnerId: 'p3' });
+    }
+  });
+
+  it('skips multiple consecutive dead players', () => {
+    const { slots, sends } = makeSlots(['p1', 'p2', 'p3', 'p4']);
+    new GameSession(slots);
+
+    const [pg1, pg2, pg3] = MockPlayerGame.instances;
+
+    // p1's first target is p2, second is p3 — eliminate both
+    pg2.emit('gameOver');
+    pg3.emit('gameOver');
+
+    vi.clearAllMocks();
+
+    // p1 attacks — should skip p2 and p3, land on p4
+    pg1.emit('attack', 2);
+
+    expect(sentTypes(sends['p4'])).toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p3'])).not.toContain('game_garbage_incoming');
   });
 });

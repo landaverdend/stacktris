@@ -10,10 +10,17 @@ export class GameSession {
 
   private players: Record<string, PlayerSlot> = {}
   private playerGames: Record<string, PlayerGame> = {};
+
   private alivePlayers: Set<string> = new Set();
+
   private gameEnded = false;
+
   private gravityLevel = MULTIPLAYER_GRAVITY_CONFIG.START_LEVEL;
   private gravityTimer: ReturnType<typeof setInterval> | null = null;
+
+  // PPT-style targeting: stable player order + per-attacker index into that order
+  private playerOrder: string[] = [];
+  private targetIndices: Record<string, number> = {};
 
   private emitter = new Emitter<GameSessionEventMap>();
   subscribe = this.emitter.subscribe.bind(this.emitter);
@@ -43,14 +50,20 @@ export class GameSession {
     this.seed = Math.floor(Math.random() * 2 ** 32);
 
     // Create PlayerGames AFTER seed is finalized so server and client share the same seed
-    this.alivePlayers = new Set(Object.keys(this.players));
+    this.playerOrder = Object.keys(this.players);
+    this.alivePlayers = new Set(this.playerOrder);
+
+    // Each player starts targeting the next player in order
+    for (let i = 0; i < this.playerOrder.length; i++) {
+      this.targetIndices[this.playerOrder[i]] = (i + 1) % this.playerOrder.length;
+    }
 
     for (const playerId of Object.keys(this.players)) {
       const pg = new PlayerGame(this.seed);
 
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
       pg.subscribe('pieceLocked', ({ board }) => this.broadcastBoardUpdate(playerId, board));
-      pg.subscribe('gameOver', () => this.handlePlayerOut(playerId));
+      pg.subscribe('gameOver', () => this.removePlayer(playerId));
 
       this.playerGames[playerId] = pg;
     }
@@ -87,8 +100,14 @@ export class GameSession {
     }
   }
 
-  private handlePlayerOut(playerId: string): void {
+  /** Remove a player from the session — used for both engine game-over and disconnects. */
+  public removePlayer(playerId: string): void {
     if (this.gameEnded) return;
+
+    // Remove from gameplay structures; playerOrder kept as tombstone (advanceTarget skips non-alive)
+    // players is intentionally kept so the removed player still receives the final game_over broadcast
+    delete this.playerGames[playerId];
+    delete this.targetIndices[playerId];
     this.alivePlayers.delete(playerId);
 
     if (this.alivePlayers.size === 1) {
@@ -106,11 +125,26 @@ export class GameSession {
   }
 
   private routeGarbage(attackerId: string, lines: number, triggerFrame: number): void {
-    for (const [id, game] of Object.entries(this.playerGames)) {
-      if (id === attackerId || !this.alivePlayers.has(id)) continue;
-      game.addGarbage(lines, triggerFrame);
-      this.players[id].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
+    const targetId = this.advanceTarget(attackerId);
+    if (!targetId) return;
+    this.playerGames[targetId].addGarbage(lines, triggerFrame);
+    this.players[targetId].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
+  }
+
+  /** Returns the next alive target for the attacker and advances their index. */
+  private advanceTarget(attackerId: string): string | null {
+    const n = this.playerOrder.length;
+    let idx = this.targetIndices[attackerId];
+
+    for (let i = 0; i < n; i++) {
+      const candidate = this.playerOrder[idx];
+      idx = (idx + 1) % n;
+      if (candidate !== attackerId && this.alivePlayers.has(candidate)) {
+        this.targetIndices[attackerId] = idx;
+        return candidate;
+      }
     }
+    return null;
   }
 
   private broadcastBoardUpdate(senderId: string, board: Board): void {
