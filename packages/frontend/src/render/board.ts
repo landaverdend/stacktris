@@ -78,6 +78,7 @@ export function renderBoard(
       if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
       ctx.fillRect(c * cellSize + GAP, r * cellSize + GAP, cellSize - GAP * 2, cellSize - GAP * 2);
     }
+
   }
 
   ctx.globalAlpha = 1;

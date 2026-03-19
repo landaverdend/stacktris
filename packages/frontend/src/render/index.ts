@@ -1,4 +1,4 @@
-import { GameState, visibleBoard } from '@stacktris/shared';
+import { GameState, LOCK_DELAY_FRAMES, visibleBoard } from '@stacktris/shared';
 import { renderBoard } from './board';
 import { renderHold, renderQueue } from './queue';
 
@@ -12,7 +12,8 @@ export function renderGameState(state: GameState, canvases: Canvases): void {
   const boardCtx = canvases.board.getContext('2d');
   if (boardCtx) {
     const piece = state.activePiece;
-    renderBoard(boardCtx, visibleBoard(state.board), piece);
+    const lockProgress = piece.isFloored ? piece.timeOnFloor / LOCK_DELAY_FRAMES : 0;
+    renderBoard(boardCtx, visibleBoard(state.board), piece, false, 1 - lockProgress * 0.6);
   }
 
   const queueCtx = canvases.queue.getContext('2d');
