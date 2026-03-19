@@ -3,6 +3,12 @@ import { ActivePiece, InputAction, PieceKind } from "./game/types.js";
 
 export const COUNTDOWN_SECONDS = 3;
 
+export const MULTIPLAYER_GRAVITY_CONFIG = {
+  INTERVAL_MS: 5_000, // how often gravity level increases
+  START_LEVEL: 1,      // gravity level at match start
+  MAX_LEVEL: 20,       // cap
+} as const;
+
 export interface RoomInfo {
   roomId: string;
   playerCount: number;
@@ -78,4 +84,5 @@ export type ServerMsg =
   | { type: 'opponent_board_update'; playerId: string; board: Board }
 
   | { type: 'game_over'; winnerId: string | null }
+  | { type: 'gravity_update'; level: number }
   | { type: 'error'; message: string };

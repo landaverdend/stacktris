@@ -61,10 +61,20 @@ export class GameEngine {
     } else {
       this.state = config.initialGameState ?? createGameState(this.seed);
     }
+
+    if (this.startLevel > 0 && !config?.initialGameState) {
+      this.state.level = this.startLevel;
+      this.state.gravity = GRAVITY_TABLE[Math.min(this.startLevel + 1, 20)] ?? GRAVITY_TABLE[20];
+    }
   }
 
   getState(): GameState {
     return this.state;
+  }
+
+  setGravityLevel(level: number): void {
+    this.state.level = level;
+    this.state.gravity = GRAVITY_TABLE[Math.min(level + 1, 20)] ?? GRAVITY_TABLE[20];
   }
 
   /**

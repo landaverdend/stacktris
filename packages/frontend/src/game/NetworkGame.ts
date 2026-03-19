@@ -41,6 +41,10 @@ export class NetworkGame {
       this.gameEngine.addGarbage(msg.lines, msg.triggerFrame);
     })
 
+    this.ws.on('gravity_update', (msg: { level: number }) => {
+      this.gameEngine.setGravityLevel(msg.level);
+    })
+
   }
 
   get state() {
@@ -73,7 +77,6 @@ export class NetworkGame {
 
 
           if (this.frameCount % 180 === 0) {
-            console.log('NetworkGame flush replay buffer');
             this.ws.send({ type: 'game_action', buffer: this.inputBuffer, frame: this.frameCount });
             this.inputBuffer = [];
           }
