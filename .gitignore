@@ -23,5 +23,7 @@ yarn-error.log*
 .cursorignore
 .claude
 .vite
+.agents
+
 # Rust
 target/

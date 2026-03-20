@@ -4,12 +4,16 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { WSServer } from './wsServer.js';
 import { RoomRegistry } from './roomRegistry.js';
+import { PaymentClient } from './lightning/paymentClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.PORT ?? 8080;
 const STATIC_DIR = process.env.STATIC_DIR ?? path.join(__dirname, '../../frontend/dist');
+
+export const paymentClient = new PaymentClient();
+await paymentClient.init();
 
 app.use(express.json());
 app.use(express.static(STATIC_DIR));
