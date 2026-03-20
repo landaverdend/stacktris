@@ -1,6 +1,6 @@
 import { ClientMsg, RoomInfo } from '@stacktris/shared';
 import { MAX_PLAYERS, Room } from './room.js';
-import { SendFn } from './types.js';
+import { SendFn } from '../types.js';
 
 export class RoomRegistry {
   // Map of player ID to send function

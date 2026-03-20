@@ -1,6 +1,6 @@
 import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus, WINS_TO_MATCH } from "@stacktris/shared";
 import { GameSession } from "./gameSession.js";
-import { PlayerSlot, SendFn } from "./types.js";
+import { PlayerSlot, SendFn } from "../types.js";
 
 // Valid state transitions for a room.
 const VALID_TRANSITIONS: Record<RoomStatus, RoomStatus[]> = {

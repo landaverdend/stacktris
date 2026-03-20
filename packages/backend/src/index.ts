@@ -2,8 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { WSServer } from './wsServer.js';
-import { RoomRegistry } from './roomRegistry.js';
+import { WSServer } from './ws/wsServer.js';
+import { RoomRegistry } from './game/roomRegistry.js';
 import { PaymentClient } from './lightning/paymentClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

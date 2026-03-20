@@ -1,5 +1,5 @@
 import { Board, ClientMsg, Emitter, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
-import { PlayerSlot } from './types.js';
+import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
 type GameSessionEventMap = {
