@@ -77,6 +77,7 @@ export type ServerMsg =
   | { type: 'room_created'; room_id: string }
   | { type: 'room_joined'; room_id: string; }
   | { type: 'room_state_update'; roomState: RoomState }
+  | { type: 'bet_invoice_issued'; bolt11: string; paymentHash: string; expiresAt: number }
 
   // Game Ops
   | { type: 'game_start'; seed: number; }

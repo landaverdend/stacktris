@@ -14,7 +14,9 @@ export class PaymentService {
 
 
   async generateBetInvoice(playerId: string, sendFn: SendFn, onPaid: () => void) {
+    const invoice = await this.client.generateInvoice(this.betSats, `stacktris bet hold invoice`);
 
+    sendFn({ type: 'bet_invoice_issued', bolt11: invoice, paymentHash: invoice.payment_hash, expiresAt: Date.now() + 600000 });
   }
 
 }
