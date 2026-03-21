@@ -8,7 +8,7 @@ const VALID_TRANSITIONS: Record<RoomStatus, RoomStatus[]> = {
   waiting: ['countdown'],
   countdown: ['waiting', 'playing'],
   playing: ['finished'],
-  finished: ['waiting'],
+  finished: ['waiting', 'countdown'],
 };
 
 class RoomStateMachine {
@@ -39,10 +39,12 @@ export class Room {
   private fsm = new RoomStateMachine();
 
   private countdownTimer: NodeJS.Timeout | null = null;
+  private interRoundTimer: NodeJS.Timeout | null = null;
   private readonly COUNTDOWN_DURATION = COUNTDOWN_SECONDS * 1000;
+  private readonly INTER_ROUND_PAUSE = 3000;
   private game: GameSession | null = null;
 
-  private _isSessionStarted = false; // Whether or not the game has started, independent of the room status. Enabled on first match start.
+  private _isSessionStarted = false;
 
   constructor(id: string, buyIn: number, private readonly paymentService: PaymentService) {
     this.id = id;
@@ -86,13 +88,17 @@ export class Room {
     if (this.status === 'countdown') this.cancelCountdown();
     if (this.status === 'playing') this.game?.removePlayer(playerId);
 
+    // Cancel a pending inter-round restart if one is queued.
+    if (this.interRoundTimer) {
+      clearTimeout(this.interRoundTimer);
+      this.interRoundTimer = null;
+    }
+
     if (this.buyIn > 0) {
       if (!this._isSessionStarted) {
-        // Session hasn't started yet — refund the player's hold.
         this.paymentService.cancelHoldInvoice(playerId);
         console.log(`[Room] refunded hold invoice for player ${playerId} in room ${this.id}`);
       } else {
-        // Session is underway — forfeit the hold on disconnect.
         this.paymentService.settleHoldInvoice(playerId);
       }
     }
@@ -114,13 +120,13 @@ export class Room {
   }
 
   private onReadyUpdate(playerId: string, ready: boolean) {
-    const player = this.players.get(playerId);
+    // Once a session is underway, ready state is irrelevant — rounds auto-restart.
+    if (this._isSessionStarted) return;
 
-    // Gate player from readying up until payment is confirmed.
+    const player = this.players.get(playerId);
     if (!player || !player.paid) return;
 
-
-    if (player) player.ready = ready;
+    player.ready = ready;
 
     if (this.status === 'waiting' && this.checkAllReady()) {
       this.startCountdown();
@@ -144,6 +150,7 @@ export class Room {
   private startCountdown() {
     this.fsm.transition('countdown');
     this.countdownTimer = setTimeout(() => this.startGame(), this.COUNTDOWN_DURATION);
+    this.broadcastRoomStateUpdate();
   }
 
   private cancelCountdown() {
@@ -168,11 +175,8 @@ export class Room {
       const w = (this.wins.get(winnerId) ?? 0) + 1;
       this.wins.set(winnerId, w);
       if (w >= WINS_TO_MATCH) {
-        // Match is over - settle hold invoices and pay out the pot.
-        // Also- we should probably broadcast a room state update signifying that the match is over.
         this.matchWinnerId = winnerId;
         this.paymentService.onMatchComplete(winnerId);
-        
       }
     }
 
@@ -180,12 +184,10 @@ export class Room {
     this.broadcastRoomStateUpdate();
 
     if (!this.matchWinnerId) {
-      setTimeout(() => {
-        this.players.forEach(p => { p.ready = false; });
-        this.fsm.transition('waiting');
-    
-        this.broadcastRoomStateUpdate();
-      }, 3000);
+      this.interRoundTimer = setTimeout(() => {
+        this.interRoundTimer = null;
+        this.startCountdown();
+      }, this.INTER_ROUND_PAUSE);
     }
   }
 

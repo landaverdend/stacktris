@@ -23,6 +23,7 @@ export function MultiplayerScreen() {
   const { pendingGarbage, getTickCount, opponentBoards, winnerId } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
   const { playerId } = useConnection();
 
+
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
       {/* ── Arena — always mounted, same position ── */}
@@ -67,14 +68,14 @@ export function MultiplayerScreen() {
       </div>
 
       {/* ── Right panel — lobby or opponent boards ── */}
-      {status === 'playing'
-        ? <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(3, ${10 * OPPONENT_CELL_SIZE}px)` }}>
+      {status === 'waiting'
+        ? <MultiplayerLobby />
+        : <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(3, ${10 * OPPONENT_CELL_SIZE}px)` }}>
           {Object.entries(opponentBoards).map(([id, board]) => {
             const info = roomState.players.find(p => p.playerId === id);
             return <OpponentBoard key={id} board={board} playerName={info?.playerName} />;
           })}
-        </div>
-        : <MultiplayerLobby />}
+        </div>}
     </div>
   );
 }
