@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '../lib/utils';
+import { Divider } from './Divider';
 
 interface NervModalProps {
   open: boolean;
@@ -83,8 +84,7 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
           </button>
         </div>
 
-        {/* Divider */}
-        <div className="self-center w-8/10 bg-phosphor" style={{ height: '4px', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
+        <Divider color="phosphor" className="w-8/10 self-center" />
 
         {/* Content */}
         <div className="px-6 pb-6">

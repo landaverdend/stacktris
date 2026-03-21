@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { GenesisBlock } from '../components/GenesisBlock';
 import { GlitchTitle } from '../components/GlitchTitle';
 import { GlitchOverlay } from '../components/GlitchOverlay';
+import { Divider } from '../components/Divider';
 import { LightningGraph } from '../components/LightningGraph';
 import { NervModal } from '../components/NervModal';
 
@@ -19,7 +20,7 @@ const MENU = [
   { id: 'controls', label: 'CONTROLS', jp: '操作方法' },
 ] as const;
 
-export function LobbyScreen() {
+export function TitleScreen() {
   const navigate = useNavigate();
   const { createRoom, joinRoom } = useRoom();
 
@@ -46,7 +47,7 @@ export function LobbyScreen() {
         <div className="nerv-title-box bg-black">
           <div className="flex flex-col">
             <GlitchTitle />
-            <div className="bg-bitcoin" style={{ height: '4px', boxShadow: '0 0 6px rgba(247,147,26,0.9), 0 0 18px rgba(247,147,26,0.5)' }} />
+            <Divider color="bitcoin" />
           </div>
           <p className="nerv-sub-text text-phosphor font-display text-[22px] tracking-[0.05em] mt-1">
             BATTLE TETRIS // ライトニングネットワーク

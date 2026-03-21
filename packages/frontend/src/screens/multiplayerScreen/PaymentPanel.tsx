@@ -77,7 +77,7 @@ export function PaymentPanel({ bolt11, paid }: PaymentPanelProps) {
               disabled={!bolt11}
               className="w-full py-2 font-display font-bold text-xl tracking-[0.02em] border border-bitcoin/40 text-bitcoin/80 hover:border-bitcoin hover:text-bitcoin transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              ⚡ PAY WITH WALLET
+              PAY WITH WALLET
             </button>
           </div>
         )

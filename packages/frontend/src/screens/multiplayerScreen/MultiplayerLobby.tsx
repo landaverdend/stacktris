@@ -53,7 +53,9 @@ export function MultiplayerLobby() {
       )}
 
       {/* Players */}
-      <div className="flex flex-col">
+      <div className="flex flex-col items-center">
+        <span className="font-display font-bold text-6xl tracking-[0.02em] text-phosphor">PLAYERS</span>
+
         {roomState.players.map((p) => (
           <PlayerRow key={p.playerId} player={p} isYou={p.playerId === playerId} />
         ))}
@@ -97,7 +99,7 @@ function ReadyButton({ canReady, isReady, onClick }: { canReady: boolean; isRead
 function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
   const pips = Array.from({ length: WINS_TO_MATCH }, (_, i) => i < player.wins ? '■' : '□').join('');
   return (
-    <div className="flex items-center justify-between px-5 py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+    <div className="w-full flex items-center justify-between px-5 py-2.5 border-b border-[rgba(0,255,180,0.08)]">
       <div className="flex items-baseline gap-2">
         <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">
           {player.playerName || player.playerId.slice(0, 8).toUpperCase()}
