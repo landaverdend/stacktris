@@ -392,18 +392,16 @@ describe('Room', () => {
       confirmPayment('p1');
       confirmPayment('p2');
 
-      const startRound = () => {
-        room.onMessage('p1', { type: 'ready_update', ready: true });
-        room.onMessage('p2', { type: 'ready_update', ready: true });
-        vi.advanceTimersByTime(3500); // countdown → playing
-      };
+      // Round 1 — manually ready up to start the session.
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      vi.advanceTimersByTime(3500); // countdown → playing
 
-      startRound();
       for (let i = 0; i < WINS_TO_MATCH; i++) {
         fireGameOver('p1');
         if (i < WINS_TO_MATCH - 1) {
-          vi.advanceTimersByTime(3100); // reset → waiting
-          startRound();
+          // Subsequent rounds auto-start: inter-round pause → countdown → playing.
+          vi.advanceTimersByTime(3000 + 3500);
         }
       }
 
@@ -421,17 +419,15 @@ describe('Room', () => {
       confirmPayment('p1');
       confirmPayment('p2');
 
-      const startRound = () => {
-        room.onMessage('p1', { type: 'ready_update', ready: true });
-        room.onMessage('p2', { type: 'ready_update', ready: true });
-        vi.advanceTimersByTime(3500);
-      };
+      // Round 1.
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      vi.advanceTimersByTime(3500);
 
-      startRound();
       for (let i = 0; i < WINS_TO_MATCH - 1; i++) {
         fireGameOver('p1');
-        vi.advanceTimersByTime(3100); // reset → waiting
-        startRound();
+        // Subsequent rounds auto-start.
+        vi.advanceTimersByTime(3000 + 3500);
       }
 
       expect(service.onMatchComplete).not.toHaveBeenCalled();
@@ -529,13 +525,81 @@ describe('Room', () => {
 
       vi.advanceTimersByTime(3500); // game starts → _isSessionStarted = true
       fireGameOver('p2');
-      vi.advanceTimersByTime(3100); // reset → waiting
+      vi.advanceTimersByTime(1000); // mid inter-round pause
 
       room.removePlayer('p1');
 
       expect(service.settleHoldInvoice).toHaveBeenCalledWith('p1');
       expect(service.cancelHoldInvoice).not.toHaveBeenCalled();
       vi.useRealTimers();
+    });
+  });
+
+  describe('mid-session auto-restart', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    const startSession = (room: Room) => {
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      vi.advanceTimersByTime(3500); // countdown → playing
+    };
+
+    it('transitions to countdown (not waiting) after a round ends mid-session', () => {
+      const room = makeRoom();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+      startSession(room);
+
+      fireGameOver('p1');
+      vi.advanceTimersByTime(3000); // inter-round pause
+
+      expect(room.status).toBe('countdown');
+    });
+
+    it('next round starts automatically after the inter-round countdown', () => {
+      const room = makeRoom();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+      startSession(room);
+
+      fireGameOver('p1');
+      vi.advanceTimersByTime(3000 + 3500); // pause + countdown
+
+      expect(room.status).toBe('playing');
+    });
+
+    it('ready_update is ignored mid-session', () => {
+      const room = makeRoom();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+      startSession(room);
+
+      fireGameOver('p1');
+      vi.advanceTimersByTime(3000); // now in countdown
+      expect(room.status).toBe('countdown');
+
+      // ready_update should not cancel the auto-countdown
+      room.onMessage('p1', { type: 'ready_update', ready: false });
+      expect(room.status).toBe('countdown');
+
+      vi.advanceTimersByTime(3500);
+      expect(room.status).toBe('playing');
+    });
+
+    it('does not auto-restart when the match is over', () => {
+      const room = makeRoom();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+      startSession(room);
+
+      for (let i = 0; i < WINS_TO_MATCH; i++) {
+        if (i > 0) vi.advanceTimersByTime(3000 + 3500);
+        fireGameOver('p1');
+      }
+
+      vi.advanceTimersByTime(10000);
+      expect(room.status).toBe('finished');
     });
   });
 });

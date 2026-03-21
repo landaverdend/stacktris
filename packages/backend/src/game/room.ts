@@ -168,19 +168,22 @@ export class Room {
       const w = (this.wins.get(winnerId) ?? 0) + 1;
       this.wins.set(winnerId, w);
       if (w >= WINS_TO_MATCH) {
+        // Match is over - settle hold invoices and pay out the pot.
+        // Also- we should probably broadcast a room state update signifying that the match is over.
         this.matchWinnerId = winnerId;
         this.paymentService.onMatchComplete(winnerId);
+        
       }
     }
 
     console.log(`[Room] round over in room ${this.id}, winner: ${winnerId ?? 'draw'}, match winner: ${this.matchWinnerId ?? 'none'}`);
     this.broadcastRoomStateUpdate();
 
-    // If match is still going, reset to waiting after a short delay so players can ready up again.
     if (!this.matchWinnerId) {
       setTimeout(() => {
         this.players.forEach(p => { p.ready = false; });
         this.fsm.transition('waiting');
+    
         this.broadcastRoomStateUpdate();
       }, 3000);
     }
