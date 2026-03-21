@@ -27,6 +27,8 @@ export function MultiplayerLobby() {
     readyUpdate(next);
   };
 
+  const canReady = roomState.buyIn === 0 || roomState.invoicePaid;
+
   return (
     <div className="flex flex-col w-full max-w-sm pt-2 nerv-border nerv-border-teal bg-black">
       {/* Header */}
@@ -35,7 +37,6 @@ export function MultiplayerLobby() {
           <span className="font-display font-bold text-4xl tracking-[0.02em] text-phosphor">OP_STAGING</span>
           <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">作戦準備中</span>
         </div>
-
         {roomState.buyIn > 0 && (
           <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor mt-1">
             BUY IN: <span className="text-bitcoin">{roomState.buyIn} sats</span>
@@ -46,11 +47,9 @@ export function MultiplayerLobby() {
       {/* Room ID */}
       <RoomIdBadge roomId={roomState.roomId} />
 
-      {/* Payment */}
-      {!roomState.invoicePaid && roomState.buyIn > 0 && (
-        roomState.bolt11
-          ? <PaymentPanel bolt11={roomState.bolt11} />
-          : <PaymentPanelSkeleton />
+      {/* Payment panel — always visible for paid rooms */}
+      {roomState.buyIn > 0 && (
+        <PaymentPanel bolt11={roomState.bolt11} paid={roomState.invoicePaid} />
       )}
 
       {/* Players */}
@@ -62,16 +61,7 @@ export function MultiplayerLobby() {
 
       {/* Actions */}
       <div className="flex flex-col gap-2 px-5 py-4 border-t border-[rgba(0,255,180,0.08)]">
-        <button
-          onClick={handleReady}
-          className={cn(
-            'w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border transition-colors cursor-pointer',
-            isReady
-              ? 'border-[rgba(0,170,85,0.5)] text-magi hover:border-magi'
-              : 'border-[rgba(0,255,180,0.4)] text-phosphor hover:border-[rgba(0,255,180,0.8)] hover:text-teal',
-          )}>
-          {isReady ? '■ CANCEL' : '◌ READY'}
-        </button>
+        <ReadyButton canReady={canReady} isReady={isReady} onClick={handleReady} />
         <button
           onClick={handleLeave}
           className="w-full py-2 font-display font-bold text-2xl tracking-[0.02em] border border-[rgba(200,168,130,0.15)] text-phosphor/30 hover:border-alert hover:text-alert transition-colors cursor-pointer">
@@ -79,6 +69,28 @@ export function MultiplayerLobby() {
         </button>
       </div>
     </div>
+  );
+}
+
+function ReadyButton({ canReady, isReady, onClick }: { canReady: boolean; isReady: boolean; onClick: () => void }) {
+  if (!canReady) {
+    return (
+      <button disabled className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,255,180,0.1)] text-phosphor/20 cursor-not-allowed">
+        ◌ AWAITING PAYMENT
+      </button>
+    );
+  }
+  if (isReady) {
+    return (
+      <button onClick={onClick} className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,170,85,0.5)] text-magi hover:border-magi transition-colors cursor-pointer">
+        ■ CANCEL
+      </button>
+    );
+  }
+  return (
+    <button onClick={onClick} className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,255,180,0.4)] text-phosphor hover:border-[rgba(0,255,180,0.8)] hover:text-teal transition-colors cursor-pointer">
+      ◌ READY
+    </button>
   );
 }
 
@@ -98,22 +110,6 @@ function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
           {player.ready ? '■ READY' : '◌ WAITING'}
         </span>
       </div>
-    </div>
-  );
-}
-
-function PaymentPanelSkeleton() {
-  return (
-    <div className="border-b border-[rgba(0,255,180,0.08)] px-5 py-4 flex flex-col items-center gap-3">
-      <div className="flex items-baseline gap-2 self-start">
-        <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">PAY INVOICE</span>
-        <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">支払い</span>
-      </div>
-      {/* QR placeholder */}
-      <div className="w-[196px] h-[196px] bg-[rgba(0,255,180,0.04)] animate-pulse" />
-      {/* Button placeholders */}
-      <div className="w-full h-9 bg-[rgba(0,255,180,0.04)] animate-pulse" />
-      <div className="w-full h-9 bg-[rgba(247,147,26,0.06)] animate-pulse" />
     </div>
   );
 }

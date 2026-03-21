@@ -91,9 +91,10 @@ export class Room {
         // Session hasn't started yet — refund the player's hold.
         this.paymentService.cancelHoldInvoice(playerId);
         console.log(`[Room] refunded hold invoice for player ${playerId} in room ${this.id}`);
+      } else {
+        // Session is underway — forfeit the hold on disconnect.
+        this.paymentService.settleHoldInvoice(playerId);
       }
-      // If the session has started, the hold is forfeited on disconnect.
-      this.paymentService.settleHoldInvoice(playerId);
     }
 
     if (this.isEmpty) this.paymentService.destroy();

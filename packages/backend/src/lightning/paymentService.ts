@@ -78,7 +78,11 @@ export class PaymentService {
     // Only call the NWC if the HTLC is actually in-flight. A pending (unpaid)
     // invoice has no hold to cancel — it will expire naturally via its expiry field.
     if (record.status === 'held') {
-      await this.client.cancelHoldInvoice(record.paymentHash);
+      try {
+        await this.client.cancelHoldInvoice(record.paymentHash);
+      } catch (err) {
+        console.error(`[PaymentService] cancelHoldInvoice failed for ${playerId}:`, err);
+      }
     }
 
     record.status = 'cancelled';
@@ -90,7 +94,12 @@ export class PaymentService {
     const record = this.betRecords.get(playerId);
     if (!record || record.status !== 'held') return;
 
-    await this.client.settleHoldInvoice(record.preimage);
+    try {
+      await this.client.settleHoldInvoice(record.preimage);
+    } catch (err) {
+      console.error(`[PaymentService] settleHoldInvoice failed for ${playerId}:`, err);
+    }
+
     record.status = 'settled';
 
     record.unsub();
