@@ -30,7 +30,7 @@ export class Room {
   private id: string;
   private createdAt: number = Date.now();
 
-  private betSats: number;
+  private buyIn: number;
 
   private players: Map<string, PlayerSlot> = new Map();
   private wins: Map<string, number> = new Map();
@@ -44,9 +44,9 @@ export class Room {
 
   private _isSessionStarted = false; // Whether or not the game has started, independent of the room status. Enabled on first match start.
 
-  constructor(id: string, betSats: number, private readonly paymentService: PaymentService) {
+  constructor(id: string, buyIn: number, private readonly paymentService: PaymentService) {
     this.id = id;
-    this.betSats = betSats;
+    this.buyIn = buyIn;
   }
 
   get status(): RoomStatus { return this.fsm.status; }
@@ -59,7 +59,7 @@ export class Room {
     return {
       roomId: this.id,
       playerCount: this.playerCount,
-      betSats: this.betSats,
+      buyIn: this.buyIn,
       createdAt: this.createdAt,
     };
   }
@@ -69,10 +69,10 @@ export class Room {
     if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
     console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
-    this.players.set(playerId, { playerId, playerName, lightningAddress, sendFn, ready: false, paid: this.betSats === 0 });
+    this.players.set(playerId, { playerId, playerName, lightningAddress, sendFn, ready: false, paid: this.buyIn === 0 });
     this.wins.set(playerId, 0);
 
-    if (this.betSats > 0) {
+    if (this.buyIn > 0) {
       this.paymentService.generateBetInvoice(playerId, lightningAddress, sendFn, () => this.onPaymentConfirmed(playerId));
     }
 
@@ -86,10 +86,11 @@ export class Room {
     if (this.status === 'countdown') this.cancelCountdown();
     if (this.status === 'playing') this.game?.removePlayer(playerId);
 
-    if (this.betSats > 0) {
+    if (this.buyIn > 0) {
       if (!this._isSessionStarted) {
         // Session hasn't started yet — refund the player's hold.
         this.paymentService.cancelHoldInvoice(playerId);
+        console.log(`[Room] refunded hold invoice for player ${playerId} in room ${this.id}`);
       }
       // If the session has started, the hold is forfeited on disconnect.
       this.paymentService.settleHoldInvoice(playerId);
@@ -189,7 +190,7 @@ export class Room {
       .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId } });
+      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn } });
     });
   }
 }

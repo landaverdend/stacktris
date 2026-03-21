@@ -30,7 +30,7 @@ export class RoomRegistry {
     switch (msg.type) {
       case 'create_room':
         console.log('[RoomManager] create_room: ', msg);
-        this.createRoom(playerId, playerName, lightningAddress, msg.bet_sats);
+        this.createRoom(playerId, playerName, lightningAddress, msg.buy_in);
         break;
       case 'join_room':
         console.log('[RoomManager] join_room: ', msg);
@@ -51,10 +51,10 @@ export class RoomRegistry {
     }
   }
 
-  private createRoom(playerId: string, playerName: string, lightningAddress: string, betSats: number): void {
+  private createRoom(playerId: string, playerName: string, lightningAddress: string, buyIn: number): void {
     const roomId = crypto.randomUUID();
-    const paymentService = new PaymentService(this.paymentClient, betSats);
-    const room = new Room(roomId, betSats, paymentService);
+    const paymentService = new PaymentService(this.paymentClient, buyIn);
+    const room = new Room(roomId, buyIn, paymentService);
 
     this.rooms.set(roomId, room);
     room.addPlayer(playerId, playerName, lightningAddress, this.playerIdToSendFn.get(playerId)!);

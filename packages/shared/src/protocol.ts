@@ -12,7 +12,7 @@ export const MULTIPLAYER_GRAVITY_CONFIG = {
 export interface RoomInfo {
   roomId: string;
   playerCount: number;
-  betSats: number;
+  buyIn: number;
   createdAt: number;
 }
 
@@ -41,7 +41,7 @@ export type InputBuffer = {
 
 export type ClientMsg =
   // Room Operations
-  | { type: 'create_room'; bet_sats: number }
+  | { type: 'create_room'; buy_in: number }
   | { type: 'join_room'; room_id: string; }
   | { type: 'leave_room'; room_id: string }
   | { type: 'ready_update'; ready: boolean }
@@ -68,6 +68,7 @@ export interface RoomState {
   players: PlayerInfo[];
   status: RoomStatus;
   matchWinnerId: string | null;
+  buyIn: number;
 }
 
 // ── Server → Client ───────────────────────────────────────────────────────────

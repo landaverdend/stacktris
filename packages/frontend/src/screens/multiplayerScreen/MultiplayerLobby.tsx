@@ -29,11 +29,19 @@ export function MultiplayerLobby() {
   return (
     <div className="flex flex-col w-full max-w-sm pt-2 nerv-border nerv-border-teal bg-black">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[rgba(0,255,180,0.08)]">
+      <div className="flex flex-col items-center justify-between px-5 pt-5 pb-3 border-b border-[rgba(0,255,180,0.08)]">
         <div className="flex flex-col gap-0.5">
           <span className="font-display font-bold text-4xl tracking-[0.02em] text-phosphor">OP_STAGING</span>
           <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">作戦準備中</span>
         </div>
+
+        {roomState.bolt11 && <div>
+          <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">BUY IN: <span className="text-bitcoin ">{roomState.buyIn} sats</span></span>
+          <span className="font-jp bg-gray-500 p-2 rounded-md w-3/5">
+            {roomState.bolt11}
+          </span>
+        </div>}
+
       </div>
 
       {/* Room ID */}

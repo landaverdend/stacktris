@@ -4,9 +4,10 @@ import { useWS, useConnection } from '../ws/WSContext';
 import type { ConnectionStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
+type RoomStateWithPayment = RoomState & { bolt11?: string; expiresAt?: number; invoicePaid: boolean };
 interface RoomContextValue {
   connectionStatus: ConnectionStatus;
-  roomState: RoomState;
+  roomState: RoomStateWithPayment;
 
   leaveRoom: () => void;
   createRoom: (amountBet: number) => void;
@@ -16,6 +17,8 @@ interface RoomContextValue {
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
+const initialRoomState: RoomStateWithPayment = { players: [], roomId: '', status: 'waiting', matchWinnerId: null, invoicePaid: false, buyIn: 0 };
+
 export function RoomProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
@@ -23,7 +26,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   const { status: connectionStatus } = useConnection();
 
-  const [roomState, setRoomState] = useState<RoomState>({ players: [], roomId: '', status: 'waiting', matchWinnerId: null });
+  const [roomState, setRoomState] = useState<RoomStateWithPayment>(initialRoomState);
 
   useEffect(() => {
     const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {
@@ -35,12 +38,12 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     };
 
     const onRoomStateUpdate = (msg: { type: 'room_state_update'; roomState: RoomState }) => {
-      setRoomState(msg.roomState);
+      setRoomState(prev => ({ ...prev, ...msg.roomState }));
     };
 
     const onBetInvoiceIssued = (msg: { type: 'bet_invoice_issued'; bolt11: string; expiresAt: number }) => {
       console.log('[RoomContext] bet invoice issued:', msg);
-      console.log(msg.bolt11);
+      setRoomState(prev => ({ ...prev, bolt11: msg.bolt11 }));
     };
 
     const onBetPaymentConfirmed = (msg: { type: 'bet_payment_confirmed'; playerId: string }) => {
@@ -61,11 +64,11 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     };
   }, [ws]);
 
-  const createRoom = useCallback((amountBet: number) => { ws.send({ type: 'create_room', bet_sats: amountBet }) }, [ws])
+  const createRoom = useCallback((amountBet: number) => { ws.send({ type: 'create_room', buy_in: amountBet }) }, [ws])
 
   const joinRoom = useCallback((roomId: string) => { ws.send({ type: 'join_room', room_id: roomId }) }, [ws])
 
-  const leaveRoom = useCallback(() => { ws.send({ type: 'leave_room', room_id: roomState.roomId }) }, [ws])
+  const leaveRoom = useCallback(() => { ws.send({ type: 'leave_room', room_id: roomState.roomId }); setRoomState(initialRoomState); }, [ws])
 
   const readyUpdate = useCallback((readyState: boolean) => { ws.send({ type: 'ready_update', ready: readyState }) }, [ws])
 

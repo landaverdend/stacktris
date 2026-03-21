@@ -43,10 +43,10 @@ const makeMockPaymentService = () => {
   };
 };
 
-// Free rooms don't require payment — use betSats=0 for non-payment tests.
-const makeRoom = (betSats = 0) => {
+// Free rooms don't require payment — use buyIn=0 for non-payment tests.
+const makeRoom = (buyIn = 0) => {
   const { service } = makeMockPaymentService();
-  return new Room('room-1', betSats, service);
+  return new Room('room-1', buyIn, service);
 };
 
 describe('Room', () => {

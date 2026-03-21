@@ -128,7 +128,7 @@ function CreateMatchModal({ open, onClose, onCreate }: {
   open: boolean; onClose: () => void;
   onCreate: (sats: number) => void;
 }) {
-  const [betSats, setBetSats] = useState(21);
+  const [buyIn, setBuyIn] = useState(21);
 
   return (
     <NervModal open={open} title="CREATE MATCH" titleJp="作成" onClose={onClose}>
@@ -142,14 +142,14 @@ function CreateMatchModal({ open, onClose, onCreate }: {
             <input
               type="number"
               className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
-              value={betSats} min={5}
-              onChange={(e) => setBetSats(Number(e.target.value))}
+              value={buyIn} min={5}
+              onChange={(e) => setBuyIn(Number(e.target.value))}
             />
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
           </div>
         </div>
         <div className="pt-5">
-          <NervButton onClick={() => onCreate(betSats)}>INITIALIZE SESSION</NervButton>
+          <NervButton onClick={() => onCreate(buyIn)}>INITIALIZE SESSION</NervButton>
         </div>
       </div>
     </NervModal>
@@ -161,7 +161,7 @@ function JoinRoomModal({ open, onClose, onJoin }: {
   onJoin: (id: string) => void;
 }) {
   const [roomId, setRoomId] = useState('');
-  const [betSats, setBetSats] = useState(21);
+  const [buyIn, setBuyIn] = useState(21);
 
   return (
     <NervModal open={open} title="JOIN ROOM" titleJp="参加" onClose={onClose}>
@@ -187,8 +187,8 @@ function JoinRoomModal({ open, onClose, onJoin }: {
             <input
               type="number"
               className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
-              value={betSats} min={1}
-              onChange={(e) => setBetSats(Number(e.target.value))}
+              value={buyIn} min={1}
+              onChange={(e) => setBuyIn(Number(e.target.value))}
             />
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
           </div>
@@ -248,7 +248,7 @@ function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-baseline gap-1">
-          <span className="font-display font-bold text-xl tracking-[0.02em] text-bitcoin">{room.betSats.toLocaleString()}</span>
+          <span className="font-display font-bold text-xl tracking-[0.02em] text-bitcoin">{room.buyIn.toLocaleString()}</span>
           <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">sats</span>
         </div>
         <button

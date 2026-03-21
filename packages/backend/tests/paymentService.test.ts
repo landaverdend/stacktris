@@ -96,14 +96,14 @@ describe('PaymentService', () => {
   });
 
   describe('cancelHoldInvoice', () => {
-    it('cancels a pending hold invoice', async () => {
+    it('does not call the NWC for a pending (unpaid) invoice — let it expire naturally', async () => {
       const { client } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
       await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
       await service.cancelHoldInvoice('p1');
 
-      expect(client.cancelHoldInvoice).toHaveBeenCalledWith(PAYMENT_HASH);
+      expect(client.cancelHoldInvoice).not.toHaveBeenCalled();
     });
 
     it('cancels a held invoice', async () => {
@@ -126,12 +126,13 @@ describe('PaymentService', () => {
     });
 
     it('is a no-op if already cancelled', async () => {
-      const { client } = makeMockClient();
+      const { client, fireHoldAccepted } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
       await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      fireHoldAccepted(); // make it held so the first cancel hits the NWC
       await service.cancelHoldInvoice('p1');
-      await service.cancelHoldInvoice('p1'); // second call
+      await service.cancelHoldInvoice('p1'); // second call — should be no-op
 
       expect(client.cancelHoldInvoice).toHaveBeenCalledOnce();
     });

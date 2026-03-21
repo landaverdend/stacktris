@@ -18,7 +18,7 @@ export class PaymentService {
 
   constructor(
     private readonly client: PaymentClient,
-    private readonly betSats: number,
+    private readonly buyIn: number,
   ) { }
 
   destroy(): void {
@@ -30,7 +30,7 @@ export class PaymentService {
     const winnerRecord = this.betRecords.get(winnerId);
     const loserRecords = Array.from(this.betRecords.entries()).filter(([id]) => id !== winnerId);
     const heldLoserCount = loserRecords.filter(([, r]) => r.status === 'held').length;
-    const potSats = this.betSats * heldLoserCount;
+    const potSats = this.buyIn * heldLoserCount;
 
     console.log(`[PaymentService] match complete — winner: ${winnerId}, pot: ${potSats} sats (${heldLoserCount} losers)`);
 
@@ -53,7 +53,7 @@ export class PaymentService {
   }
 
   async generateBetInvoice(playerId: string, lightningAddress: string, sendFn: SendFn, onPaid: () => void) {
-    const { invoice, paymentHash, preimage, expiresAt } = await this.client.generateHoldInvoice(this.betSats, `stacktris bet hold invoice`);
+    const { invoice, paymentHash, preimage, expiresAt } = await this.client.generateHoldInvoice(this.buyIn, `stacktris bet hold invoice`);
 
     const unsub = await this.client.subscribeHoldInvoiceAccepted(paymentHash, (settleDeadline) => {
       console.log(`[PaymentService] hold invoice accepted for player ${playerId} (settle by block ${settleDeadline})`);
@@ -75,7 +75,11 @@ export class PaymentService {
     const record = this.betRecords.get(playerId);
     if (!record || record.status === 'cancelled') return;
 
-    await this.client.cancelHoldInvoice(record.paymentHash);
+    // Only call the NWC if the HTLC is actually in-flight. A pending (unpaid)
+    // invoice has no hold to cancel — it will expire naturally via its expiry field.
+    if (record.status === 'held') {
+      await this.client.cancelHoldInvoice(record.paymentHash);
+    }
 
     record.status = 'cancelled';
 
