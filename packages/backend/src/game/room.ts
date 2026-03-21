@@ -1,6 +1,7 @@
 import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus, WINS_TO_MATCH } from "@stacktris/shared";
 import { GameSession } from "./gameSession.js";
 import { PlayerSlot, SendFn } from "../types.js";
+import { PaymentService } from "../lightning/paymentService.js";
 
 // Valid state transitions for a room.
 const VALID_TRANSITIONS: Record<RoomStatus, RoomStatus[]> = {
@@ -43,7 +44,7 @@ export class Room {
 
   private _isSessionStarted = false; // Whether or not the game has started, independent of the room status. Enabled on first match start.
 
-  constructor(id: string, betSats: number) {
+  constructor(id: string, betSats: number, private readonly paymentService: PaymentService) {
     this.id = id;
     this.betSats = betSats;
   }
@@ -139,6 +140,7 @@ export class Room {
       this.wins.set(winnerId, w);
       if (w >= WINS_TO_MATCH) {
         this.matchWinnerId = winnerId;
+        this.paymentService.onMatchComplete(winnerId);
       }
     }
 

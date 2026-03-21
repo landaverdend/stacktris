@@ -12,13 +12,13 @@ const app = express();
 const PORT = process.env.PORT ?? 8080;
 const STATIC_DIR = process.env.STATIC_DIR ?? path.join(__dirname, '../../frontend/dist');
 
-export const paymentClient = new PaymentClient();
+const paymentClient = new PaymentClient();
 await paymentClient.init();
 
 app.use(express.json());
 app.use(express.static(STATIC_DIR));
 
-const roomRegistry = new RoomRegistry();
+const roomRegistry = new RoomRegistry(paymentClient);
 
 const server = createServer(app);
 const wss = new WSServer(server, roomRegistry);

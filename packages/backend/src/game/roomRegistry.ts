@@ -1,6 +1,8 @@
 import { ClientMsg, RoomInfo } from '@stacktris/shared';
 import { MAX_PLAYERS, Room } from './room.js';
 import { SendFn } from '../types.js';
+import { PaymentClient } from '../lightning/paymentClient.js';
+import { PaymentService } from '../lightning/paymentService.js';
 
 export class RoomRegistry {
   // Map of player ID to send function
@@ -10,7 +12,7 @@ export class RoomRegistry {
   private rooms: Map<string, Room> = new Map();
   private playerIdToRoom = new Map<string, string>();
 
-  constructor() { }
+  constructor(private readonly paymentClient: PaymentClient) { }
 
   get roomCount() {
     return this.rooms.size;
@@ -51,7 +53,8 @@ export class RoomRegistry {
 
   private createRoom(playerId: string, playerName: string, betSats: number): void {
     const roomId = crypto.randomUUID();
-    const room = new Room(roomId, betSats);
+    const paymentService = new PaymentService(this.paymentClient, betSats);
+    const room = new Room(roomId, betSats, paymentService);
 
     this.rooms.set(roomId, room);
     room.addPlayer(playerId, playerName, this.playerIdToSendFn.get(playerId)!);
