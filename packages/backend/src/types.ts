@@ -8,4 +8,5 @@ export interface PlayerSlot {
   playerName: string;
   sendFn: SendFn;
   ready: boolean;
+  paid: boolean;
 }

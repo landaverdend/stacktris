@@ -55,6 +55,7 @@ export interface PlayerInfo {
   playerId: string;
   playerName: string;
   ready: boolean;
+  paid: boolean;
   wins: number;
 }
 

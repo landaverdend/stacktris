@@ -69,8 +69,13 @@ export class Room {
     if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
     console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
-    this.players.set(playerId, { playerId, playerName, sendFn, ready: false });
+    this.players.set(playerId, { playerId, playerName, sendFn, ready: false, paid: false });
     this.wins.set(playerId, 0);
+
+    if (this.betSats > 0) {
+      this.paymentService.generateBetInvoice(playerId, sendFn, () => this.onPaymentConfirmed(playerId));
+    }
+
     this.broadcastRoomStateUpdate();
   }
 
@@ -97,6 +102,11 @@ export class Room {
 
   private onReadyUpdate(playerId: string, ready: boolean) {
     const player = this.players.get(playerId);
+
+    // Gate player from readying up until payment is confirmed.
+    if (!player || !player.paid) return;
+
+
     if (player) player.ready = ready;
 
     if (this.status === 'waiting' && this.checkAllReady()) {
@@ -105,6 +115,12 @@ export class Room {
       this.cancelCountdown();
     }
 
+    this.broadcastRoomStateUpdate();
+  }
+
+  private onPaymentConfirmed(playerId: string) {
+    console.log(`[Room] payment confirmed for player ${playerId} in room ${this.id}`);
+    this.players.get(playerId)!.paid = true;
     this.broadcastRoomStateUpdate();
   }
 
@@ -159,7 +175,7 @@ export class Room {
 
   private broadcastRoomStateUpdate() {
     const playerInfoArray: PlayerInfo[] = Array.from(this.players.values())
-      .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, wins: this.wins.get(p.playerId) ?? 0 }));
+      .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
       player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId } });
