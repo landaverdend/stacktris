@@ -40,13 +40,18 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
     const onBetInvoiceIssued = (msg: { type: 'bet_invoice_issued'; bolt11: string; expiresAt: number }) => {
       console.log('[RoomContext] bet invoice issued:', msg);
+      console.log(msg.bolt11);
+    };
+
+    const onBetPaymentConfirmed = (msg: { type: 'bet_payment_confirmed'; playerId: string }) => {
+      console.log('[RoomContext] bet payment confirmed:', msg);
     };
 
     ws.on('room_created', onRoomCreated);
     ws.on('room_joined', onRoomJoined);
     ws.on('room_state_update', onRoomStateUpdate);
     ws.on('bet_invoice_issued', onBetInvoiceIssued);
-
+    ws.on('bet_payment_confirmed', onBetPaymentConfirmed);
 
     return () => {
       ws.off('room_created', onRoomCreated);
