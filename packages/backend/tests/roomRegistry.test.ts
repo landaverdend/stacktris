@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RoomRegistry } from '../src/roomRegistry.js';
+import { RoomRegistry } from '../src/game/roomRegistry.js';
 import { SendFn } from '../src/types.js';
-import { MAX_PLAYERS } from '../src/room.js';
+import { MAX_PLAYERS } from '../src/game/room.js';
+import { PaymentClient } from '../src/lightning/paymentClient.js';
 
 const makeSend = (): SendFn => vi.fn();
 
@@ -15,7 +16,7 @@ describe('RoomRegistry', () => {
   let registry: RoomRegistry;
 
   beforeEach(() => {
-    registry = new RoomRegistry();
+    registry = new RoomRegistry({} as PaymentClient);
   });
 
   describe('create_room', () => {

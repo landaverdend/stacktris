@@ -1,36 +1,54 @@
-import { describe, it, expect, vi, beforeEach, afterEach, } from 'vitest';
-import { MAX_PLAYERS, Room } from '../src/room.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MAX_PLAYERS, Room } from '../src/game/room.js';
+import { PaymentService } from '../src/lightning/paymentService.js';
 import { SendFn } from '../src/types.js';
 
 const makeSend = (): SendFn => vi.fn();
 
+const makeMockPaymentService = () => {
+  const callbacks = new Map<string, () => void>();
+  const service = {
+    generateBetInvoice: vi.fn((playerId: string, _sendFn: SendFn, onPaid: () => void) => {
+      callbacks.set(playerId, onPaid);
+    }),
+    onMatchComplete: vi.fn(),
+  } as unknown as PaymentService;
+  return {
+    service,
+    confirmPayment: (playerId: string) => callbacks.get(playerId)?.(),
+  };
+};
+
+// Free rooms don't require payment — use betSats=0 for non-payment tests.
+const makeRoom = (betSats = 0) => {
+  const { service } = makeMockPaymentService();
+  return new Room('room-1', betSats, service);
+};
+
 describe('Room', () => {
   it('adds a player', () => {
-    const room = new Room('room-1', 1000);
-    const send = makeSend();
-    room.addPlayer('player-1', '', send);
+    const room = makeRoom();
+    room.addPlayer('player-1', '', makeSend());
     expect(room.playerCount).toBe(1);
   });
 
   it('removes a player', () => {
-    const room = new Room('room-1', 1000);
+    const room = makeRoom();
     room.addPlayer('player-1', '', makeSend());
     room.removePlayer('player-1');
     expect(room.playerCount).toBe(0);
   });
 
   it('does not exceed MAX_PLAYERS players', () => {
-    const room = new Room('room-1', 1000);
-
+    const room = makeRoom();
     for (let i = 0; i < MAX_PLAYERS; i++) {
       room.addPlayer(`player-${i}`, '', makeSend());
     }
-
     expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
   });
 
   it('reports isFull correctly', () => {
-    const room = new Room('room-1', 1000);
+    const room = makeRoom();
     expect(room.isFull).toBe(false);
     for (let i = 1; i < MAX_PLAYERS; i++) {
       room.addPlayer(`player-${i}`, '', makeSend());
@@ -41,7 +59,7 @@ describe('Room', () => {
   });
 
   it('reports isEmpty correctly', () => {
-    const room = new Room('room-1', 1000);
+    const room = makeRoom();
     expect(room.isEmpty).toBe(true);
     room.addPlayer('player-1', '', makeSend());
     expect(room.isEmpty).toBe(false);
@@ -50,7 +68,7 @@ describe('Room', () => {
   describe('addPlayer', () => {
     it('throws if the room is in countdown', () => {
       vi.useFakeTimers();
-      const room = new Room('room-1', 1000);
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
 
@@ -64,7 +82,7 @@ describe('Room', () => {
 
     it('throws if the room is in playing', () => {
       vi.useFakeTimers();
-      const room = new Room('room-1', 1000);
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
 
@@ -79,8 +97,7 @@ describe('Room', () => {
 
   describe('ready state', () => {
     it('advances to countdown state when all players are ready', () => {
-      const room = new Room('room-1', 1000);
-
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
 
@@ -88,10 +105,10 @@ describe('Room', () => {
       room.onMessage('player-2', { type: 'ready_update', ready: true });
 
       expect(room.status).toBe('countdown');
-    })
+    });
 
     it('does not advance to countdown state when not all players are ready', () => {
-      const room = new Room('room-1', 1000);
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
 
@@ -101,14 +118,12 @@ describe('Room', () => {
     });
   });
 
-
   describe('countdown', () => {
     beforeEach(() => { vi.useFakeTimers(); });
     afterEach(() => { vi.useRealTimers(); });
 
     it('transitions to playing after countdown expires', () => {
-      const room = new Room('room-1', 1000);
-
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
 
@@ -120,7 +135,7 @@ describe('Room', () => {
     });
 
     it('cancels countdown when a player disconnects', () => {
-      const room = new Room('room-1', 1000);
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
       room.onMessage('player-1', { type: 'ready_update', ready: true });
@@ -132,7 +147,7 @@ describe('Room', () => {
     });
 
     it('cancels countdown and returns to waiting when a player unreadies', () => {
-      const room = new Room('room-1', 1000);
+      const room = makeRoom();
       room.addPlayer('player-1', '', makeSend());
       room.addPlayer('player-2', '', makeSend());
       room.onMessage('player-1', { type: 'ready_update', ready: true });
@@ -141,10 +156,96 @@ describe('Room', () => {
       room.onMessage('player-1', { type: 'ready_update', ready: false });
       expect(room.status).toBe('waiting');
       vi.runAllTimers();
-      expect(room.status).toBe('waiting'); // timer was cleared, should not flip to playing
+      expect(room.status).toBe('waiting');
     });
   });
 
+  describe('payment', () => {
+    it('player cannot ready up before paying in a paid room', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
 
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
 
+      expect(room.status).toBe('waiting');
+    });
+
+    it('player can ready up after payment is confirmed', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+
+      expect(room.status).toBe('countdown');
+    });
+
+    it('only the paying player is unblocked — unpaid player still cannot ready up', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      confirmPayment('p1'); // only p1 pays
+
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true }); // ignored
+
+      expect(room.status).toBe('waiting');
+    });
+
+    it('generateBetInvoice is called for each player joining a paid room', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      expect(service.generateBetInvoice).toHaveBeenCalledTimes(2);
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', expect.any(Function), expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', expect.any(Function), expect.any(Function));
+    });
+
+    it('generateBetInvoice is not called for free rooms', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 0, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      expect(service.generateBetInvoice).not.toHaveBeenCalled();
+    });
+
+    it('payment confirmation triggers a room state broadcast', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', send1);
+      room.addPlayer('p2', '', makeSend());
+
+      const callsBefore = (send1 as ReturnType<typeof vi.fn>).mock.calls.length;
+      confirmPayment('p1');
+      const callsAfter = (send1 as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      expect(callsAfter).toBeGreaterThan(callsBefore);
+    });
+
+    it('free room players are automatically considered paid', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 0, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+
+      expect(room.status).toBe('countdown');
+    });
+  });
 });

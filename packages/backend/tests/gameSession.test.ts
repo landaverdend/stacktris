@@ -36,10 +36,10 @@ class MockPlayerGame {
   handleInput = vi.fn();
 }
 
-vi.mock('../src/playerGame.js', () => ({ PlayerGame: MockPlayerGame }));
+vi.mock('../src/game/playerGame.js', () => ({ PlayerGame: MockPlayerGame }));
 
 // Import AFTER mock registration
-const { GameSession } = await import('../src/gameSession.js');
+const { GameSession } = await import('../src/game/gameSession.js');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

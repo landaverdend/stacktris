@@ -69,7 +69,7 @@ export class Room {
     if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
     console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
-    this.players.set(playerId, { playerId, playerName, sendFn, ready: false, paid: false });
+    this.players.set(playerId, { playerId, playerName, sendFn, ready: false, paid: this.betSats === 0 });
     this.wins.set(playerId, 0);
 
     if (this.betSats > 0) {
