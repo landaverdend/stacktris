@@ -48,6 +48,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
     const onBetPaymentConfirmed = (msg: { type: 'bet_payment_confirmed'; playerId: string }) => {
       console.log('[RoomContext] bet payment confirmed:', msg);
+      setRoomState(prev => ({ ...prev, invoicePaid: true }));
     };
 
     ws.on('room_created', onRoomCreated);

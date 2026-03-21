@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PlayerInfo, WINS_TO_MATCH } from "@stacktris/shared";
 import { useRoom } from "../../context/RoomContext";
 import { cn } from "../../lib/utils";
+import { PaymentPanel } from "./PaymentPanel";
 
 export function MultiplayerLobby() {
   const { roomState, leaveRoom, readyUpdate } = useRoom();
@@ -35,17 +36,22 @@ export function MultiplayerLobby() {
           <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">作戦準備中</span>
         </div>
 
-        {roomState.bolt11 && <div>
-          <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">BUY IN: <span className="text-bitcoin ">{roomState.buyIn} sats</span></span>
-          <span className="font-jp bg-gray-500 p-2 rounded-md w-3/5">
-            {roomState.bolt11}
+        {roomState.buyIn > 0 && (
+          <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor mt-1">
+            BUY IN: <span className="text-bitcoin">{roomState.buyIn} sats</span>
           </span>
-        </div>}
-
+        )}
       </div>
 
       {/* Room ID */}
       <RoomIdBadge roomId={roomState.roomId} />
+
+      {/* Payment */}
+      {!roomState.invoicePaid && roomState.buyIn > 0 && (
+        roomState.bolt11
+          ? <PaymentPanel bolt11={roomState.bolt11} />
+          : <PaymentPanelSkeleton />
+      )}
 
       {/* Players */}
       <div className="flex flex-col">
@@ -92,6 +98,22 @@ function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
           {player.ready ? '■ READY' : '◌ WAITING'}
         </span>
       </div>
+    </div>
+  );
+}
+
+function PaymentPanelSkeleton() {
+  return (
+    <div className="border-b border-[rgba(0,255,180,0.08)] px-5 py-4 flex flex-col items-center gap-3">
+      <div className="flex items-baseline gap-2 self-start">
+        <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">PAY INVOICE</span>
+        <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">支払い</span>
+      </div>
+      {/* QR placeholder */}
+      <div className="w-[196px] h-[196px] bg-[rgba(0,255,180,0.04)] animate-pulse" />
+      {/* Button placeholders */}
+      <div className="w-full h-9 bg-[rgba(0,255,180,0.04)] animate-pulse" />
+      <div className="w-full h-9 bg-[rgba(247,147,26,0.06)] animate-pulse" />
     </div>
   );
 }

@@ -24,6 +24,13 @@
   --font-jp: 'Noto Sans JP', sans-serif;
 }
 
+:root {
+  --bc-color-brand: #00ffb4;
+  --bc-color-brand-dark: #00cc90;
+  --bc-color-brand-button-text: #000000;
+  --bc-color-brand-button-text-dark: #000000;
+}
+
 @layer base {
   html,
   body,
