@@ -86,6 +86,15 @@ export class Room {
     if (this.status === 'countdown') this.cancelCountdown();
     if (this.status === 'playing') this.game?.removePlayer(playerId);
 
+    if (this.betSats > 0) {
+      if (!this._isSessionStarted) {
+        // Session hasn't started yet — refund the player's hold.
+        this.paymentService.cancelHoldInvoice(playerId);
+      }
+      // If the session has started, the hold is forfeited on disconnect.
+      this.paymentService.settleHoldInvoice(playerId);
+    }
+
     if (this.isEmpty) this.paymentService.destroy();
 
     this.broadcastRoomStateUpdate();

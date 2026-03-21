@@ -6,10 +6,10 @@ type BetRecord = {
   preimage: Uint8Array;
   paymentHash: string;
   lightningAddress: string;
-  status: 'pending' | 'held' | 'cancelled';
+  status: 'pending' | 'held' | 'cancelled' | 'settled';
   createdAt: number;
   expiresAt: number;
-  settleDeadline: number | null;
+  settleDeadline: number | null; // absolute Bitcoin block height — must settle before this block
   unsub: () => void;
 }
 
@@ -36,7 +36,7 @@ export class PaymentService {
 
     // Settle losers' hold invoices to collect their funds, cancel the winner's.
     await Promise.allSettled([
-      ...loserRecords.map(([playerId, record]) => {
+      ...loserRecords.map(([, record]) => {
         if (record.status !== 'held') return Promise.resolve();
         return this.client.settleHoldInvoice(record.preimage);
       }),
@@ -56,11 +56,12 @@ export class PaymentService {
     const { invoice, paymentHash, preimage, expiresAt } = await this.client.generateHoldInvoice(this.betSats, `stacktris bet hold invoice`);
 
     const unsub = await this.client.subscribeHoldInvoiceAccepted(paymentHash, (settleDeadline) => {
-      console.log(`[PaymentService] hold invoice accepted for player ${playerId}`);
+      console.log(`[PaymentService] hold invoice accepted for player ${playerId} (settle by block ${settleDeadline})`);
       const record = this.betRecords.get(playerId)!;
       record.status = 'held';
       record.settleDeadline = settleDeadline;
       record.unsub();
+      record.unsub = () => { }; // prevent double-call if destroy() runs after hold fires
       sendFn({ type: 'bet_payment_confirmed', playerId });
       onPaid();
     });
@@ -73,8 +74,21 @@ export class PaymentService {
   async cancelHoldInvoice(playerId: string): Promise<void> {
     const record = this.betRecords.get(playerId);
     if (!record || record.status === 'cancelled') return;
+
     await this.client.cancelHoldInvoice(record.paymentHash);
+
     record.status = 'cancelled';
+
+    record.unsub();
+  }
+
+  async settleHoldInvoice(playerId: string): Promise<void> {
+    const record = this.betRecords.get(playerId);
+    if (!record || record.status !== 'held') return;
+
+    await this.client.settleHoldInvoice(record.preimage);
+    record.status = 'settled';
+
     record.unsub();
   }
 }

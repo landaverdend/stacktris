@@ -32,11 +32,12 @@ export class PaymentClient {
     const hashBuffer = await crypto.subtle.digest('SHA-256', preimage);
     const paymentHash = Buffer.from(hashBuffer).toString('hex');
 
-    const result = await this.client.makeHoldInvoice({ amount: amountSats * 1000, description, payment_hash: paymentHash });
+    const result = await this.client.makeHoldInvoice({ amount: amountSats * 1000, description, payment_hash: paymentHash, expiry: 3600 });
 
     console.log('[invoice] ', result);
 
-    return { invoice: result.invoice, paymentHash, preimage, expiresAt: result.expires_at };
+    // expires_at is a Unix timestamp in seconds — convert to ms for consistency.
+    return { invoice: result.invoice, paymentHash, preimage, expiresAt: result.expires_at * 1000 };
   }
 
   async settleHoldInvoice(preimage: Uint8Array): Promise<void> {
@@ -62,6 +63,7 @@ export class PaymentClient {
         notification.notification_type === 'hold_invoice_accepted' &&
         notification.notification.payment_hash === paymentHash
       ) {
+        console.log('[PaymentClient] hold invoice accepted:', notification.notification);
         onAccepted(notification.notification.settle_deadline ?? null);
       }
     }, ['hold_invoice_accepted']);

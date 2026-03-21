@@ -33,6 +33,8 @@ const makeMockPaymentService = () => {
       callbacks.set(playerId, onPaid);
     }),
     onMatchComplete: vi.fn(),
+    cancelHoldInvoice: vi.fn(),
+    settleHoldInvoice: vi.fn(),
     destroy: vi.fn(),
   } as unknown as PaymentService;
   return {
@@ -373,6 +375,96 @@ describe('Room', () => {
       // 'ghost' never joined — the callback just won't be in the map
       expect(() => confirmPayment('ghost')).not.toThrow();
       expect(room.status).toBe('waiting');
+    });
+  });
+
+  describe('disconnect payment behavior', () => {
+    it('cancels hold when a player leaves before the session starts', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      room.removePlayer('p1');
+
+      // cancel is called to refund; settle is also called but is a no-op in the
+      // real PaymentService because the record won't be in 'held' state
+      expect(service.cancelHoldInvoice).toHaveBeenCalledWith('p1');
+    });
+
+    it('does not cancel hold when a player leaves after the session starts', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      vi.advanceTimersByTime(3500); // countdown → playing (_isSessionStarted = true)
+
+      room.removePlayer('p1');
+
+      expect(service.cancelHoldInvoice).not.toHaveBeenCalled();
+      expect(service.settleHoldInvoice).toHaveBeenCalledWith('p1');
+      vi.useRealTimers();
+    });
+
+    it('does not call cancel or settle for free rooms on disconnect', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 0, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      room.removePlayer('p1');
+
+      expect(service.cancelHoldInvoice).not.toHaveBeenCalled();
+      expect(service.settleHoldInvoice).not.toHaveBeenCalled();
+    });
+
+    it('cancels hold during countdown (session not yet started)', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown'); // _isSessionStarted still false
+
+      room.removePlayer('p1');
+
+      expect(service.cancelHoldInvoice).toHaveBeenCalledWith('p1');
+      expect(service.cancelHoldInvoice).not.toHaveBeenCalledWith('p2'); // other player unaffected
+      vi.useRealTimers();
+    });
+
+    it('settles hold when a player leaves between rounds (session already started)', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+
+      vi.advanceTimersByTime(3500); // game starts → _isSessionStarted = true
+      fireGameOver('p2');
+      vi.advanceTimersByTime(3100); // reset → waiting
+
+      room.removePlayer('p1');
+
+      expect(service.settleHoldInvoice).toHaveBeenCalledWith('p1');
+      expect(service.cancelHoldInvoice).not.toHaveBeenCalled();
+      vi.useRealTimers();
     });
   });
 });
