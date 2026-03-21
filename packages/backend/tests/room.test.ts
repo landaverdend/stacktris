@@ -226,6 +226,77 @@ describe('Room', () => {
       expect(room.status).toBe('waiting');
     });
 
+    it('ready state is not reflected in broadcast while unpaid', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
+
+      room.onMessage('p1', { type: 'ready_update', ready: true }); // ignored
+
+      const lastMsg = send1.mock.calls.at(-1)?.[0];
+      const p1Info = lastMsg?.roomState?.players?.find((p: { playerId: string }) => p.playerId === 'p1');
+      // The ready_update was silently dropped — no new broadcast, so p1 is still not ready
+      expect(p1Info?.ready).toBe(false);
+    });
+
+    it('countdown does not start when all players ready but none have paid', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+
+      expect(room.status).toBe('waiting');
+    });
+
+    it('countdown does not start when only one player has paid and readied', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+
+      expect(room.status).toBe('waiting');
+    });
+
+    it('countdown starts once the last player pays and then readies', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+
+      // p1 pays and readies first; p2 readies before paying (ignored), then pays
+      confirmPayment('p1');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true }); // ignored — not paid yet
+      expect(room.status).toBe('waiting');
+
+      confirmPayment('p2');
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown');
+    });
+
+    it('ready_update after payment is correctly reflected in the broadcast', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+
+      const lastMsg = send1.mock.calls.at(-1)?.[0];
+      const p1Info = lastMsg?.roomState?.players?.find((p: { playerId: string }) => p.playerId === 'p1');
+      expect(p1Info?.ready).toBe(true);
+    });
+
     it('generateBetInvoice is called for each player joining a paid room', () => {
       const { service } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);

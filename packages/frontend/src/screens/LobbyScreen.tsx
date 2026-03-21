@@ -128,7 +128,7 @@ function CreateMatchModal({ open, onClose, onCreate }: {
   open: boolean; onClose: () => void;
   onCreate: (sats: number) => void;
 }) {
-  const [betSats, setBetSats] = useState(1000);
+  const [betSats, setBetSats] = useState(21);
 
   return (
     <NervModal open={open} title="CREATE MATCH" titleJp="作成" onClose={onClose}>
@@ -161,7 +161,7 @@ function JoinRoomModal({ open, onClose, onJoin }: {
   onJoin: (id: string) => void;
 }) {
   const [roomId, setRoomId] = useState('');
-  const [betSats, setBetSats] = useState(1000);
+  const [betSats, setBetSats] = useState(21);
 
   return (
     <NervModal open={open} title="JOIN ROOM" titleJp="参加" onClose={onClose}>

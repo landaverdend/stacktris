@@ -3,7 +3,7 @@ import { WSProvider } from './ws/WSContext';
 import { RoomProvider } from './context/RoomContext';
 import { NavBar } from './components/NavBar';
 import { LobbyScreen } from './screens/LobbyScreen';
-import { MultiplayerScreen } from './screens/MultiplayerScreen';
+import { MultiplayerScreen } from './screens/multiplayerScreen/MultiplayerScreen';
 import { SoloScreen } from './screens/SoloScreen';
 import { TetrominoBackground } from './components/TetrominoBackground';
 import { NameEntryScreen } from './screens/NameEntryScreen';
