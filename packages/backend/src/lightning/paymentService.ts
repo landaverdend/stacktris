@@ -2,6 +2,10 @@ import { SendFn } from '../types.js';
 import { PaymentClient } from './paymentClient.js';
 
 export class PaymentService {
+
+
+  private holdInvoices: Map<string, { preimage: string; paymentHash: string }> = new Map();
+
   constructor(
     private readonly client: PaymentClient,
     private readonly betSats: number,
@@ -14,9 +18,9 @@ export class PaymentService {
 
 
   async generateBetInvoice(playerId: string, sendFn: SendFn, onPaid: () => void) {
-    const invoice = await this.client.generateInvoice(this.betSats, `stacktris bet hold invoice`);
+    const invoice = await this.client.generateHoldInvoice(this.betSats, `stacktris bet hold invoice`);
 
-    sendFn({ type: 'bet_invoice_issued', bolt11: invoice, paymentHash: invoice.payment_hash, expiresAt: Date.now() + 600000 });
+    sendFn({ type: 'bet_invoice_issued', bolt11: invoice, expiresAt: Date.now() + 600000 });
   }
 
 }

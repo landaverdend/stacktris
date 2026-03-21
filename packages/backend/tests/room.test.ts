@@ -2,8 +2,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MAX_PLAYERS, Room } from '../src/game/room.js';
 import { PaymentService } from '../src/lightning/paymentService.js';
 import { SendFn } from '../src/types.js';
+import { WINS_TO_MATCH } from '@stacktris/shared';
 
-const makeSend = (): SendFn => vi.fn();
+// ---- GameSession mock ----
+// Captures the 'gameOver' subscriber so tests can fire it on demand.
+let _gameOverCallback: ((winnerId: string | null) => void) | null = null;
+
+vi.mock('../src/game/gameSession.js', () => ({
+  GameSession: class {
+    subscribe(event: string, cb: (id: string | null) => void) {
+      if (event === 'gameOver') _gameOverCallback = cb;
+    }
+    onMessage() {}
+    removePlayer() {}
+  },
+}));
+
+const fireGameOver = (winnerId: string | null) => {
+  _gameOverCallback?.(winnerId);
+  _gameOverCallback = null;
+};
+
+type MockSendFn = ReturnType<typeof vi.fn> & SendFn;
+const makeSend = (): MockSendFn => vi.fn() as unknown as MockSendFn;
 
 const makeMockPaymentService = () => {
   const callbacks = new Map<string, () => void>();
@@ -229,9 +250,9 @@ describe('Room', () => {
       room.addPlayer('p1', '', send1);
       room.addPlayer('p2', '', makeSend());
 
-      const callsBefore = (send1 as ReturnType<typeof vi.fn>).mock.calls.length;
+      const callsBefore = send1.mock.calls.length;
       confirmPayment('p1');
-      const callsAfter = (send1 as ReturnType<typeof vi.fn>).mock.calls.length;
+      const callsAfter = send1.mock.calls.length;
 
       expect(callsAfter).toBeGreaterThan(callsBefore);
     });
@@ -246,6 +267,111 @@ describe('Room', () => {
       room.onMessage('p2', { type: 'ready_update', ready: true });
 
       expect(room.status).toBe('countdown');
+    });
+
+    it('room_state_update reflects paid=false for unpaid players', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', send1);
+      room.addPlayer('p2', '', makeSend());
+
+      // The last broadcast sent to p1 after p2 joined
+      const lastMsg = send1.mock.calls.at(-1)?.[0];
+      const p1Info = lastMsg?.roomState?.players?.find((p: { playerId: string }) => p.playerId === 'p1');
+      expect(p1Info?.paid).toBe(false);
+    });
+
+    it('room_state_update reflects paid=true after payment confirmed', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', send1);
+      room.addPlayer('p2', '', makeSend());
+
+      confirmPayment('p1');
+
+      const lastMsg = send1.mock.calls.at(-1)?.[0];
+      const p1Info = lastMsg?.roomState?.players?.find((p: { playerId: string }) => p.playerId === 'p1');
+      expect(p1Info?.paid).toBe(true);
+    });
+
+    it('the correct sendFn is passed to generateBetInvoice for each player', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      const send1 = makeSend();
+      const send2 = makeSend();
+      room.addPlayer('p1', '', send1);
+      room.addPlayer('p2', '', send2);
+
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', send1, expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', send2, expect.any(Function));
+    });
+
+    it('onMatchComplete is called with the winner after enough round wins', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+
+      const startRound = () => {
+        room.onMessage('p1', { type: 'ready_update', ready: true });
+        room.onMessage('p2', { type: 'ready_update', ready: true });
+        vi.advanceTimersByTime(3500); // countdown → playing
+      };
+
+      startRound();
+      for (let i = 0; i < WINS_TO_MATCH; i++) {
+        fireGameOver('p1');
+        if (i < WINS_TO_MATCH - 1) {
+          vi.advanceTimersByTime(3100); // reset → waiting
+          startRound();
+        }
+      }
+
+      expect(service.onMatchComplete).toHaveBeenCalledWith('p1');
+      vi.useRealTimers();
+    });
+
+    it('onMatchComplete is not called until WINS_TO_MATCH rounds are won', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p2', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+
+      const startRound = () => {
+        room.onMessage('p1', { type: 'ready_update', ready: true });
+        room.onMessage('p2', { type: 'ready_update', ready: true });
+        vi.advanceTimersByTime(3500);
+      };
+
+      startRound();
+      for (let i = 0; i < WINS_TO_MATCH - 1; i++) {
+        fireGameOver('p1');
+        vi.advanceTimersByTime(3100); // reset → waiting
+        startRound();
+      }
+
+      expect(service.onMatchComplete).not.toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it('payment confirmation for an unknown player id does not crash', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Room('room-1', 1000, service);
+      room.addPlayer('p1', '', makeSend());
+
+      // 'ghost' never joined — the callback just won't be in the map
+      expect(() => confirmPayment('ghost')).not.toThrow();
+      expect(room.status).toBe('waiting');
     });
   });
 });
