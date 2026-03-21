@@ -9,7 +9,7 @@ type WSContextValue = {
   client: WSClient;
   playerId: string | null;
   playerName: string | null;
-  setPlayerName: (name: string) => void;
+  setPlayerInfo: (name: string, lightningAddress: string) => void;
 };
 
 const WSContext = createContext<WSContextValue | null>(null);
@@ -24,19 +24,21 @@ export function WSProvider({ children }: { children: ReactNode }) {
     client.connect();
     client.on('welcome', (msg) => {
       setPlayerId(msg.player_id);
-      const saved = localStorage.getItem('playerName');
-      if (saved) client.send({ type: 'set_player_name', name: saved });
+      const savedName = localStorage.getItem('playerName');
+      const savedAddress = localStorage.getItem('lightningAddress') ?? undefined;
+      if (savedName) client.send({ type: 'set_player_name', name: savedName, lightning_address: savedAddress });
     });
   }, []);
 
-  const setPlayerName = (name: string) => {
+  const setPlayerInfo = (name: string, lightningAddress: string) => {
     localStorage.setItem('playerName', name);
-    client.send({ type: 'set_player_name', name });
+    localStorage.setItem('lightningAddress', lightningAddress);
+    client.send({ type: 'set_player_name', name, lightning_address: lightningAddress });
     setPlayerNameState(name);
   };
 
   return (
-    <WSContext.Provider value={{ client, playerId, playerName, setPlayerName }}>
+    <WSContext.Provider value={{ client, playerId, playerName, setPlayerInfo }}>
       {children}
     </WSContext.Provider>
   );
@@ -52,7 +54,7 @@ export function useConnection(): {
   status: ConnectionStatus;
   playerId: string | null;
   playerName: string | null;
-  setPlayerName: (name: string) => void;
+  setPlayerInfo: (name: string, lightningAddress: string) => void;
 } {
   const ctx = useContext(WSContext);
   const [status, setStatus] = useState<ConnectionStatus>(client.getStatus());
@@ -63,6 +65,6 @@ export function useConnection(): {
     status,
     playerId: ctx?.playerId ?? null,
     playerName: ctx?.playerName ?? null,
-    setPlayerName: ctx?.setPlayerName ?? (() => {}),
+    setPlayerInfo: ctx?.setPlayerInfo ?? (() => {}),
   };
 }

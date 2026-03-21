@@ -6,6 +6,7 @@ export type SendFn = (msg: ServerMsg) => void;
 export interface PlayerSlot {
   playerId: string;
   playerName: string;
+  lightningAddress: string;
   sendFn: SendFn;
   ready: boolean;
   paid: boolean;

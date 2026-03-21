@@ -29,10 +29,11 @@ const makeSend = (): MockSendFn => vi.fn() as unknown as MockSendFn;
 const makeMockPaymentService = () => {
   const callbacks = new Map<string, () => void>();
   const service = {
-    generateBetInvoice: vi.fn((playerId: string, _sendFn: SendFn, onPaid: () => void) => {
+    generateBetInvoice: vi.fn((playerId: string, _lightningAddress: string, _sendFn: SendFn, onPaid: () => void) => {
       callbacks.set(playerId, onPaid);
     }),
     onMatchComplete: vi.fn(),
+    destroy: vi.fn(),
   } as unknown as PaymentService;
   return {
     service,
@@ -49,13 +50,13 @@ const makeRoom = (betSats = 0) => {
 describe('Room', () => {
   it('adds a player', () => {
     const room = makeRoom();
-    room.addPlayer('player-1', '', makeSend());
+    room.addPlayer('player-1', '', '', makeSend());
     expect(room.playerCount).toBe(1);
   });
 
   it('removes a player', () => {
     const room = makeRoom();
-    room.addPlayer('player-1', '', makeSend());
+    room.addPlayer('player-1', '', '', makeSend());
     room.removePlayer('player-1');
     expect(room.playerCount).toBe(0);
   });
@@ -63,26 +64,26 @@ describe('Room', () => {
   it('does not exceed MAX_PLAYERS players', () => {
     const room = makeRoom();
     for (let i = 0; i < MAX_PLAYERS; i++) {
-      room.addPlayer(`player-${i}`, '', makeSend());
+      room.addPlayer(`player-${i}`, '', '', makeSend());
     }
-    expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
+    expect(() => room.addPlayer('player-3', '', '', makeSend())).toThrow();
   });
 
   it('reports isFull correctly', () => {
     const room = makeRoom();
     expect(room.isFull).toBe(false);
     for (let i = 1; i < MAX_PLAYERS; i++) {
-      room.addPlayer(`player-${i}`, '', makeSend());
+      room.addPlayer(`player-${i}`, '', '', makeSend());
       expect(room.isFull).toBe(false);
     }
-    room.addPlayer(`player-${MAX_PLAYERS}`, '', makeSend());
+    room.addPlayer(`player-${MAX_PLAYERS}`, '', '', makeSend());
     expect(room.isFull).toBe(true);
   });
 
   it('reports isEmpty correctly', () => {
     const room = makeRoom();
     expect(room.isEmpty).toBe(true);
-    room.addPlayer('player-1', '', makeSend());
+    room.addPlayer('player-1', '', '', makeSend());
     expect(room.isEmpty).toBe(false);
   });
 
@@ -90,28 +91,28 @@ describe('Room', () => {
     it('throws if the room is in countdown', () => {
       vi.useFakeTimers();
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
 
       expect(room.status).toBe('countdown');
-      expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
+      expect(() => room.addPlayer('player-3', '', '', makeSend())).toThrow();
       vi.useRealTimers();
     });
 
     it('throws if the room is in playing', () => {
       vi.useFakeTimers();
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       vi.advanceTimersByTime(3500);
       expect(room.status).toBe('playing');
-      expect(() => room.addPlayer('player-3', '', makeSend())).toThrow();
+      expect(() => room.addPlayer('player-3', '', '', makeSend())).toThrow();
       vi.useRealTimers();
     });
   });
@@ -119,8 +120,8 @@ describe('Room', () => {
   describe('ready state', () => {
     it('advances to countdown state when all players are ready', () => {
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
@@ -130,8 +131,8 @@ describe('Room', () => {
 
     it('does not advance to countdown state when not all players are ready', () => {
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: false });
@@ -145,8 +146,8 @@ describe('Room', () => {
 
     it('transitions to playing after countdown expires', () => {
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
 
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
@@ -157,8 +158,8 @@ describe('Room', () => {
 
     it('cancels countdown when a player disconnects', () => {
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       expect(room.status).toBe('countdown');
@@ -169,8 +170,8 @@ describe('Room', () => {
 
     it('cancels countdown and returns to waiting when a player unreadies', () => {
       const room = makeRoom();
-      room.addPlayer('player-1', '', makeSend());
-      room.addPlayer('player-2', '', makeSend());
+      room.addPlayer('player-1', '', '', makeSend());
+      room.addPlayer('player-2', '', '', makeSend());
       room.onMessage('player-1', { type: 'ready_update', ready: true });
       room.onMessage('player-2', { type: 'ready_update', ready: true });
       expect(room.status).toBe('countdown');
@@ -185,8 +186,8 @@ describe('Room', () => {
     it('player cannot ready up before paying in a paid room', () => {
       const { service } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       room.onMessage('p1', { type: 'ready_update', ready: true });
       room.onMessage('p2', { type: 'ready_update', ready: true });
@@ -197,8 +198,8 @@ describe('Room', () => {
     it('player can ready up after payment is confirmed', () => {
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       confirmPayment('p1');
       confirmPayment('p2');
@@ -212,8 +213,8 @@ describe('Room', () => {
     it('only the paying player is unblocked — unpaid player still cannot ready up', () => {
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       confirmPayment('p1'); // only p1 pays
 
@@ -226,19 +227,19 @@ describe('Room', () => {
     it('generateBetInvoice is called for each player joining a paid room', () => {
       const { service } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       expect(service.generateBetInvoice).toHaveBeenCalledTimes(2);
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', expect.any(Function), expect.any(Function));
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', expect.any(Function), expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', '', expect.any(Function), expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', '', expect.any(Function), expect.any(Function));
     });
 
     it('generateBetInvoice is not called for free rooms', () => {
       const { service } = makeMockPaymentService();
       const room = new Room('room-1', 0, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       expect(service.generateBetInvoice).not.toHaveBeenCalled();
     });
@@ -247,8 +248,8 @@ describe('Room', () => {
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
       const send1 = makeSend();
-      room.addPlayer('p1', '', send1);
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
 
       const callsBefore = send1.mock.calls.length;
       confirmPayment('p1');
@@ -260,8 +261,8 @@ describe('Room', () => {
     it('free room players are automatically considered paid', () => {
       const { service } = makeMockPaymentService();
       const room = new Room('room-1', 0, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       room.onMessage('p1', { type: 'ready_update', ready: true });
       room.onMessage('p2', { type: 'ready_update', ready: true });
@@ -273,8 +274,8 @@ describe('Room', () => {
       const { service } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
       const send1 = makeSend();
-      room.addPlayer('p1', '', send1);
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
 
       // The last broadcast sent to p1 after p2 joined
       const lastMsg = send1.mock.calls.at(-1)?.[0];
@@ -286,8 +287,8 @@ describe('Room', () => {
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
       const send1 = makeSend();
-      room.addPlayer('p1', '', send1);
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
 
       confirmPayment('p1');
 
@@ -301,19 +302,19 @@ describe('Room', () => {
       const room = new Room('room-1', 1000, service);
       const send1 = makeSend();
       const send2 = makeSend();
-      room.addPlayer('p1', '', send1);
-      room.addPlayer('p2', '', send2);
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', send2);
 
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', send1, expect.any(Function));
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', send2, expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', '', send1, expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', '', send2, expect.any(Function));
     });
 
     it('onMatchComplete is called with the winner after enough round wins', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       confirmPayment('p1');
       confirmPayment('p2');
@@ -341,8 +342,8 @@ describe('Room', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
-      room.addPlayer('p2', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
 
       confirmPayment('p1');
       confirmPayment('p2');
@@ -367,7 +368,7 @@ describe('Room', () => {
     it('payment confirmation for an unknown player id does not crash', () => {
       const { service, confirmPayment } = makeMockPaymentService();
       const room = new Room('room-1', 1000, service);
-      room.addPlayer('p1', '', makeSend());
+      room.addPlayer('p1', '', '', makeSend());
 
       // 'ghost' never joined — the callback just won't be in the map
       expect(() => confirmPayment('ghost')).not.toThrow();

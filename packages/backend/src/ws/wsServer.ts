@@ -8,6 +8,7 @@ import { RoomRegistry } from '../game/roomRegistry.js';
 export interface PlayerSocket extends WebSocket {
   playerId: string;
   playerName: string;
+  lightningAddress: string;
 }
 
 
@@ -32,6 +33,7 @@ export class WSServer {
     const sock = ws as PlayerSocket;
     sock.playerId = crypto.randomUUID();
     sock.playerName = '';
+    sock.lightningAddress = '';
 
     console.log(`[WSServer] connected: ${sock.playerId}`);
 
@@ -48,9 +50,10 @@ export class WSServer {
       const raw = decode(data as Buffer) as any;
       if (raw.type === 'set_player_name') {
         sock.playerName = raw.name ?? '';
+        sock.lightningAddress = raw.lightning_address ?? '';
         return;
       }
-      this.roomRegistry.onMessage(sock.playerId, sock.playerName, raw as ClientMsg);
+      this.roomRegistry.onMessage(sock.playerId, sock.playerName, sock.lightningAddress, raw as ClientMsg);
     });
 
     ws.on('close', () => {

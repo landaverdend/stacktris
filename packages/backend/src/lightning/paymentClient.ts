@@ -44,6 +44,14 @@ export class PaymentClient {
     await this.client.settleHoldInvoice({ preimage: preimageHex });
   }
 
+  async payToLightningAddress(lightningAddress: string, amountSats: number): Promise<void> {
+    const { LightningAddress } = await import('@getalby/lightning-tools');
+    const ln = new LightningAddress(lightningAddress);
+    await ln.fetch();
+    const invoice = await ln.requestInvoice({ satoshi: amountSats });
+    await this.client.payInvoice({ invoice: invoice.paymentRequest });
+  }
+
   async cancelHoldInvoice(paymentHash: string): Promise<void> {
     await this.client.cancelHoldInvoice({ payment_hash: paymentHash });
   }

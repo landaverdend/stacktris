@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useConnection } from '../ws/WSContext';
 
 export function NameEntryScreen() {
-  const { setPlayerName } = useConnection();
-  const [value, setValue] = useState('');
+  const { setPlayerInfo } = useConnection();
+  const [name, setName] = useState('');
+  const [lightningAddress, setLightningAddress] = useState('');
+
+  const canSubmit = name.trim() && lightningAddress.trim();
 
   const submit = () => {
-    const trimmed = value.trim();
-    if (trimmed) setPlayerName(trimmed);
+    if (!canSubmit) return;
+    setPlayerInfo(name.trim(), lightningAddress.trim());
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -21,7 +24,6 @@ export function NameEntryScreen() {
         ⚠ WARNING: THIS GAME CONTAINS FLASHING LIGHTS THAT MAY AFFECT PEOPLE WITH PHOTOSENSITIVE EPILEPSY
       </p>
 
-      {/* Name entry */}
       <div className="flex flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-1">
           <span className="font-display font-bold text-6xl tracking-tight text-phosphor leading-none">
@@ -30,19 +32,32 @@ export function NameEntryScreen() {
           <span className="font-jp text-[15px] text-phosphor/30 tracking-widest">名前を入力してください</span>
         </div>
 
-        <input
-          autoFocus
-          maxLength={16}
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder="YOUR NAME"
-          className="bg-black border border-phosphor/40 text-phosphor font-display font-bold text-4xl tracking-tight text-center w-80 py-3 px-4 outline-none focus:border-phosphor placeholder:text-phosphor/20 placeholder:text-3xl"
-        />
+        <div className="flex flex-col items-center gap-4">
+          <input
+            autoFocus
+            maxLength={16}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="YOUR NAME"
+            className="bg-black border border-phosphor/40 text-phosphor font-display font-bold text-4xl tracking-tight text-center w-80 py-3 px-4 outline-none focus:border-phosphor placeholder:text-phosphor/20 placeholder:text-3xl"
+          />
+
+          <div className="flex flex-col items-center gap-1 w-80">
+            <input
+              value={lightningAddress}
+              onChange={e => setLightningAddress(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="you@wallet.com"
+              className="bg-black border border-phosphor/40 text-phosphor font-display text-xl tracking-tight text-center w-full py-3 px-4 outline-none focus:border-phosphor placeholder:text-phosphor/20"
+            />
+            <span className="font-display text-[11px] tracking-widest text-phosphor/30">LIGHTNING ADDRESS (REQUIRED)</span>
+          </div>
+        </div>
 
         <button
           onClick={submit}
-          disabled={!value.trim()}
+          disabled={!canSubmit}
           className="font-display font-bold text-4xl tracking-tight text-black bg-phosphor px-12 py-3 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer transition-opacity"
         >
           CONFIRM

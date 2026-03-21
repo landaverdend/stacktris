@@ -45,7 +45,7 @@ export type ClientMsg =
   | { type: 'join_room'; room_id: string; }
   | { type: 'leave_room'; room_id: string }
   | { type: 'ready_update'; ready: boolean }
-  | { type: 'set_player_name'; name: string }
+  | { type: 'set_player_name'; name: string; lightning_address?: string }
 
   // Game Ops
   | { type: 'game_action'; buffer: InputBuffer; frame: number };

@@ -5,6 +5,7 @@ import { PaymentClient } from './paymentClient.js';
 type BetRecord = {
   preimage: Uint8Array;
   paymentHash: string;
+  lightningAddress: string;
   status: 'pending' | 'held' | 'cancelled';
   createdAt: number;
   expiresAt: number;
@@ -26,21 +27,32 @@ export class PaymentService {
   }
 
   async onMatchComplete(winnerId: string): Promise<void> {
-    console.log(`[PaymentService] match complete — winner: ${winnerId}, pot: ${this.betSats} sats`);
+    const winnerRecord = this.betRecords.get(winnerId);
+    const loserRecords = Array.from(this.betRecords.entries()).filter(([id]) => id !== winnerId);
+    const heldLoserCount = loserRecords.filter(([, r]) => r.status === 'held').length;
+    const potSats = this.betSats * heldLoserCount;
 
-    await Promise.allSettled(
-      Array.from(this.betRecords.entries()).map(([playerId, record]) => {
+    console.log(`[PaymentService] match complete — winner: ${winnerId}, pot: ${potSats} sats (${heldLoserCount} losers)`);
+
+    // Settle losers' hold invoices to collect their funds, cancel the winner's.
+    await Promise.allSettled([
+      ...loserRecords.map(([playerId, record]) => {
         if (record.status !== 'held') return Promise.resolve();
-        if (playerId === winnerId) {
-          return this.client.settleHoldInvoice(record.preimage);
-        } else {
-          return this.cancelHoldInvoice(playerId);
-        }
-      })
-    );
+        return this.client.settleHoldInvoice(record.preimage);
+      }),
+      winnerRecord?.status === 'held'
+        ? this.cancelHoldInvoice(winnerId)
+        : Promise.resolve(),
+    ]);
+
+    // Pay the pot to the winner's lightning address.
+    if (potSats > 0 && winnerRecord?.lightningAddress) {
+      await this.client.payToLightningAddress(winnerRecord.lightningAddress, potSats);
+      console.log(`[PaymentService] paid ${potSats} sats to ${winnerRecord.lightningAddress}`);
+    }
   }
 
-  async generateBetInvoice(playerId: string, sendFn: SendFn, onPaid: () => void) {
+  async generateBetInvoice(playerId: string, lightningAddress: string, sendFn: SendFn, onPaid: () => void) {
     const { invoice, paymentHash, preimage, expiresAt } = await this.client.generateHoldInvoice(this.betSats, `stacktris bet hold invoice`);
 
     const unsub = await this.client.subscribeHoldInvoiceAccepted(paymentHash, (settleDeadline) => {
@@ -53,7 +65,7 @@ export class PaymentService {
       onPaid();
     });
 
-    this.betRecords.set(playerId, { preimage, paymentHash, status: 'pending', createdAt: Date.now(), expiresAt, settleDeadline: null, unsub });
+    this.betRecords.set(playerId, { preimage, paymentHash, lightningAddress, status: 'pending', createdAt: Date.now(), expiresAt, settleDeadline: null, unsub });
 
     sendFn({ type: 'bet_invoice_issued', bolt11: invoice, expiresAt });
   }

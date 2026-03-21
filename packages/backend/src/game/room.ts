@@ -64,16 +64,16 @@ export class Room {
     };
   }
 
-  public addPlayer(playerId: string, playerName: string, sendFn: SendFn) {
+  public addPlayer(playerId: string, playerName: string, lightningAddress: string, sendFn: SendFn) {
     if (this.isFull) throw new Error(`Room ${this.id} is already full`);
     if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
     console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
-    this.players.set(playerId, { playerId, playerName, sendFn, ready: false, paid: this.betSats === 0 });
+    this.players.set(playerId, { playerId, playerName, lightningAddress, sendFn, ready: false, paid: this.betSats === 0 });
     this.wins.set(playerId, 0);
 
     if (this.betSats > 0) {
-      this.paymentService.generateBetInvoice(playerId, sendFn, () => this.onPaymentConfirmed(playerId));
+      this.paymentService.generateBetInvoice(playerId, lightningAddress, sendFn, () => this.onPaymentConfirmed(playerId));
     }
 
     this.broadcastRoomStateUpdate();
