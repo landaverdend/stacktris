@@ -65,7 +65,26 @@ export function RoomStagingOverlay() {
       </div>
 
       {/* ── Main ── */}
-      <div className="flex-1 flex flex-col justify-center px-4 gap-4">
+      <div className="flex-1 flex flex-col px-4 pt-2 gap-4">
+
+        {/* System code dump, framed by teal lines */}
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
+            <div className="h-px" style={{ background: 'rgba(0,255,180,0.55)', boxShadow: '0 0 5px rgba(0,255,180,0.4)' }} />
+            <div className="h-px" style={{ background: 'rgba(0,255,180,0.25)' }} />
+          </div>
+          <div className="flex flex-col gap-px py-0.5">
+            <span className="font-mono text-[12px] tracking-[0.08em] text-[#ff7020]/30">BOLT: 11 // HOLD_INVOICE</span>
+            <span className="font-mono text-[12px] tracking-[0.08em] text-[#ff7020]/30">HTLC: LOCKED — CLTV_ACTIVE</span>
+            <span className="font-mono text-[12px] tracking-[0.08em] text-[#ff7020]/30">PREIMAGE: PENDING_REVEAL</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <div className="h-px" style={{ background: 'rgba(0,255,180,0.25)' }} />
+            <div className="h-px" style={{ background: 'rgba(0,255,180,0.55)', boxShadow: '0 0 5px rgba(0,255,180,0.4)' }} />
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-center gap-4">
 
         {needsPayment && (
           <>
@@ -131,6 +150,8 @@ export function RoomStagingOverlay() {
             <span className="font-mono text-xs tracking-[0.15em] text-[#ff7020]/35">// FREE ENTRY — NO PAYMENT REQUIRED</span>
           </div>
         )}
+
+        </div>{/* end centered content */}
       </div>
 
       {/* ── Terminal status line ── */}
