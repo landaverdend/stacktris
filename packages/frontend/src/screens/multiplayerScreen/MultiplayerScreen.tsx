@@ -19,9 +19,12 @@ export function MultiplayerScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
 
-  const { roomState } = useRoom();
+  const { roomState, leaveRoom } = useRoom();
 
   const { status } = roomState;
+
+  // Leave room  if you navigate away from the page
+  useEffect(() => () => { leaveRoom(); }, []);
 
   const { pendingGarbage, getTickCount, opponentBoards, winnerId } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
   const { playerId } = useConnection();
