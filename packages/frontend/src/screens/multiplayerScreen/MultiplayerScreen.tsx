@@ -8,7 +8,8 @@ import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../../render
 import { CANVAS_HEIGHT, CANVAS_WIDTH, OPPONENT_CELL_SIZE } from '../../render/board';
 import { GarbageMeter } from '../../components/GarbageMeter';
 import { OpponentBoard } from '../../components/OpponentBoard';
-import { MultiplayerLobby } from './MultiplayerLobby';
+import { RoomStaging } from './RoomStaging';
+import { PlayerList } from './PlayerList';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -26,6 +27,9 @@ export function MultiplayerScreen() {
 
   return (
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
+
+      <PlayerList />
+
       {/* ── Arena — always mounted, same position ── */}
       <div className="flex items-start gap-3">
         {/* Hold */}
@@ -69,7 +73,7 @@ export function MultiplayerScreen() {
 
       {/* ── Right panel — lobby or opponent boards ── */}
       {status === 'waiting'
-        ? <MultiplayerLobby />
+        ? <RoomStaging />
         : <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(3, ${10 * OPPONENT_CELL_SIZE}px)` }}>
           {Object.entries(opponentBoards).map(([id, board]) => {
             const info = roomState.players.find(p => p.playerId === id);

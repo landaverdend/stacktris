@@ -136,14 +136,14 @@ function CreateMatchModal({ open, onClose, onCreate }: {
       <div className="flex flex-col">
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BET AMOUNT</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BUY IN</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
           </div>
           <div className="flex items-center gap-2">
             <input
               type="number"
               className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
-              value={buyIn} min={5}
+              value={buyIn} min={0}
               onChange={(e) => setBuyIn(Number(e.target.value))}
             />
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
@@ -181,14 +181,14 @@ function JoinRoomModal({ open, onClose, onJoin }: {
         </div>
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BET AMOUNT</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BUY IN</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
           </div>
           <div className="flex items-center gap-2">
             <input
               type="number"
               className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
-              value={buyIn} min={1}
+              value={buyIn} min={0}
               onChange={(e) => setBuyIn(Number(e.target.value))}
             />
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>

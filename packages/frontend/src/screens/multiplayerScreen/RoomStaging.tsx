@@ -1,14 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useConnection } from "../../ws/WSContext";
 import { useEffect, useState } from "react";
-import { PlayerInfo, WINS_TO_MATCH } from "@stacktris/shared";
 import { useRoom } from "../../context/RoomContext";
-import { cn } from "../../lib/utils";
 import { PaymentPanel } from "./PaymentPanel";
 
-export function MultiplayerLobby() {
+export function RoomStaging() {
   const { roomState, leaveRoom, readyUpdate } = useRoom();
-  const { playerId } = useConnection();
 
   const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
@@ -52,15 +49,6 @@ export function MultiplayerLobby() {
         <PaymentPanel bolt11={roomState.bolt11} paid={roomState.invoicePaid} />
       )}
 
-      {/* Players */}
-      <div className="flex flex-col items-center">
-        <span className="font-display font-bold text-6xl tracking-[0.02em] text-phosphor">PLAYERS</span>
-
-        {roomState.players.map((p) => (
-          <PlayerRow key={p.playerId} player={p} isYou={p.playerId === playerId} />
-        ))}
-      </div>
-
       {/* Actions */}
       <div className="flex flex-col gap-2 px-5 py-4 border-t border-[rgba(0,255,180,0.08)]">
         <ReadyButton canReady={canReady} isReady={isReady} onClick={handleReady} />
@@ -93,26 +81,6 @@ function ReadyButton({ canReady, isReady, onClick }: { canReady: boolean; isRead
     <button onClick={onClick} className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,255,180,0.4)] text-phosphor hover:border-[rgba(0,255,180,0.8)] hover:text-teal transition-colors cursor-pointer">
       ◌ READY
     </button>
-  );
-}
-
-function PlayerRow({ player, isYou }: { player: PlayerInfo; isYou: boolean }) {
-  const pips = Array.from({ length: WINS_TO_MATCH }, (_, i) => i < player.wins ? '■' : '□').join('');
-  return (
-    <div className="w-full flex items-center justify-between px-5 py-2.5 border-b border-[rgba(0,255,180,0.08)]">
-      <div className="flex items-baseline gap-2">
-        <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">
-          {player.playerName || player.playerId.slice(0, 8).toUpperCase()}
-        </span>
-        {isYou && <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">あなた</span>}
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="font-display text-sm tracking-widest text-magi">{pips}</span>
-        <span className={cn('font-display font-bold text-xl tracking-[0.02em]', player.ready ? 'text-magi' : 'text-phosphor/30')}>
-          {player.ready ? '■ READY' : '◌ WAITING'}
-        </span>
-      </div>
-    </div>
   );
 }
 
