@@ -2,8 +2,6 @@
 
 TODO:
 
-- Multiplayer gravity should get faster over time
-- Add garbage meter effects when it's close to populating DONE
-- Game Ending Logic DONE
-- lightning HODL invoice room logic 
-- add opponent board snapshots DONE
+- Multiplayer gravity should get faster over time (I dont remember if I did this)
+- player death animation
+- opponent boards

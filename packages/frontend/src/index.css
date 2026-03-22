@@ -1,6 +1,14 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'DSEG7';
+  src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-display: swap;
+}
+
 @theme {
+  --font-segment: 'DSEG7', monospace;
   /* ── NERV color system ───────────────────────────────────────────────────── */
   --color-bitcoin: #f7931a; /* NERV amber — primary accent */
   --color-nerv-dim: #7a4010;
@@ -293,6 +301,26 @@
 
 /* ── NERV utility classes ─────────────────────────────────────────────────── */
 @layer utilities {
+  /* Anime HUD armor-plate bar gradient — dark teal band on near-black */
+  .bg-armor-plate {
+    background: linear-gradient(
+      90deg,
+      #060e08 0%,
+      #0d2e1a 25%,
+      #0f3820 50%,
+      #0b2415 75%,
+      #040a06 100%
+    );
+  }
+
+  /* Armor-plate gradient applied to text — green → cyan-blue */
+  .text-armor-plate {
+    background: linear-gradient(90deg, #00e050 0%, #00ffaa 40%, #00e8ff 70%, #0099ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   /* Corner-bracket tactical frame */
   .nerv-frame {
     position: relative;
@@ -328,5 +356,8 @@
   }
   .font-jp {
     font-family: var(--font-jp);
+  }
+  .font-segment {
+    font-family: var(--font-segment);
   }
 }

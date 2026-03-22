@@ -20,7 +20,7 @@ export function PlayerList() {
   )
 }
 
-const ORANGE_GLOW = '0 0 6px #ff7020, 0 0 18px rgba(255,100,20,0.5)';
+const ORANGE_GLOW = '0 0 4px rgba(255,112,32,0.6)';
 
 function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolean; index: number }) {
   const pips = Array.from({ length: WINS_TO_MATCH }, (_, i) => i < player.wins ? '■' : '□').join('');
@@ -30,44 +30,44 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
   const accent = `linear-gradient(90deg, rgba(230,140,20,${accentAlpha}), rgba(180,40,60,${accentAlpha}), rgba(110,20,90,${accentAlpha}))`;
 
   return (
-    <div className="flex flex-col gap-1 min-w-72">
+    <div className="flex flex-col gap-1 min-w-80">
       {/* Main bar */}
-      <div className="relative h-12">
+      <div className="relative h-16">
         <div className="absolute inset-0" style={{ background, clipPath: 'polygon(4% 0%, 100% 0%, 96% 100%, 0% 100%)' }} />
-        <div className="relative flex items-center h-full px-4 gap-3">
-          {/* Glowy index number */}
+        <div className="relative flex items-center h-full px-5 gap-4">
+          {/* Index number */}
           <div className="flex flex-col items-start -mr-1">
-            <span className="font-display font-bold leading-none" style={{ fontSize: '9px', color: '#ff7020', letterSpacing: '0.15em', textShadow: ORANGE_GLOW }}>
-              PARTITION No.
+            <span className="font-display font-bold leading-none" style={{ fontSize: '10px', color: '#ff7020', letterSpacing: '0.15em', textShadow: ORANGE_GLOW }}>
+              PLAYER No.
             </span>
-            <span className="font-display font-bold leading-none" style={{ fontSize: '28px', color: '#ff7020', textShadow: ORANGE_GLOW }}>
+            <span className="font-display font-bold leading-none" style={{ fontSize: '34px', color: '#ff7020', textShadow: ORANGE_GLOW }}>
               {String(index + 1).padStart(2, '0')}
             </span>
           </div>
 
           {/* Divider */}
-          <div className="h-8 w-px bg-white/10" />
+          <div className="h-10 w-px bg-white/10" />
 
           {/* Name + pips */}
           <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-baseline gap-1.5">
-              <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor truncate">
+              <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor truncate">
                 {player.playerName || player.playerId.slice(0, 8).toUpperCase()}
               </span>
-              {isYou && <span className="font-jp text-[10px] text-[rgba(0,255,180,0.35)] shrink-0">あなた</span>}
+              {isYou && <span className="font-jp text-[11px] text-[rgba(0,255,180,0.35)] shrink-0">あなた</span>}
             </div>
-            <span className="font-display text-xs tracking-widest text-magi">{pips}</span>
+            <span className="font-display text-sm tracking-widest text-magi">{pips}</span>
           </div>
 
           {/* Ready status */}
-          <span className={cn('font-display font-bold text-sm tracking-[0.05em] shrink-0', player.ready ? 'text-magi' : 'text-phosphor/25')}>
+          <span className={cn('font-display font-bold text-base tracking-[0.05em] shrink-0', player.ready ? 'text-magi' : 'text-phosphor/25')}>
             {player.ready ? '■ READY' : '◌ WAITING'}
           </span>
         </div>
       </div>
 
       {/* Accent bar */}
-      <div className="h-1.5 w-[96%]" style={{ background: accent }} />
+      <div className="h-2 w-[96%]" style={{ background: accent }} />
     </div>
   );
 }

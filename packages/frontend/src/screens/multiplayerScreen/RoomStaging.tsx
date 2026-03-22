@@ -1,112 +1,150 @@
-import { useNavigate } from "react-router-dom";
-import { useConnection } from "../../ws/WSContext";
 import { useEffect, useState } from "react";
 import { useRoom } from "../../context/RoomContext";
-import { PaymentPanel } from "./PaymentPanel";
+import { QRCodeSVG } from "qrcode.react";
+import { launchPaymentModal } from "@getalby/bitcoin-connect-react";
+// Complex CSS values that can't be expressed in Tailwind
+const AMBER_GLOW = '0 0 8px rgba(255,112,32,0.7), 0 0 24px rgba(255,80,0,0.3)';
+const HAZARD = 'repeating-linear-gradient(45deg, rgba(255,100,0,0.09) 0px, rgba(255,100,0,0.09) 3px, transparent 3px, transparent 9px)';
 
-export function RoomStaging() {
-  const { roomState, leaveRoom, readyUpdate } = useRoom();
-
-  const navigate = useNavigate();
+export function RoomStagingOverlay() {
+  const { roomState, readyUpdate } = useRoom();
   const [isReady, setIsReady] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const { bolt11, invoicePaid, buyIn } = roomState;
+  const canReady = buyIn === 0 || invoicePaid;
+  const needsPayment = buyIn > 0 && !invoicePaid;
 
   useEffect(() => {
     if (roomState.status === 'waiting') setIsReady(false);
   }, [roomState.status]);
 
-  const handleLeave = () => {
-    leaveRoom();
-    navigate('/');
-  };
   const handleReady = () => {
     const next = !isReady;
     setIsReady(next);
     readyUpdate(next);
   };
 
-  const canReady = roomState.buyIn === 0 || roomState.invoicePaid;
-
-  return (
-    <div className="flex flex-col w-full max-w-sm pt-2 nerv-border nerv-border-teal bg-black">
-      {/* Header */}
-      <div className="flex flex-col items-center justify-between px-5 pt-5 pb-3 border-b border-[rgba(0,255,180,0.08)]">
-        <div className="flex flex-col gap-0.5">
-          <span className="font-display font-bold text-4xl tracking-[0.02em] text-phosphor">OP_STAGING</span>
-          <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">作戦準備中</span>
-        </div>
-        {roomState.buyIn > 0 && (
-          <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor mt-1">
-            BUY IN: <span className="text-bitcoin">{roomState.buyIn} sats</span>
-          </span>
-        )}
-      </div>
-
-      {/* Room ID */}
-      <RoomIdBadge roomId={roomState.roomId} />
-
-      {/* Payment panel — always visible for paid rooms */}
-      {roomState.buyIn > 0 && (
-        <PaymentPanel bolt11={roomState.bolt11} paid={roomState.invoicePaid} />
-      )}
-
-      {/* Actions */}
-      <div className="flex flex-col gap-2 px-5 py-4 border-t border-[rgba(0,255,180,0.08)]">
-        <ReadyButton canReady={canReady} isReady={isReady} onClick={handleReady} />
-        <button
-          onClick={handleLeave}
-          className="w-full py-2 font-display font-bold text-2xl tracking-[0.02em] border border-[rgba(200,168,130,0.15)] text-phosphor/30 hover:border-alert hover:text-alert transition-colors cursor-pointer">
-          ABORT
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ReadyButton({ canReady, isReady, onClick }: { canReady: boolean; isReady: boolean; onClick: () => void }) {
-  if (!canReady) {
-    return (
-      <button disabled className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,255,180,0.1)] text-phosphor/20 cursor-not-allowed">
-        ◌ AWAITING PAYMENT
-      </button>
-    );
-  }
-  if (isReady) {
-    return (
-      <button onClick={onClick} className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,170,85,0.5)] text-magi hover:border-magi transition-colors cursor-pointer">
-        ■ CANCEL
-      </button>
-    );
-  }
-  return (
-    <button onClick={onClick} className="w-full py-3 font-display font-bold text-4xl tracking-[0.02em] border border-[rgba(0,255,180,0.4)] text-phosphor hover:border-[rgba(0,255,180,0.8)] hover:text-teal transition-colors cursor-pointer">
-      ◌ READY
-    </button>
-  );
-}
-
-function RoomIdBadge({ roomId }: { roomId: string }) {
-  const [copied, setCopied] = useState(false);
   const copy = () => {
-    navigator.clipboard.writeText(roomId).then(() => {
+    if (!bolt11) return;
+    navigator.clipboard.writeText(bolt11).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
   };
 
+  const pay = () => {
+    if (!bolt11) return;
+    launchPaymentModal({ invoice: bolt11 });
+  };
+
+  function statusLine() {
+    if (!bolt11) return '> GENERATING_INVOICE...';
+    if (needsPayment) return '> AWAITING_PAYMENT';
+    if (isReady) return '> OPERATOR_READY — STANDBY';
+    if (invoicePaid) return '> PAYMENT_CONFIRMED — INITIATE_READY';
+    return '> FREE_ENTRY — INITIATE_READY';
+  }
+
   return (
-    <div className="flex items-center justify-between px-5 py-2.5 border-b border-[rgba(0,255,180,0.08)]">
-      <div className="flex items-baseline gap-2">
-        <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor">SESSION ID</span>
-        <span className="font-jp text-[12px] text-[rgba(0,255,180,0.3)]">セッションID</span>
+    <div className="absolute inset-0 flex flex-col bg-black/90">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[rgba(255,100,0,0.18)]" style={{ background: HAZARD }}>
+        <div className="flex flex-col">
+          <span className="font-display font-bold text-base tracking-[0.2em] text-[#ff7020] w-fit bg-black p-2 border-nerv-dim border" style={{ textShadow: AMBER_GLOW }}>
+            OP_STAGING
+          </span>
+          <span className="font-jp text-[10px] tracking-[0.01em] text-[#ff7020]/45">作戦準備 // OPERATION STANDBY</span>
+        </div>
+        {/* Internal badge */}
+        <div className="flex flex-col items-end border border-[rgba(255,100,0,0.45)] px-2 py-1 bg-black">
+          <span className="font-jp font-bold text-xs text-[#ff7020]">内部</span>
+          <span className="font-display font-bold text-xs tracking-widest text-[#ff7020]/60">INTERNAL</span>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="font-mono text-sm text-teal tracking-wide">{roomId.slice(0, 8).toUpperCase()}</span>
-        <button
-          onClick={copy}
-          className="font-display font-bold text-xl tracking-[0.02em] text-phosphor/40 hover:text-teal transition-colors cursor-pointer border-l border-[rgba(0,255,180,0.1)] pl-3">
-          {copied ? 'COPIED' : 'COPY'}
-        </button>
+
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col justify-center px-4 gap-4">
+
+        {needsPayment && (
+          <>
+            {/* Amount row */}
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex flex-col">
+                <span className="font-mono text-[12px] tracking-[0.2em] text-[#ff7020]/40 mb-1">
+                  即時送金
+                </span>
+                <span className="font-segment text-[56px] leading-none text-[#ff7020]" style={{ textShadow: AMBER_GLOW }}>
+                  {buyIn}
+                </span>
+                <span className="font-display text-sm tracking-[0.4em] text-[#ff7020]/50 mt-1">
+                  SATS
+                </span>
+              </div>
+              {/* QR code */}
+              <div className="border border-[rgba(255,100,0,0.3)] p-1.5 bg-white shrink-0">
+                {bolt11
+                  ? <QRCodeSVG value={`lightning:${bolt11}`} size={108} />
+                  : <div className="w-[108px] h-[108px] bg-[rgba(255,100,0,0.06)] animate-pulse" />
+                }
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={copy}
+                disabled={!bolt11}
+                className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-[#ff7020] cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+              >
+                {copied ? '✓ COPIED' : 'COPY INVOICE'}
+              </button>
+              <button
+                onClick={pay}
+                disabled={!bolt11}
+                className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-[#ff7020] cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+              >
+                PAY WALLET
+              </button>
+            </div>
+          </>
+        )}
+
+        {invoicePaid && (
+          <div className="flex flex-col items-center gap-1 py-2">
+            <span className="font-display font-bold text-2xl tracking-[0.1em] text-magi" style={{ textShadow: '0 0 10px rgba(0,255,136,0.6)' }}>
+              ■ PAYMENT CONFIRMED
+            </span>
+          </div>
+        )}
+
+        {buyIn === 0 && (
+          <div className="flex flex-col items-center gap-0.5 py-2">
+            <span className="font-mono text-xs tracking-[0.15em] text-[#ff7020]/35">// FREE ENTRY — NO PAYMENT REQUIRED</span>
+          </div>
+        )}
       </div>
+
+      {/* ── Terminal status line ── */}
+      <div className="px-3 py-2 border-t border-[rgba(255,100,0,0.12)]">
+        <span className="font-mono text-xs tracking-widest text-[#ff7020]/55">{statusLine()}</span>
+      </div>
+
+      {/* ── Ready button ── */}
+      <button
+        onClick={handleReady}
+        disabled={!canReady}
+        className="w-full py-3 font-display font-bold text-2xl tracking-[0.15em] border-t-2 transition-all cursor-pointer disabled:cursor-not-allowed"
+        style={{
+          background: HAZARD,
+          color: !canReady ? 'rgba(255,112,32,0.15)' : isReady ? '#00ff88' : '#ff7020',
+          borderColor: !canReady ? 'rgba(255,100,0,0.08)' : isReady ? 'rgba(0,255,136,0.5)' : 'rgba(255,100,0,0.5)',
+          textShadow: !canReady ? 'none' : isReady ? '0 0 10px rgba(0,255,136,0.7)' : AMBER_GLOW,
+        }}
+      >
+        {!canReady ? '◌ AWAITING PAYMENT' : isReady ? '■ CANCEL READY' : '◌ INITIATE READY'}
+      </button>
     </div>
   );
 }

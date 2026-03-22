@@ -24,6 +24,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
       setWinnerId(undefined);
       setOpponentBoards({});
+
       gameSession.current = new NetworkGame(msg.seed, ws);
       unsubGarbage.current = gameSession.current.subscribeGarbage(setPendingGarbage);
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
@@ -46,6 +47,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       ws.off('game_start', handleGameStart);
       ws.off('opponent_board_update', handleOpponentBoardUpdate);
       ws.off('game_over', handleGameOver);
+
       unsubGarbage.current?.();
       gameSession.current?.stop();
     };
