@@ -18,6 +18,8 @@
   --color-teal: #00ffb4; /* NERV teal — UI accent */
   --color-phosphor: #c8a882; /* warm beige — default text */
 
+  --color-terminal: #00ff41; /* matrix/hacker terminal green */
+
   --color-pit: #050505;
   --color-surface: #0c0600;
   --color-surface-2: #140a00;
@@ -93,6 +95,15 @@
       inset 0 0 8px rgba(247, 147, 26, 0.08),
       0 0 10px rgba(247, 147, 26, 0.06);
   }
+}
+
+/* ── Terminal prompt blink ────────────────────────────────────────────────── */
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.15; }
+}
+.terminal-blink {
+  animation: terminal-blink 1.2s ease-in-out infinite;
 }
 
 /* ── Title panel ──────────────────────────────────────────────────────────── */

@@ -4,7 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { launchPaymentModal } from "@getalby/bitcoin-connect-react";
 // Complex CSS values that can't be expressed in Tailwind
 const AMBER_GLOW = '0 0 8px rgba(255,112,32,0.7), 0 0 24px rgba(255,80,0,0.3)';
-const HAZARD = 'repeating-linear-gradient(45deg, rgba(255,100,0,0.09) 0px, rgba(255,100,0,0.09) 3px, transparent 3px, transparent 9px)';
+const HAZARD = 'repeating-linear-gradient(45deg, rgba(180,0,0,0.55) 0px, rgba(180,0,0,0.55) 3px, transparent 3px, transparent 9px)';
 
 export function RoomStagingOverlay() {
   const { roomState, readyUpdate } = useRoom();
@@ -55,7 +55,7 @@ export function RoomStagingOverlay() {
           <span className="font-display font-bold text-base tracking-[0.2em] text-[#ff7020] w-fit bg-black p-2 border-nerv-dim border" style={{ textShadow: AMBER_GLOW }}>
             OP_STAGING
           </span>
-          <span className="font-jp text-[10px] tracking-[0.01em] text-[#ff7020]/45">作戦準備 // OPERATION STANDBY</span>
+          <span className="font-jp text-[10px] tracking-[0.01em] text-[#ff7020]/50 bg-black p-0.5 font-bold">作戦準備 // OPERATION STANDBY</span>
         </div>
         {/* Internal badge */}
         <div className="flex flex-col items-end border border-[rgba(255,100,0,0.45)] px-2 py-1 bg-black">
@@ -75,9 +75,16 @@ export function RoomStagingOverlay() {
                 <span className="font-mono text-[12px] tracking-[0.2em] text-[#ff7020]/40 mb-1">
                   即時送金
                 </span>
-                <span className="font-segment text-[56px] leading-none text-[#ff7020]" style={{ textShadow: AMBER_GLOW }}>
-                  {buyIn}
-                </span>
+                <div className="relative inline-block leading-none">
+                  {/* Ghost segments — all segments on, very dim */}
+                  <span aria-hidden className="font-segment text-[56px] leading-none text-[#ff7020]/4 absolute inset-0 select-none">
+                    {'8'.repeat(String(buyIn).length)}
+                  </span>
+                  {/* Active segments */}
+                  <span className="font-segment text-[56px] leading-none text-[#ff7020] relative" style={{ textShadow: AMBER_GLOW }}>
+                    {buyIn}
+                  </span>
+                </div>
                 <span className="font-display text-sm tracking-[0.4em] text-[#ff7020]/50 mt-1">
                   SATS
                 </span>
@@ -128,7 +135,9 @@ export function RoomStagingOverlay() {
 
       {/* ── Terminal status line ── */}
       <div className="px-3 py-2 border-t border-[rgba(255,100,0,0.12)]">
-        <span className="font-mono text-xs tracking-widest text-[#ff7020]/55">{statusLine()}</span>
+        <span className="font-mono text-xs tracking-widest text-terminal" style={{ textShadow: '0 0 6px rgba(0,255,65,0.6)' }}>
+          {statusLine()}<span className="terminal-blink">▌</span>
+        </span>
       </div>
 
       {/* ── Ready button ── */}
@@ -143,7 +152,7 @@ export function RoomStagingOverlay() {
           textShadow: !canReady ? 'none' : isReady ? '0 0 10px rgba(0,255,136,0.7)' : AMBER_GLOW,
         }}
       >
-        {!canReady ? '◌ AWAITING PAYMENT' : isReady ? '■ CANCEL READY' : '◌ INITIATE READY'}
+        <span className="bg-black p-2 border-nerv-dim border">{!canReady ? 'AWAITING PAYMENT' : isReady ? '■ CANCEL READY' : '◌ INITIATE READY'}</span>
       </button>
     </div>
   );
