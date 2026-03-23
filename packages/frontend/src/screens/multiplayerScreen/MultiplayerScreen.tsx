@@ -30,9 +30,9 @@ export function MultiplayerScreen() {
   console.log(opponentBoards);
 
   return (
-    <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
+    <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
 
-      <PlayerList />
+      <div className="flex justify-end items-start pt-1"><PlayerList /></div>
 
       {/* ── Arena — always mounted, same position ── */}
       <div className="flex items-start gap-3">
@@ -77,10 +77,12 @@ export function MultiplayerScreen() {
       </div>
 
       {/* ── Right panel - opponent boards ── */}
-      <ConnectedBoards
-        players={roomState.players.filter(p => p.playerId !== playerId)}
-        opponentBoards={opponentBoards}
-      />
+      <div className="flex justify-start items-start pt-1">
+        <ConnectedBoards
+          players={roomState.players.filter(p => p.playerId !== playerId)}
+          opponentBoards={opponentBoards}
+        />
+      </div>
 
     </div>
   );
