@@ -31,11 +31,6 @@ export class LocalGame {
     this.inputHandler = new InputHandler(action => {
       this.gameEngine.handleInput(action);
     });
-
-    this.subscribe('gameOver', () => {
-      alert('Game Over');
-    })
-
   }
 
   get state(): GameState {

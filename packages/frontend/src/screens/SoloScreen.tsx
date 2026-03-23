@@ -13,6 +13,8 @@ export function SoloScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
 
+
+  const [isGameOver, setIsGameOver] = useState(false);
   const [score] = useState(0);
   const [lines, setLines] = useState(0);
   const [level, setLevel] = useState(0);
@@ -25,6 +27,10 @@ export function SoloScreen() {
       setLines(game.state.lines);
       setLevel(game.state.level);
     });
+
+    game.subscribe('gameOver', () => {
+      setIsGameOver(true);
+    })
 
     return () => game.stop();
   }, []);
@@ -44,7 +50,7 @@ export function SoloScreen() {
 
         {/* Board */}
         <div className="relative flex flex-col gap-1.5">
-          <ScrollFlareOverlay />
+          {isGameOver && <ScrollFlareOverlay />}
           <canvas
             ref={boardRef}
             width={CANVAS_WIDTH}
