@@ -11,8 +11,11 @@ type CanvasRefs = {
 
 export function useMultiplayerGameSession(refs: CanvasRefs) {
   const ws = useWS();
+
   const gameSession = useRef<NetworkGame | null>(null);
+
   const unsubGarbage = useRef<(() => void) | null>(null);
+
   const [pendingGarbage, setPendingGarbage] = useState<PendingGarbage[]>([]);
   const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
   const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
