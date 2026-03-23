@@ -5,13 +5,11 @@ import { cn } from '../../lib/utils';
 import { useConnection } from '../../ws/WSContext';
 import { useMultiplayerGameSession } from '../../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../../render/queue';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, OPPONENT_CELL_SIZE } from '../../render/board';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../render/board';
 import { GarbageMeter } from '../../components/GarbageMeter';
-import { OpponentBoard } from '../../components/OpponentBoard';
 import { RoomStagingOverlay } from './RoomStagingOverlay';
 import { PlayerList } from './PlayerList';
-
-const EMPTY_BOARD: number[][] = Array.from({ length: 22 }, () => Array(10).fill(0));
+import { ConnectedBoards } from './ConnectedBoards';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -79,14 +77,10 @@ export function MultiplayerScreen() {
       </div>
 
       {/* ── Right panel - opponent boards ── */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(3, ${10 * OPPONENT_CELL_SIZE}px)` }}>
-        {roomState.players
-          .filter(p => p.playerId !== playerId)
-          .map(p => {
-            const board = opponentBoards[p.playerId] ?? EMPTY_BOARD;
-            return <OpponentBoard key={p.playerId} board={board} playerName={p.playerName} />;
-          })}
-      </div>
+      <ConnectedBoards
+        players={roomState.players.filter(p => p.playerId !== playerId)}
+        opponentBoards={opponentBoards}
+      />
 
     </div>
   );
