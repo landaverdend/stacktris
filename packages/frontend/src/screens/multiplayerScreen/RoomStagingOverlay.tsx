@@ -72,7 +72,7 @@ export function RoomStagingOverlay() {
       <div className="flex-1 flex flex-col px-4 pt-2 gap-4">
         <div className="flex-1 flex flex-col justify-center gap-4">
           {needsPayment && (
-            <>
+            <div className="flex flex-col gap-4">
               {/* Amount row */}
               <div className="flex items-end justify-between gap-3">
                 <div className="flex flex-col">
@@ -104,7 +104,17 @@ export function RoomStagingOverlay() {
               </div>
 
               {/* Action buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <div className="group relative shrink-0">
+                  <span className="font-mono text-4xl text-alert cursor-default select-none hover:text-alert/70 transition-colors">⚠</span>
+                  <div className="absolute bottom-full left-0 mb-2 w-56 hidden group-hover:block z-10">
+                    <div className="bg-black border border-[rgba(255,100,0,0.4)] px-3 py-2">
+                      <p className="font-mono text-[15px] tracking-wide text-[#ff7020]/70 leading-relaxed">
+                        NOTICE: Disconnecting during an active match will result in immediate forfeiture of staked funds.
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <button
                   onClick={copy}
                   disabled={!bolt11}
@@ -118,7 +128,7 @@ export function RoomStagingOverlay() {
                   PAY WALLET
                 </button>
               </div>
-            </>
+            </div>
           )}
 
           {invoicePaid && (
