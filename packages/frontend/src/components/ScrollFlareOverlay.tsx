@@ -3,11 +3,8 @@ import { useEffect } from 'react';
 
 interface Props {
   word?: string;
-  /** Any valid CSS color value */
   color?: string;
-  /** Number of rows of repeated text */
   rows?: number;
-  /** Font size in px — scale this down for smaller boards */
   fontSize?: number;
   onAnimationComplete?: () => void;
 }
@@ -17,24 +14,30 @@ export function ScrollFlareOverlay({
   color = '#cc1111',
   rows = 8,
   fontSize = 80,
-  onAnimationComplete,
 }: Props) {
   const [scope, animate] = useAnimate();
 
   useEffect(() => {
     async function run() {
-      // Phase 1: slide up — fire blink concurrently, don't await it
-      animate(
-        scope.current,
-        { opacity: [1, 0] },
-        { duration: 0.1, ease: 'linear', repeat: Infinity }
-      );
-      await animate(
-        scope.current,
-        { y: ['110%', '0%'] },
-        { duration: 3.5, ease: 'linear' }
-      );
-      onAnimationComplete?.();
+      const el = scope.current as HTMLElement;
+
+      // Fast strobe during entry slide
+      animate(el, { opacity: [1, 0] }, { duration: 0.1, ease: 'linear', repeat: Infinity });
+
+      // Entry: pixels so the math is exact regardless of element size
+      await animate(el, { y: [window.innerHeight, 0] }, { duration: 3.5, ease: 'linear' });
+
+      // Seamless loop: el is sized to content (h-auto), so half its height = exactly one set of rows
+      const halfH = el.scrollHeight / 2;
+      animate(el, { y: [0, -halfH] }, { duration: 6, ease: 'linear', repeat: Infinity, repeatType: 'loop' });
+
+      // Decelerate opacity strobe
+      for (const [cycleDur, reps] of [[0.1, 3], [0.25, 2], [0.6, 1], [1.0, 1]] as [number, number][]) {
+        await animate(el, { opacity: [1, 0, 1] }, { duration: cycleDur, ease: 'linear', repeat: reps });
+      }
+
+      // Settle into slow breathing
+      animate(el, { opacity: [1, 0.3, 1] }, { duration: 2.5, ease: 'easeInOut', repeat: Infinity });
     }
     run();
   }, []);
@@ -43,15 +46,9 @@ export function ScrollFlareOverlay({
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Static dark bg — never animates */}
-      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0,0,0,0.82)' }} />
-
-      {/* Text block — slides up from below */}
-      <div
-        ref={scope}
-        className="absolute inset-0 flex flex-col justify-center"
-      >
-        {Array.from({ length: rows }).map((_, r) => (
+      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0,0,0,0.88)' }} />
+      <div ref={scope} className="absolute top-0 left-0 w-full flex flex-col">
+        {Array.from({ length: rows * 2 }).map((_, r) => (
           <div key={r} className="flex justify-around w-full" style={{ lineHeight: 1.05 }}>
             {[0, 1].map(c => (
               <span

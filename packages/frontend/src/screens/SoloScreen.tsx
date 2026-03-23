@@ -51,6 +51,7 @@ export function SoloScreen() {
         {/* Board */}
         <div className="relative flex flex-col gap-1.5">
           {isGameOver && <ScrollFlareOverlay />}
+          {/* <ScrollFlareOverlay /> */}
           <canvas
             ref={boardRef}
             width={CANVAS_WIDTH}
