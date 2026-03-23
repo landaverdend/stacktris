@@ -46,6 +46,9 @@ export class NetworkGame {
       this.gameEngine.setGravityLevel(msg.level);
     })
 
+    this.gameEngine.subscribe('gameOver', () => {
+      this.ws.send({ type: 'player_died' });
+    });
   }
 
   get state() {

@@ -48,7 +48,8 @@ export type ClientMsg =
   | { type: 'set_player_name'; name: string; lightning_address?: string }
 
   // Game Ops
-  | { type: 'game_action'; buffer: InputBuffer; frame: number };
+  | { type: 'game_action'; buffer: InputBuffer; frame: number }
+  | { type: 'player_died' };
 
 
 export interface PlayerInfo {

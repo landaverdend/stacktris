@@ -43,6 +43,10 @@ export class GameSession {
         const ps = this.playerGames[playerId];
         ps?.handleInput(msg.buffer, msg.frame);
         break;
+      case 'player_died':
+        this.broadcastPlayerDeath(playerId);
+        this.removePlayer(playerId);
+        break;
     }
   }
 
@@ -106,6 +110,7 @@ export class GameSession {
   /** Remove a player from the session — used for both engine game-over and disconnects. */
   public removePlayer(playerId: string): void {
     if (this.gameEnded) return;
+    if (!this.alivePlayers.has(playerId)) return;
 
     // Remove from gameplay structures; playerOrder kept as tombstone (advanceTarget skips non-alive)
     // players is intentionally kept so the removed player still receives the final game_over broadcast
