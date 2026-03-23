@@ -1,4 +1,4 @@
-import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, RoomStatus, WINS_TO_MATCH } from "@stacktris/shared";
+import { ClientMsg, COUNTDOWN_SECONDS, InputBuffer, PlayerInfo, RoomInfo, RoomStatus, WINS_TO_MATCH } from "@stacktris/shared";
 import { GameSession } from "./gameSession.js";
 import { PlayerSlot, SendFn } from "../types.js";
 import { PaymentService } from "../lightning/paymentService.js";
@@ -115,6 +115,7 @@ export class Room {
         break;
       default:
         this.game?.onMessage(playerId, msg);
+        if (msg.type === 'game_action') { this.relayInputBuffer(playerId, msg.buffer); }
         break;
     }
   }
@@ -199,4 +200,22 @@ export class Room {
       player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn } });
     });
   }
+
+  /**
+   * Relay the input buffer stream to other players in the room (for ghost-games)
+   * @param playerId 
+   * @param inputBuffer 
+   */
+  private relayInputBuffer(playerId: string, inputBuffer: InputBuffer) {
+
+    // TODO: Need to scrub inputs and make sure they make sense and aren't tempered with....
+    for (const player of this.players.values()) {
+      if (player.playerId === playerId) continue;
+
+      player.sendFn({ type: 'game_player_input', playerId, inputBuffer })
+
+    }
+
+  }
+
 }

@@ -59,7 +59,6 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
               <span className="font-display text-2xl tracking-[0.02em] text-truncate text-aqua">
                 {truncatedName || player.playerId.slice(0, 8).toUpperCase()}
               </span>
-              {isYou && <span className="font-jp text-[11px] text-aqua shrink-0">あなた</span>}
             </div>
             <span className="font-display text-sm tracking-widest text-alert">{pips}</span>
           </div>

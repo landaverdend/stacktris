@@ -89,6 +89,7 @@ export type ServerMsg =
   | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
   | { type: 'opponent_board_update'; playerId: string; board: Board }
   | { type: 'game_player_died'; playerId: string }
+  | { type: 'game_player_input'; playerId: string; inputBuffer: InputBuffer }
 
   | { type: 'game_over'; winnerId: string | null }
   | { type: 'gravity_update'; level: number }

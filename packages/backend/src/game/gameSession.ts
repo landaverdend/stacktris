@@ -1,4 +1,4 @@
-import { Board, ClientMsg, Emitter, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, Emitter, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
@@ -169,7 +169,6 @@ export class GameSession {
       this.players[id].sendFn({ type: 'game_player_died', playerId: playerId })
     }
   }
-
 
   private broadcastToAll(msg: ServerMsg): void {
     for (const player of Object.values(this.players)) {
