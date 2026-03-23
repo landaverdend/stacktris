@@ -23,6 +23,8 @@ export function PlayerList() {
 const ORANGE_GLOW = '0 0 4px rgba(255,112,32,0.6)';
 
 function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolean; index: number }) {
+  const { roomState } = useRoom();
+
   const pips = Array.from({ length: WINS_TO_MATCH }, (_, i) => i < player.wins ? '■' : '□').join('');
   const alpha = isYou ? 0.55 : 0.28;
   const background = `linear-gradient(90deg, rgba(230,140,20,${alpha}), rgba(180,40,60,${alpha}), rgba(110,20,90,${alpha}))`;
@@ -60,9 +62,9 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
           </div>
 
           {/* Ready status */}
-          <span className={cn('font-display font-bold text-base tracking-[0.05em] shrink-0', player.ready ? 'text-magi' : 'text-phosphor/25')}>
+          {roomState.status === 'waiting' && <span className={cn('font-display font-bold text-base tracking-[0.05em] shrink-0', player.ready ? 'text-magi' : 'text-phosphor/25')}>
             {player.ready ? '■ READY' : '◌ WAITING'}
-          </span>
+          </span>}
         </div>
       </div>
 

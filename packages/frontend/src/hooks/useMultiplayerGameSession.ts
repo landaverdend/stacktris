@@ -15,6 +15,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const unsubGarbage = useRef<(() => void) | null>(null);
   const [pendingGarbage, setPendingGarbage] = useState<PendingGarbage[]>([]);
   const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
+  const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
   const [winnerId, setWinnerId] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
       setWinnerId(undefined);
       setOpponentBoards({});
-
+      setDeadPlayers(new Set())
       gameSession.current = new NetworkGame(msg.seed, ws);
       unsubGarbage.current = gameSession.current.subscribeGarbage(setPendingGarbage);
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
@@ -39,15 +40,20 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setWinnerId(msg.winnerId);
     };
 
+    const handleDeadPlayer = ({ playerId }: { playerId: string }) => {
+      setDeadPlayers(prev => new Set(prev).add(playerId));
+    };
+
     ws.on('game_start', handleGameStart);
     ws.on('opponent_board_update', handleOpponentBoardUpdate);
+    ws.on('game_player_died', handleDeadPlayer);
     ws.on('game_over', handleGameOver);
 
     return () => {
       ws.off('game_start', handleGameStart);
       ws.off('opponent_board_update', handleOpponentBoardUpdate);
       ws.off('game_over', handleGameOver);
-
+      ws.off('game_player_died', handleDeadPlayer)
       unsubGarbage.current?.();
       gameSession.current?.stop();
     };
@@ -55,5 +61,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbage, getTickCount, opponentBoards, winnerId };
+  return { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers };
 }

@@ -6,13 +6,17 @@ const BUFFER_ROWS = 2;
 const W = 10 * OPPONENT_CELL_SIZE;
 const H = 20 * OPPONENT_CELL_SIZE;
 
-export function OpponentBoard({ board, playerName }: { board: Board; playerName?: string }) {
+export function OpponentBoard({ board, playerName, isDead }: { board: Board; playerName?: string; isDead?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (ctx) renderBoard(ctx, board.slice(BUFFER_ROWS), null, false, 1, OPPONENT_CELL_SIZE);
   }, [board]);
+
+  useEffect(() => {
+    if (isDead) console.log('[OpponentBoard] player died:', playerName);
+  }, [isDead]);
 
   const displayName = playerName
     ? playerName.length > 10 ? playerName.slice(0, 9) + '…' : playerName

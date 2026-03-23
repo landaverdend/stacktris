@@ -63,7 +63,10 @@ export class GameSession {
 
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
       pg.subscribe('pieceLocked', ({ board }) => this.broadcastBoardUpdate(playerId, board));
-      pg.subscribe('gameOver', () => this.removePlayer(playerId));
+      pg.subscribe('gameOver', () => {
+        this.broadcastPlayerDeath(playerId);
+        this.removePlayer(playerId);
+      });
 
       this.playerGames[playerId] = pg;
     }
@@ -154,9 +157,20 @@ export class GameSession {
     }
   }
 
+  private broadcastPlayerDeath(playerId: string) {
+    for (const id of Object.keys(this.players)) {
+      if (id === playerId) continue;
+
+      this.players[id].sendFn({ type: 'game_player_died', playerId: playerId })
+    }
+  }
+
+
   private broadcastToAll(msg: ServerMsg): void {
     for (const player of Object.values(this.players)) {
       player.sendFn(msg);
     }
   }
+
+
 }

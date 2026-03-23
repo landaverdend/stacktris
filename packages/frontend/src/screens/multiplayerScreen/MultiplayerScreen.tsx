@@ -24,10 +24,8 @@ export function MultiplayerScreen() {
   // Leave room  if you navigate away from the page
   useEffect(() => () => { leaveRoom(); }, []);
 
-  const { pendingGarbage, getTickCount, opponentBoards, winnerId } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
+  const { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
   const { playerId } = useConnection();
-
-  console.log(opponentBoards);
 
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
@@ -81,6 +79,7 @@ export function MultiplayerScreen() {
         <ConnectedBoards
           players={roomState.players.filter(p => p.playerId !== playerId)}
           opponentBoards={opponentBoards}
+          deadPlayers={deadPlayers}
         />
       </div>
 

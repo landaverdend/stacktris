@@ -14,9 +14,10 @@ const EMPTY_BOARD: Board = Array.from({ length: 22 }, () => Array(10).fill(0));
 interface Props {
   players: PlayerInfo[];
   opponentBoards: Record<string, Board>;
+  deadPlayers: Set<string>;
 }
 
-export function ConnectedBoards({ players, opponentBoards }: Props) {
+export function ConnectedBoards({ players, opponentBoards, deadPlayers }: Props) {
   const count = players.length;
   if (count === 0) return null;
 
@@ -93,6 +94,7 @@ export function ConnectedBoards({ players, opponentBoards }: Props) {
             key={p.playerId}
             board={opponentBoards[p.playerId] ?? EMPTY_BOARD}
             playerName={p.playerName}
+            isDead={deadPlayers.has(p.playerId)}
           />
         ))}
       </div>
