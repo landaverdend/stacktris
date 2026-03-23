@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
 import { LocalGame } from '../game/LocalGame';
+import { ScrollFlareOverlay } from '../components/ScrollFlareOverlay';
 
 
 export function SoloScreen() {
@@ -42,7 +43,8 @@ export function SoloScreen() {
         </div>
 
         {/* Board */}
-        <div className="flex flex-col gap-1.5">
+        <div className="relative flex flex-col gap-1.5">
+          <ScrollFlareOverlay />
           <canvas
             ref={boardRef}
             width={CANVAS_WIDTH}
