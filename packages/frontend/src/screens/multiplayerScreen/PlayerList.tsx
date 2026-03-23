@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { PlayerInfo, WINS_TO_MATCH } from "../../../../shared/dist/protocol";
 import { useRoom } from "../../context/RoomContext";
 import { cn } from "../../lib/utils";
@@ -31,6 +32,8 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
   const accentAlpha = isYou ? 0.4 : 0.18;
   const accent = `linear-gradient(90deg, rgba(230,140,20,${accentAlpha}), rgba(180,40,60,${accentAlpha}), rgba(110,20,90,${accentAlpha}))`;
 
+  const truncatedName = useMemo(() => { return player.playerName?.slice(0, 9) + '...' }, [player.playerName])
+
   return (
     <div className="flex flex-col gap-1 min-w-80">
       {/* Main bar */}
@@ -51,14 +54,14 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
           <div className="h-10 w-px bg-white/10" />
 
           {/* Name + pips */}
-          <div className="flex flex-col flex-1 min-w-0">
+          <div className="flex flex-col flex-1 min-w-0 bg-black border-nerv-dim border px-2 rounded-md">
             <div className="flex items-baseline gap-1.5">
-              <span className="font-display font-bold text-2xl tracking-[0.02em] text-phosphor truncate">
-                {player.playerName || player.playerId.slice(0, 8).toUpperCase()}
+              <span className="font-display text-2xl tracking-[0.02em] text-truncate text-aqua">
+                {truncatedName || player.playerId.slice(0, 8).toUpperCase()}
               </span>
-              {isYou && <span className="font-jp text-[11px] text-[rgba(0,255,180,0.35)] shrink-0">あなた</span>}
+              {isYou && <span className="font-jp text-[11px] text-aqua shrink-0">あなた</span>}
             </div>
-            <span className="font-display text-sm tracking-widest text-magi">{pips}</span>
+            <span className="font-display text-sm tracking-widest text-alert">{pips}</span>
           </div>
 
           {/* Ready status */}

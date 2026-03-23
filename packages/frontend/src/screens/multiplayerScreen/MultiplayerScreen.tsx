@@ -10,6 +10,7 @@ import { GarbageMeter } from '../../components/GarbageMeter';
 import { RoomStagingOverlay } from './RoomStagingOverlay';
 import { PlayerList } from './PlayerList';
 import { ConnectedBoards } from './ConnectedBoards';
+import { ScrollFlareOverlay } from '../../components/ScrollFlareOverlay';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -22,15 +23,25 @@ export function MultiplayerScreen() {
   const { status } = roomState;
 
   // Leave room  if you navigate away from the page
-  useEffect(() => () => { leaveRoom(); }, []);
+  useEffect(
+    () => () => {
+      leaveRoom();
+    },
+    [],
+  );
 
-  const { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers } = useMultiplayerGameSession({ board: boardRef, queue: queueRef, hold: holdRef });
+  const { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers, isClientAlive } = useMultiplayerGameSession({
+    board: boardRef,
+    queue: queueRef,
+    hold: holdRef,
+  });
   const { playerId } = useConnection();
 
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
-
-      <div className="flex justify-end items-start pt-1"><PlayerList /></div>
+      <div className="flex justify-end items-start pt-1">
+        <PlayerList />
+      </div>
 
       {/* ── Arena — always mounted, same position ── */}
       <div className="flex items-start gap-3">
@@ -47,19 +58,12 @@ export function MultiplayerScreen() {
           <GarbageMeter garbageStack={pendingGarbage} getCurrentTick={getTickCount} />
           <div className="flex flex-col gap-1.5">
             <div className="relative">
-              <canvas
-                ref={boardRef}
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
-                className="block nerv-border bg-pit"
-              />
+              <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
               {status === 'waiting' && <RoomStagingOverlay />}
               {status === 'countdown' && <CountdownOverlay />}
-              {winnerId !== undefined && status === 'finished' && (
-                roomState.matchWinnerId !== null
-                  ? <MatchOverOverlay matchWinnerId={roomState.matchWinnerId} playerId={playerId} />
-                  : <RoundOverOverlay winnerId={winnerId} playerId={playerId} />
-              )}
+
+              {!isClientAlive && status === 'playing' && <ScrollFlareOverlay />}
+
             </div>
           </div>
         </div>
@@ -77,12 +81,11 @@ export function MultiplayerScreen() {
       {/* ── Right panel - opponent boards ── */}
       <div className="flex justify-start items-start pt-1">
         <ConnectedBoards
-          players={roomState.players.filter(p => p.playerId !== playerId)}
+          players={roomState.players.filter((p) => p.playerId !== playerId)}
           opponentBoards={opponentBoards}
           deadPlayers={deadPlayers}
         />
       </div>
-
     </div>
   );
 }
@@ -94,12 +97,14 @@ function RoundOverOverlay({ winnerId, playerId }: { winnerId: string | null; pla
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70">
       <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// ROUND TERMINATED</p>
-      <p className={cn('font-display font-bold leading-none text-5xl tracking-[0.2em]', isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert')}>
+      <p
+        className={cn(
+          'font-display font-bold leading-none text-5xl tracking-[0.2em]',
+          isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
+        )}>
         {isDraw ? 'DRAW' : isWinner ? 'ROUND WIN' : 'ROUND LOSS'}
       </p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">
-        {isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}
-      </p>
+      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
     </div>
   );
 }
@@ -111,12 +116,14 @@ function MatchOverOverlay({ matchWinnerId, playerId }: { matchWinnerId: string |
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
       <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE TERMINATED</p>
-      <p className={cn('font-display font-bold leading-none text-5xl tracking-[0.2em]', isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert')}>
+      <p
+        className={cn(
+          'font-display font-bold leading-none text-5xl tracking-[0.2em]',
+          isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
+        )}>
         {isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT'}
       </p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">
-        {isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}
-      </p>
+      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
     </div>
   );
 }

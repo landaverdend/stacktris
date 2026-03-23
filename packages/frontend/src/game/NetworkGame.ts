@@ -1,4 +1,5 @@
 import {
+  EngineEventMap,
   GameEngine,
   InputBuffer,
   PendingGarbage,
@@ -55,10 +56,6 @@ export class NetworkGame {
     return this.frameCount;
   }
 
-  subscribeGarbage(fn: (val: PendingGarbage[]) => void): () => void {
-    return this.gameEngine.subscribe('pendingGarbage', fn);
-  }
-
   start(canvases: Canvases): void {
     this.inputHandler.attach();
 
@@ -99,6 +96,10 @@ export class NetworkGame {
   stop(): void {
     cancelAnimationFrame(this.rafId);
     this.inputHandler.detach();
+  }
+
+  subscribe<K extends keyof EngineEventMap>(event: K, fn: (val: EngineEventMap[K]) => void): () => void {
+    return this.gameEngine.subscribe(event, fn);
   }
 
 }

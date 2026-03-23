@@ -15,11 +15,13 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const gameSession = useRef<NetworkGame | null>(null);
 
   const unsubGarbage = useRef<(() => void) | null>(null);
+  const unsubGameOver = useRef<(() => void) | null>(null);
 
   const [pendingGarbage, setPendingGarbage] = useState<PendingGarbage[]>([]);
   const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
   const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
   const [winnerId, setWinnerId] = useState<string | null | undefined>(undefined);
+  const [isClientAlive, setIsClientAlive] = useState(true);
 
   useEffect(() => {
     const handleGameStart = (msg: { type: 'game_start'; seed: number }) => {
@@ -29,8 +31,12 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setWinnerId(undefined);
       setOpponentBoards({});
       setDeadPlayers(new Set())
+      setIsClientAlive(true);
+
       gameSession.current = new NetworkGame(msg.seed, ws);
-      unsubGarbage.current = gameSession.current.subscribeGarbage(setPendingGarbage);
+      unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => setPendingGarbage(val));
+      unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setIsClientAlive(false));
+
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
     };
 
@@ -57,12 +63,14 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       ws.off('opponent_board_update', handleOpponentBoardUpdate);
       ws.off('game_over', handleGameOver);
       ws.off('game_player_died', handleDeadPlayer)
+
       unsubGarbage.current?.();
+      unsubGameOver.current?.();
       gameSession.current?.stop();
     };
   }, [ws]);
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers };
+  return { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers, isClientAlive };
 }
