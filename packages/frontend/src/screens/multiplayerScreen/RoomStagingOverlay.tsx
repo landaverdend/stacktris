@@ -40,7 +40,8 @@ export function RoomStagingOverlay() {
   };
 
   function statusLine() {
-    if (!bolt11) return '> GENERATING_INVOICE...';
+    if (!bolt11 && buyIn > 0) return '> GENERATING_INVOICE...';
+    if (!bolt11 && buyIn === 0) return '> FREE_ENTRY — INITIATE_READY';
     if (needsPayment) return '> AWAITING_PAYMENT';
     if (isReady) return '> OPERATOR_READY — STANDBY';
     if (invoicePaid) return '> PAYMENT_CONFIRMED — INITIATE_READY';

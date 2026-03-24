@@ -157,6 +157,9 @@ export class Session {
     if (this.buyIn > 0) {
       this.paymentService.generateBetInvoice(playerId, lightningAddress, sendFn, () => {
         this.players.get(playerId)!.paid = true;
+      }).catch((err) => {
+        console.error(`[Session] Failed to request make_hold_invoice`, err);
+        sendFn({ type: 'error', message: 'Failed to generate bet invoice. Please try again.' });
       });
     }
 
@@ -182,7 +185,13 @@ export class Session {
       if (hasBuyIn) this.paymentService.settleHoldInvoice(playerId);
     }
 
-    this.broadcastRoomStateUpdate();
+
+    // Check if there is only one player left mid-session, if so, end the session.
+    if (this._isSessionStarted && this.playerCount === 1) {
+      this.fsm.transition('finished');
+    } else {
+      this.broadcastRoomStateUpdate();
+    }
   }
 
 

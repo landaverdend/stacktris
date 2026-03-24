@@ -63,6 +63,7 @@ export function MultiplayerScreen() {
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
               {status === 'waiting' && <RoomStagingOverlay />}
               {status === 'countdown' && <CountdownOverlay />}
+              {!isClientAlive && (status === 'playing' || status === 'intermission') && <ScrollFlareOverlay />}
               {status === 'intermission' && (
                 <IntermissionOverlay
                   roundWinnerId={winnerId ?? null}
@@ -74,7 +75,6 @@ export function MultiplayerScreen() {
                   winner={roomState.players.find(p => p.playerId === roomState.matchWinnerId) as PlayerInfo}
                 />
               )}
-              {!isClientAlive && status === 'playing' && <ScrollFlareOverlay />}
 
             </div>
           </div>
