@@ -6,11 +6,11 @@ TODO:
 
 MVP:
 - game flow: it should be smooth and at the end of each round the winner should be broadcast
-  - add an intermission state to show who won and allow a "rest" time before next countdown
-- There should be a WINNER animation that tells us who won and how much went to the pot
+  - add an intermission state to show who won and allow a "rest" time before next countdown DONE
+- There should be a WINNER animation that tells us who won and how much went to them
 - disconnect logic?
-- add a disclaimer saying if you disconnect you lose your funds.
-- lightning address validation 
+- add a disclaimer saying if you disconnect you lose your funds. DONE
+- lightning address validation (TBD) 
 
 Nice To Haves
 - opponent boards should stream inputs and run a ghost game on the side.
