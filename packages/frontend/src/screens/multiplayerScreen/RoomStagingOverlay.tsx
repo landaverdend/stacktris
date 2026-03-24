@@ -12,7 +12,7 @@ export function RoomStagingOverlay() {
   const [isReady, setIsReady] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { bolt11, invoicePaid, buyIn } = roomState;
+  const { bolt11, invoicePaid, buyIn, potSats } = roomState;
   const canReady = buyIn === 0 || invoicePaid;
   const needsPayment = buyIn > 0 && !invoicePaid;
 
@@ -88,6 +88,26 @@ export function RoomStagingOverlay() {
               </button>
             </div>
           </div>
+
+          {/* Pot */}
+          {buyIn > 0 && (
+            <div className="flex items-center justify-between border border-[rgba(255,100,0,0.25)] px-3 py-2 bg-[rgba(255,100,0,0.04)]">
+              <div className="flex flex-col">
+                <span className="font-mono text-[10px] tracking-[0.3em] text-[#ff7020]/40 uppercase">// Current Pot</span>
+                <div className="flex items-baseline gap-1.5 mt-0.5">
+                  <span
+                    className="font-segment text-3xl leading-none text-[#ff7020]"
+                    style={{ textShadow: AMBER_GLOW }}>
+                    {potSats}
+                  </span>
+                  <span className="font-display text-xs tracking-[0.3em] text-[#ff7020]/50">SATS</span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="font-mono text-[10px] tracking-[0.25em] text-[#ff7020]/30">{potSats > 0 ? `${potSats / buyIn}/${roomState.players.length} PAID` : 'NO HOLDS YET'}</span>
+              </div>
+            </div>
+          )}
 
           {needsPayment && (
             <div className="flex flex-col gap-4">

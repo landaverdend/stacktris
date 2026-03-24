@@ -15,6 +15,7 @@ vi.mock('../src/game/round.js', () => ({
     }
     onMessage() { }
     removePlayer() { }
+    destroy() { }
   },
 }));
 
@@ -31,6 +32,7 @@ const makeMockPaymentService = () => {
   const service = {
     generateBetInvoice: vi.fn((playerId: string, _lightningAddress: string, _sendFn: SendFn, onPaid: () => void) => {
       callbacks.set(playerId, onPaid);
+      return Promise.resolve(); // must return a thenable — Session chains .catch() on this
     }),
     onMatchComplete: vi.fn(),
     cancelHoldInvoice: vi.fn(),
@@ -362,6 +364,142 @@ describe('Room', () => {
       // 'ghost' never joined — the callback just won't be in the map
       expect(() => confirmPayment('ghost')).not.toThrow();
       expect(room.status).toBe('waiting');
+    });
+  });
+
+  describe('potSats', () => {
+    const getPotSats = (send: MockSendFn) =>
+      send.mock.calls.at(-1)?.[0]?.roomState?.potSats as number | undefined;
+
+    it('starts at 0 for a paid room with no confirmed payments', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+      expect(getPotSats(send1)).toBe(0);
+    });
+
+    it('starts at 0 for a free room and stays 0 after players join', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Session('room-1', 0, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
+      expect(getPotSats(send1)).toBe(0);
+    });
+
+    it('increments by buyIn when a hold invoice is confirmed', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      expect(getPotSats(send1)).toBe(100);
+    });
+
+    it('increments for each confirmed payment', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+      room.addPlayer('p2', '', '', makeSend());
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      expect(getPotSats(send1)).toBe(200);
+    });
+
+    it('decrements when a paid player leaves while waiting', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send2 = makeSend();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', send2);
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      room.removePlayer('p1');
+      expect(getPotSats(send2)).toBe(100); // p1's 100 sats removed, p2's remain
+    });
+
+    it('does not decrement when an unpaid player leaves while waiting', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send2 = makeSend();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', send2);
+
+      confirmPayment('p2'); // only p2 paid
+      room.removePlayer('p1'); // p1 never paid — should not touch potSats
+      expect(getPotSats(send2)).toBe(100);
+    });
+
+    it('does not decrement when a paid player leaves mid-session (forfeit)', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send2 = makeSend();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', send2);
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      vi.advanceTimersByTime(3500); // → playing (_isSessionStarted = true)
+
+      room.removePlayer('p1');
+      // session ends (1 player left) → finished broadcast
+      expect(getPotSats(send2)).toBe(200); // both sats forfeited to pot
+      vi.useRealTimers();
+    });
+
+    it('never goes negative when a free-room player leaves', () => {
+      const { service } = makeMockPaymentService();
+      const room = new Session('room-1', 0, service);
+      const send2 = makeSend();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', send2);
+
+      room.removePlayer('p1');
+      expect(getPotSats(send2)).toBe(0);
+    });
+
+    it('decrements correctly when a paid player leaves during countdown', () => {
+      vi.useFakeTimers();
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 100, service);
+      const send2 = makeSend();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', send2);
+
+      confirmPayment('p1');
+      confirmPayment('p2');
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+      expect(room.status).toBe('countdown'); // _isSessionStarted still false
+
+      room.removePlayer('p1');
+      expect(getPotSats(send2)).toBe(100); // p1 refunded, p2 still in pot
+      vi.useRealTimers();
+    });
+
+    it('potSats is included in every session_state_update broadcast', () => {
+      const { service, confirmPayment } = makeMockPaymentService();
+      const room = new Session('room-1', 50, service);
+      const send1 = makeSend();
+      room.addPlayer('p1', '', '', send1);
+
+      // Every broadcast should have potSats defined
+      for (const [msg] of send1.mock.calls) {
+        expect(msg).toHaveProperty('roomState.potSats');
+      }
+
+      confirmPayment('p1');
+      const lastMsg = send1.mock.calls.at(-1)?.[0];
+      expect(lastMsg?.roomState?.potSats).toBe(50);
     });
   });
 

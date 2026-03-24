@@ -71,6 +71,7 @@ export interface SessionState {
   roundWinnerId: string | null; // Winner of the last round.
   matchWinnerId: string | null; // Winner of the session
   buyIn: number;
+  potSats: number; // Confirmed held sats — only increases, accurate even after forfeits
 }
 
 // ── Server → Client ───────────────────────────────────────────────────────────

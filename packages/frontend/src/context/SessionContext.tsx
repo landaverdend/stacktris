@@ -17,7 +17,7 @@ interface RoomContextValue {
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
-const initialRoomState: RoomStateWithPayment = { players: [], roomId: '', status: 'waiting', matchWinnerId: null, invoicePaid: false, buyIn: 0, roundWinnerId: null };
+const initialRoomState: RoomStateWithPayment = { players: [], roomId: '', status: 'waiting', matchWinnerId: null, invoicePaid: false, buyIn: 0, roundWinnerId: null, potSats: 0 };
 
 export function RoomProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();

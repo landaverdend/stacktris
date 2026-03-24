@@ -49,6 +49,7 @@ export class Session {
 
   private matchWinnerId: string | null = null;
   private roundWinnerId: string | null = null;
+  private potSats: number = 0;
 
   private fsm = new RoomStateMachine();
 
@@ -157,6 +158,8 @@ export class Session {
     if (this.buyIn > 0) {
       this.paymentService.generateBetInvoice(playerId, lightningAddress, sendFn, () => {
         this.players.get(playerId)!.paid = true;
+        this.potSats += this.buyIn;
+        this.broadcastRoomStateUpdate();
       }).catch((err) => {
         console.error(`[Session] Failed to request make_hold_invoice`, err);
         sendFn({ type: 'error', message: 'Failed to generate bet invoice. Please try again.' });
@@ -167,6 +170,7 @@ export class Session {
   }
 
   public removePlayer(playerId: string) {
+    const playerWasPaid = this.players.get(playerId)?.paid ?? false;
     this.players.delete(playerId);
 
     const hasBuyIn = this.buyIn > 0;
@@ -174,8 +178,11 @@ export class Session {
     // If the session hasn't started and we have the hold invoice, cancel it.
     if (!this._isSessionStarted) {
 
-      // If we have a buy in, cancel the hold invoice.
-      if (hasBuyIn) this.paymentService.cancelHoldInvoice(playerId);
+      // If we have a buy in, cancel the hold invoice and remove their sats from the pot.
+      if (hasBuyIn) {
+        this.paymentService.cancelHoldInvoice(playerId);
+        if (playerWasPaid) this.potSats -= this.buyIn;
+      }
 
       // Also, if we haven't started the session and we're the last player, revert back to waiting.
       if (this.playerCount === 1 && this.status === 'countdown') this.fsm.transition('waiting');
@@ -233,7 +240,7 @@ export class Session {
       .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'session_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn, roundWinnerId: this.roundWinnerId } });
+      player.sendFn({ type: 'session_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn, roundWinnerId: this.roundWinnerId, potSats: this.potSats } });
     });
   }
 
