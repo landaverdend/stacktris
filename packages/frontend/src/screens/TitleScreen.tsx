@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/SessionContext';
+import { useConnection } from '../ws/WSContext';
 import { RoomInfo } from '@stacktris/shared';
 import { cn } from '../lib/utils';
 import { GenesisBlock } from '../components/GenesisBlock';
@@ -18,13 +19,15 @@ const MENU = [
   { id: 'create', label: 'CREATE MATCH', jp: '作成' },
   { id: 'join', label: 'JOIN ROOM', jp: '参加' },
   { id: 'controls', label: 'CONTROLS', jp: '操作方法' },
+  { id: 'options', label: 'OPTIONS', jp: '設定' },
 ] as const;
 
 export function TitleScreen() {
   const navigate = useNavigate();
   const { createRoom, joinRoom } = useRoom();
+  const { setPlayerInfo } = useConnection();
 
-  const [modal, setModal] = useState<'battle' | 'create' | 'join' | 'controls' | null>(null);
+  const [modal, setModal] = useState<'battle' | 'create' | 'join' | 'controls' | 'options' | null>(null);
   const close = () => setModal(null);
 
   function handleItem(id: (typeof MENU)[number]['id']) {
@@ -74,6 +77,7 @@ export function TitleScreen() {
       <CreateMatchModal open={modal === 'create'} onClose={close} onCreate={createRoom} />
       <JoinRoomModal open={modal === 'join'} onClose={close} onJoin={handleJoinRoom} />
       <ControlsModal open={modal === 'controls'} onClose={close} />
+      <OptionsModal open={modal === 'options'} onClose={close} onSave={setPlayerInfo} />
     </div>
   );
 }
@@ -228,6 +232,114 @@ function ControlsModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
           </div>
         ))}
+      </div>
+    </NervModal>
+  );
+}
+
+function OptionsModal({ open, onClose, onSave }: {
+  open: boolean; onClose: () => void;
+  onSave: (name: string, lightningAddress: string) => void;
+}) {
+  const [name, setName] = useState(() => localStorage.getItem('playerName') ?? '');
+  const [address, setAddress] = useState(() => localStorage.getItem('lightningAddress') ?? '');
+  const [verifyStatus, setVerifyStatus] = useState<'idle' | 'checking' | 'ok' | 'invalid' | 'cors'>('idle');
+
+  // Reset fields to current stored values each time modal opens
+  useEffect(() => {
+    if (open) {
+      setName(localStorage.getItem('playerName') ?? '');
+      setAddress(localStorage.getItem('lightningAddress') ?? '');
+      setVerifyStatus('idle');
+    }
+  }, [open]);
+
+  // Reset verify status when address changes
+  useEffect(() => { setVerifyStatus('idle'); }, [address]);
+
+  const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address);
+
+  async function handleVerify() {
+    if (!isValidFormat) { setVerifyStatus('invalid'); return; }
+    setVerifyStatus('checking');
+    const [user, domain] = address.split('@');
+    try {
+      const res = await fetch(`https://${domain}/.well-known/lnurlp/${user}`);
+      if (!res.ok) { setVerifyStatus('invalid'); return; }
+      const json = await res.json();
+      setVerifyStatus(json?.tag === 'payRequest' ? 'ok' : 'invalid');
+    } catch {
+      // CORS or network failure — can't confirm, but not necessarily wrong
+      setVerifyStatus('cors');
+    }
+  }
+
+  function handleSave() {
+    if (!name.trim()) return;
+    onSave(name.trim(), address.trim());
+    onClose();
+  }
+
+  const verifyLabel: Record<typeof verifyStatus, string> = {
+    idle: 'VERIFY',
+    checking: '◌ ...',
+    ok: '✓ VALID',
+    invalid: '✗ INVALID',
+    cors: '? UNCONFIRMED',
+  };
+  const verifyColor: Record<typeof verifyStatus, string> = {
+    idle: 'text-[rgba(0,255,180,0.5)]',
+    checking: 'text-[rgba(0,255,180,0.5)]',
+    ok: 'text-teal',
+    invalid: 'text-alert',
+    cors: 'text-bitcoin',
+  };
+
+  return (
+    <NervModal open={open} title="OPTIONS" titleJp="設定" onClose={onClose}>
+      <div className="flex flex-col gap-0">
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">NAME</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">名前</span>
+          </div>
+          <input
+            type="text"
+            className="w-40 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-sm text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
+            value={name}
+            placeholder="OPERATOR"
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">ADDRESS</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">アドレス</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              className="w-44 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-xs text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
+              value={address}
+              placeholder="you@wallet.domain"
+              onChange={(e) => setAddress(e.target.value)}
+            />
+            <button
+              onClick={handleVerify}
+              disabled={!address || verifyStatus === 'checking'}
+              className={`font-mono text-[11px] tracking-widest transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${verifyColor[verifyStatus]}`}>
+              {verifyLabel[verifyStatus]}
+            </button>
+          </div>
+        </div>
+        {verifyStatus === 'cors' && (
+          <p className="font-mono text-[10px] text-bitcoin/60 pt-1.5">
+            // could not reach {address.split('@')[1]} — address may still be valid
+          </p>
+        )}
+        <div className="pt-5">
+          <NervButton onClick={handleSave} disabled={!name.trim()}>SAVE CHANGES</NervButton>
+        </div>
       </div>
     </NervModal>
   );
