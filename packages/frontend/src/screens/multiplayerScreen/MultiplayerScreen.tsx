@@ -24,8 +24,11 @@ export function MultiplayerScreen() {
 
   // Leave room  if you navigate away from the page
   useEffect(
-    () => () => {
-      leaveRoom();
+    () => {
+
+      return () => {
+        leaveRoom();
+      }
     },
     [],
   );
@@ -61,7 +64,7 @@ export function MultiplayerScreen() {
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
               {status === 'waiting' && <RoomStagingOverlay />}
               {status === 'countdown' && <CountdownOverlay />}
-
+              {status === 'intermission' && <IntermissionOverlay />}
               {!isClientAlive && status === 'playing' && <ScrollFlareOverlay />}
 
             </div>
@@ -90,43 +93,43 @@ export function MultiplayerScreen() {
   );
 }
 
-function RoundOverOverlay({ winnerId, playerId }: { winnerId: string | null; playerId: string | null }) {
-  const isWinner = winnerId !== null && winnerId === playerId;
-  const isDraw = winnerId === null;
+// function RoundOverOverlay({ winnerId, playerId }: { winnerId: string | null; playerId: string | null }) {
+//   const isWinner = winnerId !== null && winnerId === playerId;
+//   const isDraw = winnerId === null;
 
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70">
-      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// ROUND TERMINATED</p>
-      <p
-        className={cn(
-          'font-display font-bold leading-none text-5xl tracking-[0.2em]',
-          isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
-        )}>
-        {isDraw ? 'DRAW' : isWinner ? 'ROUND WIN' : 'ROUND LOSS'}
-      </p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
-    </div>
-  );
-}
+//   return (
+//     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70">
+//       <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// ROUND TERMINATED</p>
+//       <p
+//         className={cn(
+//           'font-display font-bold leading-none text-5xl tracking-[0.2em]',
+//           isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
+//         )}>
+//         {isDraw ? 'DRAW' : isWinner ? 'ROUND WIN' : 'ROUND LOSS'}
+//       </p>
+//       <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
+//     </div>
+//   );
+// }
 
-function MatchOverOverlay({ matchWinnerId, playerId }: { matchWinnerId: string | null; playerId: string | null }) {
-  const isWinner = matchWinnerId !== null && matchWinnerId === playerId;
-  const isDraw = matchWinnerId === null;
+// function MatchOverOverlay({ matchWinnerId, playerId }: { matchWinnerId: string | null; playerId: string | null }) {
+//   const isWinner = matchWinnerId !== null && matchWinnerId === playerId;
+//   const isDraw = matchWinnerId === null;
 
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
-      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE TERMINATED</p>
-      <p
-        className={cn(
-          'font-display font-bold leading-none text-5xl tracking-[0.2em]',
-          isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
-        )}>
-        {isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT'}
-      </p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
-    </div>
-  );
-}
+//   return (
+//     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
+//       <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE TERMINATED</p>
+//       <p
+//         className={cn(
+//           'font-display font-bold leading-none text-5xl tracking-[0.2em]',
+//           isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
+//         )}>
+//         {isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT'}
+//       </p>
+//       <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
+//     </div>
+//   );
+// }
 
 function CountdownOverlay() {
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!'>(COUNTDOWN_SECONDS);
@@ -145,6 +148,16 @@ function CountdownOverlay() {
         {countdownDisplay}
       </p>
       <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — SYNC COMPLETE</p>
+    </div>
+  );
+}
+
+
+function IntermissionOverlay() {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
+      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE INTERMISSION</p>
+      <p className="text-nerv-dim text-[8px] font-jp tracking-widest">シーケンス間</p>
     </div>
   );
 }

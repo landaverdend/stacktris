@@ -68,7 +68,8 @@ export interface SessionState {
   roomId: string;
   players: PlayerInfo[];
   status: SessionStatus;
-  matchWinnerId: string | null;
+  roundWinnerId: string | null; // Winner of the last round.
+  matchWinnerId: string | null; // Winner of the session
   buyIn: number;
 }
 
@@ -91,6 +92,5 @@ export type ServerMsg =
   | { type: 'game_player_died'; playerId: string }
   | { type: 'game_player_input'; playerId: string; inputBuffer: InputBuffer }
 
-  | { type: 'game_over'; winnerId: string | null }
   | { type: 'gravity_update'; level: number }
   | { type: 'error'; message: string };

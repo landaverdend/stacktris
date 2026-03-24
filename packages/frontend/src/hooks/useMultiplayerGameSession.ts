@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { Board, PendingGarbage } from "@stacktris/shared";
+import { Board, PendingGarbage, SessionState } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
 
@@ -21,6 +21,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
   const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
   const [winnerId, setWinnerId] = useState<string | null | undefined>(undefined);
+
   const [isClientAlive, setIsClientAlive] = useState(true);
 
   useEffect(() => {
@@ -44,9 +45,13 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setOpponentBoards(prev => ({ ...prev, [msg.playerId]: msg.board }));
     };
 
-    const handleGameOver = (msg: { type: 'game_over'; winnerId: string | null }) => {
-      gameSession.current?.stop();
-      setWinnerId(msg.winnerId);
+    const handleGameOver = (msg: { type: 'session_state_update'; roomState: SessionState }) => {
+      if (msg.roomState.status === 'intermission' || msg.roomState.status === 'finished') {
+        gameSession.current?.stop();
+
+        setWinnerId(msg.roomState.roundWinnerId);
+      }
+
     };
 
     const handleDeadPlayer = ({ playerId }: { playerId: string }) => {
@@ -56,12 +61,13 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
     ws.on('game_start', handleGameStart);
     ws.on('opponent_board_update', handleOpponentBoardUpdate);
     ws.on('game_player_died', handleDeadPlayer);
-    ws.on('game_over', handleGameOver);
+    ws.on('session_state_update', handleGameOver);
+
 
     return () => {
       ws.off('game_start', handleGameStart);
       ws.off('opponent_board_update', handleOpponentBoardUpdate);
-      ws.off('game_over', handleGameOver);
+      ws.off('session_state_update', handleGameOver);
       ws.off('game_player_died', handleDeadPlayer)
 
       unsubGarbage.current?.();

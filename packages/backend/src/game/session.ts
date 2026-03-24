@@ -85,7 +85,9 @@ export class Session {
       this.round = new Round(Array.from(this.players.values()));
       this.round.subscribe('gameOver', (winnerId) => {
 
-        console.log('[Session] game over...', winnerId);
+        this.roundWinnerId = winnerId;
+
+        let isSessionOver = false;
 
         // If a winner was determined, update win counts and check if the session is complete
         if (winnerId) {
@@ -94,10 +96,11 @@ export class Session {
           if (w >= WINS_TO_MATCH) {
             this.matchWinnerId = winnerId;
             this.fsm.transition('finished');
+            isSessionOver = true;
           }
         }
 
-        this.fsm.transition('intermission');
+        if (!isSessionOver) this.fsm.transition('intermission');
       });
 
       this.broadcastRoomStateUpdate();
@@ -216,7 +219,7 @@ export class Session {
       .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'session_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn } });
+      player.sendFn({ type: 'session_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn, roundWinnerId: this.roundWinnerId } });
     });
   }
 

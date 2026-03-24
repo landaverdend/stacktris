@@ -121,7 +121,6 @@ export class Round {
       this.gameEnded = true;
       this.stopGravityTimer();
       const winnerId = [...this.alivePlayers][0] ?? null;
-      // this.broadcastToAll({ type: 'game_over', winnerId });
       this.emitter.emit('gameOver', winnerId);
     }
   }

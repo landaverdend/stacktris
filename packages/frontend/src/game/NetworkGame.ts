@@ -2,7 +2,6 @@ import {
   EngineEventMap,
   GameEngine,
   InputBuffer,
-  PendingGarbage,
   ServerMsg,
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
