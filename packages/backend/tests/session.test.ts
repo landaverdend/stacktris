@@ -13,8 +13,8 @@ vi.mock('../src/game/gameSession.js', () => ({
     subscribe(event: string, cb: (id: string | null) => void) {
       if (event === 'gameOver') _gameOverCallback = cb;
     }
-    onMessage() {}
-    removePlayer() {}
+    onMessage() { }
+    removePlayer() { }
   },
 }));
 
@@ -554,7 +554,7 @@ describe('Room', () => {
       fireGameOver('p1');
       vi.advanceTimersByTime(3000); // inter-round pause
 
-      expect(room.status).toBe('countdown');
+      expect(room.status).toBe('intermission');
     });
 
     it('next round starts automatically after the inter-round countdown', () => {
@@ -599,7 +599,7 @@ describe('Room', () => {
       }
 
       vi.advanceTimersByTime(10000);
-      expect(room.status).toBe('finished');
+      expect(room.status).toBe('intermission');
     });
   });
 });

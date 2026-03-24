@@ -113,7 +113,7 @@ export class sessionRegistry {
    */
   public listRooms(): RoomInfo[] {
     return Array.from(this.rooms.values())
-      .filter((room) => room.playerCount < MAX_PLAYERS && !room.isSessionStarted)
+      .filter((room) => room.playerCount < MAX_PLAYERS && room.status === 'waiting')
       .map((room) => room.roomInfo);
   }
 }
