@@ -178,8 +178,8 @@ function JoinRoomModal({ open, onClose, onJoin }: {
           </div>
           <input
             type="text"
-            className="w-36 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-sm text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
-            value={roomId} placeholder="XXXX-..."
+            className="w-36 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-xl text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
+            value={roomId} placeholder="XXXX"
             onChange={(e) => setRoomId(e.target.value)}
           />
         </div>
@@ -189,13 +189,8 @@ function JoinRoomModal({ open, onClose, onJoin }: {
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
-              value={buyIn} min={0}
-              onChange={(e) => setBuyIn(Number(e.target.value))}
-            />
-            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
+            <span className="font-display font-bold text-4xl tracking-[0.02em] text-bitcoin">{buyIn}</span>
+            <span className="font-mono text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
           </div>
         </div>
         <div className="pt-5">

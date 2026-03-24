@@ -72,6 +72,23 @@ export function RoomStagingOverlay() {
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col px-4 pt-2 gap-4">
         <div className="flex-1 flex flex-col justify-center gap-4">
+          {/* Room code */}
+          <div className="flex flex-col gap-1 border border-[rgba(255,100,0,0.25)] px-3 py-2 bg-[rgba(255,100,0,0.04)]">
+            <span className="font-mono text-[10px] tracking-[0.3em] text-[#ff7020]/40 uppercase">// Room Code</span>
+            <div className="flex items-center justify-between gap-3">
+              <span
+                className="font-display font-bold text-4xl tracking-[0.25em] text-[#ff7020]"
+                style={{ textShadow: AMBER_GLOW }}>
+                {roomState.roomId}
+              </span>
+              <button
+                onClick={() => navigator.clipboard.writeText(roomState.roomId)}
+                className="font-mono text-[10px] tracking-widest text-[#ff7020]/50 hover:text-[#ff7020] border border-[rgba(255,100,0,0.25)] hover:border-[rgba(255,100,0,0.7)] px-2 py-1 transition-colors cursor-pointer">
+                COPY
+              </button>
+            </div>
+          </div>
+
           {needsPayment && (
             <div className="flex flex-col gap-4">
               {/* Amount row */}

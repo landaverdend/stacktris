@@ -51,8 +51,17 @@ export class sessionRegistry {
     }
   }
 
+  private generateRoomCode(): string {
+    const CHARS = 'ABCDEFGHJKLMNPRTUVWXYSZ';
+    let code: string;
+    do {
+      code = Array.from({ length: 5 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
+    } while (this.rooms.has(code));
+    return code;
+  }
+
   private createSession(playerId: string, playerName: string, lightningAddress: string, buyIn: number): void {
-    const roomId = crypto.randomUUID();
+    const roomId = this.generateRoomCode();
     const paymentService = new PaymentService(this.paymentClient, buyIn);
     const room = new Session(roomId, buyIn, paymentService);
 
