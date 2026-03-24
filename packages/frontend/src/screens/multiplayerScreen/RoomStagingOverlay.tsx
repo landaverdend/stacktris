@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useRoom } from '../../context/RoomContext';
+import { useRoom } from '../../context/SessionContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { launchPaymentModal } from '@getalby/bitcoin-connect-react';
 // Complex CSS values that can't be expressed in Tailwind

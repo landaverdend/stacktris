@@ -62,12 +62,12 @@ export interface PlayerInfo {
 
 export const WINS_TO_MATCH = 3;
 
-export type RoomStatus = "waiting" | "countdown" | "playing" | "finished"
+export type SessionStatus = "waiting" | "countdown" | "intermission" | "playing" | "finished"
 
-export interface RoomState {
+export interface SessionState {
   roomId: string;
   players: PlayerInfo[];
-  status: RoomStatus;
+  status: SessionStatus;
   matchWinnerId: string | null;
   buyIn: number;
 }
@@ -76,9 +76,9 @@ export interface RoomState {
 export type ServerMsg =
   | { type: 'welcome'; player_id: string }
   // Room Operations
-  | { type: 'room_created'; room_id: string }
-  | { type: 'room_joined'; room_id: string; }
-  | { type: 'room_state_update'; roomState: RoomState }
+  | { type: 'session_created'; room_id: string }
+  | { type: 'session_joined'; room_id: string; }
+  | { type: 'session_state_update'; roomState: SessionState }
 
   | { type: 'bet_invoice_issued'; bolt11: string; expiresAt: number }
   | { type: 'bet_payment_confirmed'; playerId: string }

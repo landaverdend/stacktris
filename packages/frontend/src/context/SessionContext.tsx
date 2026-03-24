@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
-import type { RoomState } from '@stacktris/shared';
+import type { SessionState } from '@stacktris/shared';
 import { useWS, useConnection } from '../ws/WSContext';
 import type { ConnectionStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
-type RoomStateWithPayment = RoomState & { bolt11?: string; expiresAt?: number; invoicePaid: boolean };
+type RoomStateWithPayment = SessionState & { bolt11?: string; expiresAt?: number; invoicePaid: boolean };
 interface RoomContextValue {
   connectionStatus: ConnectionStatus;
   roomState: RoomStateWithPayment;
@@ -29,15 +29,15 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const [roomState, setRoomState] = useState<RoomStateWithPayment>(initialRoomState);
 
   useEffect(() => {
-    const onRoomCreated = (msg: { type: 'room_created'; room_id: string }) => {
+    const onRoomCreated = (msg: { type: 'session_created'; room_id: string }) => {
       navigate(`/room/${msg.room_id}`)
     };
 
-    const onRoomJoined = (msg: { type: 'room_joined'; room_id: string }) => {
+    const onRoomJoined = (msg: { type: 'session_joined'; room_id: string }) => {
       navigate(`/room/${msg.room_id}`)
     };
 
-    const onRoomStateUpdate = (msg: { type: 'room_state_update'; roomState: RoomState }) => {
+    const onRoomStateUpdate = (msg: { type: 'session_state_update'; roomState: SessionState }) => {
       setRoomState(prev => ({ ...prev, ...msg.roomState }));
     };
 
@@ -51,16 +51,16 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       setRoomState(prev => ({ ...prev, invoicePaid: true }));
     };
 
-    ws.on('room_created', onRoomCreated);
-    ws.on('room_joined', onRoomJoined);
-    ws.on('room_state_update', onRoomStateUpdate);
+    ws.on('session_created', onRoomCreated);
+    ws.on('session_joined', onRoomJoined);
+    ws.on('session_state_update', onRoomStateUpdate);
     ws.on('bet_invoice_issued', onBetInvoiceIssued);
     ws.on('bet_payment_confirmed', onBetPaymentConfirmed);
 
     return () => {
-      ws.off('room_created', onRoomCreated);
-      ws.off('room_joined', onRoomJoined);
-      ws.off('room_state_update', onRoomStateUpdate);
+      ws.off('session_created', onRoomCreated);
+      ws.off('session_joined', onRoomJoined);
+      ws.off('session_state_update', onRoomStateUpdate);
       ws.off('bet_invoice_issued', onBetInvoiceIssued);
     };
   }, [ws]);

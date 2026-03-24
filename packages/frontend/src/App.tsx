@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { WSProvider } from './ws/WSContext';
-import { RoomProvider } from './context/RoomContext';
+import { RoomProvider } from './context/SessionContext';
 import { NavBar } from './components/NavBar';
 import { TitleScreen } from './screens/TitleScreen';
 import { MultiplayerScreen } from './screens/multiplayerScreen/MultiplayerScreen';

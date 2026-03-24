@@ -1,22 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RoomRegistry } from '../src/game/roomRegistry.js';
+import { sessionRegistry } from '../src/game/sessionRegistry.js';
 import { SendFn } from '../src/types.js';
-import { MAX_PLAYERS } from '../src/game/room.js';
+import { MAX_PLAYERS } from '../src/game/session.js';
 import { PaymentClient } from '../src/lightning/paymentClient.js';
 
 const makeSend = (): SendFn => vi.fn();
 
-function connect(registry: RoomRegistry, playerId: string) {
+function connect(registry: sessionRegistry, playerId: string) {
   const send = makeSend();
   registry.onConnect(playerId, send);
   return send;
 }
 
 describe('RoomRegistry', () => {
-  let registry: RoomRegistry;
+  let registry: sessionRegistry;
 
   beforeEach(() => {
-    registry = new RoomRegistry({} as PaymentClient);
+    registry = new sessionRegistry({} as PaymentClient);
   });
 
   describe('create_room', () => {

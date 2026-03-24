@@ -34,8 +34,6 @@ export class PaymentClient {
 
     const result = await this.client.makeHoldInvoice({ amount: amountSats * 1000, description, payment_hash: paymentHash, expiry: 3600 });
 
-    console.log('[invoice] ', result);
-
     // expires_at is a Unix timestamp in seconds — convert to ms for consistency.
     return { invoice: result.invoice, paymentHash, preimage, expiresAt: result.expires_at * 1000 };
   }

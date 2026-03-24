@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { PlayerInfo, WINS_TO_MATCH } from "../../../../shared/dist/protocol";
-import { useRoom } from "../../context/RoomContext";
+import { useRoom } from "../../context/SessionContext";
 import { cn } from "../../lib/utils";
 import { useConnection } from "../../ws/WSContext";
 

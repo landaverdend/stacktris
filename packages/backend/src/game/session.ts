@@ -1,32 +1,43 @@
-import { ClientMsg, COUNTDOWN_SECONDS, InputBuffer, PlayerInfo, RoomInfo, RoomStatus, WINS_TO_MATCH } from "@stacktris/shared";
-import { GameSession } from "./gameSession.js";
+import { ClientMsg, COUNTDOWN_SECONDS, InputBuffer, PlayerInfo, RoomInfo, SessionStatus, WINS_TO_MATCH } from "@stacktris/shared";
+import { Round } from "./round.js";
 import { PlayerSlot, SendFn } from "../types.js";
 import { PaymentService } from "../lightning/paymentService.js";
 
 // Valid state transitions for a room.
-const VALID_TRANSITIONS: Record<RoomStatus, RoomStatus[]> = {
+const VALID_TRANSITIONS: Record<SessionStatus, SessionStatus[]> = {
   waiting: ['countdown'],
   countdown: ['waiting', 'playing'],
   playing: ['finished'],
-  finished: ['waiting', 'countdown'],
+  intermission: ['countdown', 'finished'],
+  finished: [],
 };
 
 class RoomStateMachine {
-  private _status: RoomStatus = 'waiting';
+  private _status: SessionStatus = 'waiting';
+  private listeners: Map<SessionStatus, Array<() => void>> = new Map();
 
-  get status(): RoomStatus { return this._status; }
+  init(): void {
+    this.listeners.get(this._status)?.forEach(fn => fn());
+  }
+  get status(): SessionStatus { return this._status; }
 
-  transition(to: RoomStatus): void {
+  transition(to: SessionStatus): void {
     if (!VALID_TRANSITIONS[this._status].includes(to)) {
       throw new Error(`Invalid room transition: ${this._status} → ${to}`);
     }
     this._status = to;
+    this.listeners.get(to)?.forEach(fn => fn());
+  }
+
+  on(status: SessionStatus, fn: () => void): void {
+    if (!this.listeners.has(status)) this.listeners.set(status, []);
+    this.listeners.get(status)!.push(fn);
   }
 }
 
 export const MAX_PLAYERS = 8;
 
-export class Room {
+export class Session {
   private id: string;
   private createdAt: number = Date.now();
 
@@ -36,22 +47,37 @@ export class Room {
   private wins: Map<string, number> = new Map();
 
   private matchWinnerId: string | null = null;
+  private roundWinnerId: string | null = null;
+
   private fsm = new RoomStateMachine();
 
   private countdownTimer: NodeJS.Timeout | null = null;
-  private interRoundTimer: NodeJS.Timeout | null = null;
   private readonly COUNTDOWN_DURATION = COUNTDOWN_SECONDS * 1000;
-  private readonly INTER_ROUND_PAUSE = 3000;
-  private game: GameSession | null = null;
+  private round: Round | null = null;
 
   private _isSessionStarted = false;
 
   constructor(id: string, buyIn: number, private readonly paymentService: PaymentService) {
     this.id = id;
     this.buyIn = buyIn;
+
+    this.fsm.on('waiting', () => {
+      console.log(`[Session] waiting`);
+    })
+    this.fsm.on('countdown', () => {
+      console.log(`[Session] countdown`);
+    })
+    this.fsm.on('playing', () => {
+      console.log(`[Session] playing`);
+    })
+    this.fsm.on('finished', () => {
+      console.log(`[Session] finished`);
+    })
+
+    this.fsm.init();
   }
 
-  get status(): RoomStatus { return this.fsm.status; }
+  get status(): SessionStatus { return this.fsm.status; }
   get playerCount() { return this.players.size; }
   get isFull() { return this.players.size >= MAX_PLAYERS; }
   get isEmpty() { return this.players.size === 0; }
@@ -82,31 +108,30 @@ export class Room {
   }
 
   public removePlayer(playerId: string) {
-    console.log(`[Room] removed player ${playerId} from room ${this.id}`);
     this.players.delete(playerId);
 
-    if (this.status === 'countdown') this.cancelCountdown();
-    if (this.status === 'playing') this.game?.removePlayer(playerId);
+    const hasBuyIn = this.buyIn > 0;
 
-    // Cancel a pending inter-round restart if one is queued.
-    if (this.interRoundTimer) {
-      clearTimeout(this.interRoundTimer);
-      this.interRoundTimer = null;
+    // If the session hasn't started and we have the hold invoice, cancel it.
+    if (!this._isSessionStarted) {
+
+      // If we have a buy in, cancel the hold invoice.
+      if (hasBuyIn) this.paymentService.cancelHoldInvoice(playerId);
+
+      // Also, if we haven't started the session and we're the last player, cancel the countdown.
+      if (this.playerCount === 1) this.cancelCountdown();
+
+    } else {
+      // If the player is removed after the session has officially started, settle the hold invoice.
+      if (hasBuyIn) this.paymentService.settleHoldInvoice(playerId);
+
+      // TODO: check if the player is the last one in the session, if so, declare them the winner and handle the session completion??
+
     }
-
-    if (this.buyIn > 0) {
-      if (!this._isSessionStarted) {
-        this.paymentService.cancelHoldInvoice(playerId);
-        console.log(`[Room] refunded hold invoice for player ${playerId} in room ${this.id}`);
-      } else {
-        this.paymentService.settleHoldInvoice(playerId);
-      }
-    }
-
-    if (this.isEmpty) this.paymentService.destroy();
 
     this.broadcastRoomStateUpdate();
   }
+
 
   public onMessage(playerId: string, msg: ClientMsg) {
     switch (msg.type) {
@@ -114,8 +139,7 @@ export class Room {
         this.onReadyUpdate(playerId, msg.ready);
         break;
       default:
-        this.game?.onMessage(playerId, msg);
-        if (msg.type === 'game_action') { this.relayInputBuffer(playerId, msg.buffer); }
+        this.round?.onMessage(playerId, msg);
         break;
     }
   }
@@ -162,34 +186,28 @@ export class Room {
 
   private startGame() {
     this._isSessionStarted = true;
+
     this.fsm.transition('playing');
-    this.game = new GameSession(Array.from(this.players.values()));
-    this.game.subscribe('gameOver', (winnerId) => this.onGameEnd(winnerId));
+    this.round = new Round(Array.from(this.players.values()));
+    this.round.subscribe('gameOver', (winnerId) => this.onRoundEnd(winnerId));
     this.broadcastRoomStateUpdate();
   }
 
-  private onGameEnd(winnerId: string | null) {
-    this.fsm.transition('finished');
-    this.game = null;
+  private onRoundEnd(winnerId: string | null) {
+    this.round = null;
 
+    // If a winner was determined, update win counts and check if the session is complete
     if (winnerId) {
       const w = (this.wins.get(winnerId) ?? 0) + 1;
       this.wins.set(winnerId, w);
       if (w >= WINS_TO_MATCH) {
-        this.matchWinnerId = winnerId;
-        this.paymentService.onMatchComplete(winnerId);
+        // this.matchWinnerId = winnerId;
+        // this.paymentService.onMatchComplete(winnerId);
+        this.handleSessionCompletion(winnerId);
       }
     }
 
-    console.log(`[Room] round over in room ${this.id}, winner: ${winnerId ?? 'draw'}, match winner: ${this.matchWinnerId ?? 'none'}`);
     this.broadcastRoomStateUpdate();
-
-    if (!this.matchWinnerId) {
-      this.interRoundTimer = setTimeout(() => {
-        this.interRoundTimer = null;
-        this.startCountdown();
-      }, this.INTER_ROUND_PAUSE);
-    }
   }
 
   private broadcastRoomStateUpdate() {
@@ -197,24 +215,11 @@ export class Room {
       .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
-      player.sendFn({ type: 'room_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn } });
+      player.sendFn({ type: 'session_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn } });
     });
   }
 
-  /**
-   * Relay the input buffer stream to other players in the room (for ghost-games)
-   * @param playerId 
-   * @param inputBuffer 
-   */
-  private relayInputBuffer(playerId: string, inputBuffer: InputBuffer) {
-
-    // TODO: Need to scrub inputs and make sure they make sense and aren't tempered with....
-    for (const player of this.players.values()) {
-      if (player.playerId === playerId) continue;
-
-      player.sendFn({ type: 'game_player_input', playerId, inputBuffer })
-
-    }
+  private handleSessionCompletion(winnerId: string) {
 
   }
 

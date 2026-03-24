@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MAX_PLAYERS, Room } from '../src/game/room.js';
+import { MAX_PLAYERS, Session } from '../src/game/session.js';
 import { PaymentService } from '../src/lightning/paymentService.js';
 import { SendFn } from '../src/types.js';
 import { WINS_TO_MATCH } from '@stacktris/shared';
@@ -46,7 +46,7 @@ const makeMockPaymentService = () => {
 // Free rooms don't require payment — use buyIn=0 for non-payment tests.
 const makeRoom = (buyIn = 0) => {
   const { service } = makeMockPaymentService();
-  return new Room('room-1', buyIn, service);
+  return new Session('room-1', buyIn, service);
 };
 
 describe('Room', () => {
@@ -187,7 +187,7 @@ describe('Room', () => {
   describe('payment', () => {
     it('player cannot ready up before paying in a paid room', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -199,7 +199,7 @@ describe('Room', () => {
 
     it('player can ready up after payment is confirmed', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -214,7 +214,7 @@ describe('Room', () => {
 
     it('only the paying player is unblocked — unpaid player still cannot ready up', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -228,7 +228,7 @@ describe('Room', () => {
 
     it('ready state is not reflected in broadcast while unpaid', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       const send1 = makeSend();
       room.addPlayer('p1', '', '', send1);
       room.addPlayer('p2', '', '', makeSend());
@@ -243,7 +243,7 @@ describe('Room', () => {
 
     it('countdown does not start when all players ready but none have paid', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -255,7 +255,7 @@ describe('Room', () => {
 
     it('countdown does not start when only one player has paid and readied', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -267,7 +267,7 @@ describe('Room', () => {
 
     it('countdown starts once the last player pays and then readies', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -284,7 +284,7 @@ describe('Room', () => {
 
     it('ready_update after payment is correctly reflected in the broadcast', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       const send1 = makeSend();
       room.addPlayer('p1', '', '', send1);
       room.addPlayer('p2', '', '', makeSend());
@@ -299,7 +299,7 @@ describe('Room', () => {
 
     it('generateBetInvoice is called for each player joining a paid room', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -310,7 +310,7 @@ describe('Room', () => {
 
     it('generateBetInvoice is not called for free rooms', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 0, service);
+      const room = new Session('room-1', 0, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -319,7 +319,7 @@ describe('Room', () => {
 
     it('payment confirmation triggers a room state broadcast', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       const send1 = makeSend();
       room.addPlayer('p1', '', '', send1);
       room.addPlayer('p2', '', '', makeSend());
@@ -333,7 +333,7 @@ describe('Room', () => {
 
     it('free room players are automatically considered paid', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 0, service);
+      const room = new Session('room-1', 0, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -345,7 +345,7 @@ describe('Room', () => {
 
     it('room_state_update reflects paid=false for unpaid players', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       const send1 = makeSend();
       room.addPlayer('p1', '', '', send1);
       room.addPlayer('p2', '', '', makeSend());
@@ -358,7 +358,7 @@ describe('Room', () => {
 
     it('room_state_update reflects paid=true after payment confirmed', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       const send1 = makeSend();
       room.addPlayer('p1', '', '', send1);
       room.addPlayer('p2', '', '', makeSend());
@@ -372,7 +372,7 @@ describe('Room', () => {
 
     it('the correct sendFn is passed to generateBetInvoice for each player', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       const send1 = makeSend();
       const send2 = makeSend();
       room.addPlayer('p1', '', '', send1);
@@ -385,7 +385,7 @@ describe('Room', () => {
     it('onMatchComplete is called with the winner after enough round wins', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -412,7 +412,7 @@ describe('Room', () => {
     it('onMatchComplete is not called until WINS_TO_MATCH rounds are won', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -436,7 +436,7 @@ describe('Room', () => {
 
     it('payment confirmation for an unknown player id does not crash', () => {
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
 
       // 'ghost' never joined — the callback just won't be in the map
@@ -448,7 +448,7 @@ describe('Room', () => {
   describe('disconnect payment behavior', () => {
     it('cancels hold when a player leaves before the session starts', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -462,7 +462,7 @@ describe('Room', () => {
     it('does not cancel hold when a player leaves after the session starts', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -481,7 +481,7 @@ describe('Room', () => {
 
     it('does not call cancel or settle for free rooms on disconnect', () => {
       const { service } = makeMockPaymentService();
-      const room = new Room('room-1', 0, service);
+      const room = new Session('room-1', 0, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -494,7 +494,7 @@ describe('Room', () => {
     it('cancels hold during countdown (session not yet started)', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -514,7 +514,7 @@ describe('Room', () => {
     it('settles hold when a player leaves between rounds (session already started)', () => {
       vi.useFakeTimers();
       const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Room('room-1', 1000, service);
+      const room = new Session('room-1', 1000, service);
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
 
@@ -539,7 +539,7 @@ describe('Room', () => {
     beforeEach(() => { vi.useFakeTimers(); });
     afterEach(() => { vi.useRealTimers(); });
 
-    const startSession = (room: Room) => {
+    const startSession = (room: Session) => {
       room.onMessage('p1', { type: 'ready_update', ready: true });
       room.onMessage('p2', { type: 'ready_update', ready: true });
       vi.advanceTimersByTime(3500); // countdown → playing

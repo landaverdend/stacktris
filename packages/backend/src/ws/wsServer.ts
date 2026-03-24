@@ -2,7 +2,7 @@ import { decode, encode } from '@msgpack/msgpack';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage, Server } from 'http';
 import type { ClientMsg, ServerMsg } from '@stacktris/shared';
-import { RoomRegistry } from '../game/roomRegistry.js';
+import { sessionRegistry } from '../game/sessionRegistry.js';
 
 /** A WebSocket with an attached stable player ID and display name. */
 export interface PlayerSocket extends WebSocket {
@@ -14,9 +14,9 @@ export interface PlayerSocket extends WebSocket {
 
 export class WSServer {
   private wss: WebSocketServer;
-  private roomRegistry: RoomRegistry;
+  private roomRegistry: sessionRegistry;
 
-  constructor(server: Server, roomManager: RoomRegistry) {
+  constructor(server: Server, roomManager: sessionRegistry) {
     this.wss = new WebSocketServer({ server });
     this.wss.on('connection', this.onConnection.bind(this));
     console.log('[WSServer] attached to HTTP server');

@@ -2,11 +2,11 @@ import { Board, ClientMsg, Emitter, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, Ser
 import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
-type GameSessionEventMap = {
+type RoundEventMap = {
   gameOver: string | null; // winnerId, or null for a draw
 };
 
-export class GameSession {
+export class Round {
 
   private players: Record<string, PlayerSlot> = {}
   private playerGames: Record<string, PlayerGame> = {};
@@ -22,7 +22,7 @@ export class GameSession {
   private playerOrder: string[] = [];
   private targetIndices: Record<string, number> = {};
 
-  private emitter = new Emitter<GameSessionEventMap>();
+  private emitter = new Emitter<RoundEventMap>();
   subscribe = this.emitter.subscribe.bind(this.emitter);
 
   private seed: number = Math.floor(Math.random() * 2 ** 32);
@@ -36,7 +36,6 @@ export class GameSession {
   }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
-    console.log(`[GameSession] onMessage: ${JSON.stringify(msg).slice(0, 80)}`);
 
     switch (msg.type) {
       case 'game_action':
@@ -45,7 +44,7 @@ export class GameSession {
         break;
       case 'player_died':
         this.broadcastPlayerDeath(playerId);
-        this.removePlayer(playerId);
+        this.killPlayer(playerId);
         break;
     }
   }
@@ -69,7 +68,7 @@ export class GameSession {
       pg.subscribe('pieceLocked', ({ board }) => this.broadcastBoardUpdate(playerId, board));
       pg.subscribe('gameOver', () => {
         this.broadcastPlayerDeath(playerId);
-        this.removePlayer(playerId);
+        this.killPlayer(playerId);
       });
 
       this.playerGames[playerId] = pg;
@@ -108,7 +107,7 @@ export class GameSession {
   }
 
   /** Remove a player from the session — used for both engine game-over and disconnects. */
-  public removePlayer(playerId: string): void {
+  public killPlayer(playerId: string): void {
     if (this.gameEnded) return;
     if (!this.alivePlayers.has(playerId)) return;
 
@@ -118,17 +117,12 @@ export class GameSession {
     delete this.targetIndices[playerId];
     this.alivePlayers.delete(playerId);
 
-    if (this.alivePlayers.size === 1) {
+    if (this.alivePlayers.size <= 1) {
       this.gameEnded = true;
       this.stopGravityTimer();
-      const winnerId = [...this.alivePlayers][0];
-      this.broadcastToAll({ type: 'game_over', winnerId });
+      const winnerId = [...this.alivePlayers][0] ?? null;
+      // this.broadcastToAll({ type: 'game_over', winnerId });
       this.emitter.emit('gameOver', winnerId);
-    } else if (this.alivePlayers.size === 0) {
-      this.gameEnded = true;
-      this.stopGravityTimer();
-      this.broadcastToAll({ type: 'game_over', winnerId: null });
-      this.emitter.emit('gameOver', null);
     }
   }
 

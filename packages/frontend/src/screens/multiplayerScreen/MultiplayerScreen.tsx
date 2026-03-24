@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { useRoom } from '../../context/RoomContext';
+import { useRoom } from '../../context/SessionContext';
 import { COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { cn } from '../../lib/utils';
 import { useConnection } from '../../ws/WSContext';

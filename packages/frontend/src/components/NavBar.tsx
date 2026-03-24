@@ -1,4 +1,4 @@
-import { useRoom } from '../context/RoomContext';
+import { useRoom } from '../context/SessionContext';
 
 export function NavBar() {
   const { connectionStatus, roomState } = useRoom();

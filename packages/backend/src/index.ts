@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WSServer } from './ws/wsServer.js';
-import { RoomRegistry } from './game/roomRegistry.js';
+import { sessionRegistry } from './game/sessionRegistry.js';
 import { PaymentClient } from './lightning/paymentClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,7 +18,7 @@ await paymentClient.init();
 app.use(express.json());
 app.use(express.static(STATIC_DIR));
 
-const roomRegistry = new RoomRegistry(paymentClient);
+const roomRegistry = new sessionRegistry(paymentClient);
 
 const server = createServer(app);
 const wss = new WSServer(server, roomRegistry);

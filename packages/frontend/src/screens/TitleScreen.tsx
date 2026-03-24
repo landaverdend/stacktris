@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRoom } from '../context/RoomContext';
+import { useRoom } from '../context/SessionContext';
 import { RoomInfo } from '@stacktris/shared';
 import { cn } from '../lib/utils';
 import { GenesisBlock } from '../components/GenesisBlock';

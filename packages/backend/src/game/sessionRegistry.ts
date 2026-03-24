@@ -1,15 +1,15 @@
 import { ClientMsg, RoomInfo } from '@stacktris/shared';
-import { MAX_PLAYERS, Room } from './room.js';
+import { MAX_PLAYERS, Session } from './session.js';
 import { SendFn } from '../types.js';
 import { PaymentClient } from '../lightning/paymentClient.js';
 import { PaymentService } from '../lightning/paymentService.js';
 
-export class RoomRegistry {
+export class sessionRegistry {
   // Map of player ID to send function
   private playerIdToSendFn = new Map<string, SendFn>();
 
   // Map of room ID to room
-  private rooms: Map<string, Room> = new Map();
+  private rooms: Map<string, Session> = new Map();
   private playerIdToRoom = new Map<string, string>();
 
   constructor(private readonly paymentClient: PaymentClient) { }
@@ -30,15 +30,15 @@ export class RoomRegistry {
     switch (msg.type) {
       case 'create_room':
         console.log('[RoomManager] create_room: ', msg);
-        this.createRoom(playerId, playerName, lightningAddress, msg.buy_in);
+        this.createSession(playerId, playerName, lightningAddress, msg.buy_in);
         break;
       case 'join_room':
         console.log('[RoomManager] join_room: ', msg);
-        this.joinRoom(playerId, playerName, lightningAddress, msg.room_id);
+        this.joinSession(playerId, playerName, lightningAddress, msg.room_id);
         break;
       case 'leave_room':
         console.log('[RoomManager] leave_room: ', msg);
-        this.leaveRoom(playerId);
+        this.leaveSession(playerId);
         break;
 
       /// All other cases should be routed directly to the room.
@@ -51,20 +51,20 @@ export class RoomRegistry {
     }
   }
 
-  private createRoom(playerId: string, playerName: string, lightningAddress: string, buyIn: number): void {
+  private createSession(playerId: string, playerName: string, lightningAddress: string, buyIn: number): void {
     const roomId = crypto.randomUUID();
     const paymentService = new PaymentService(this.paymentClient, buyIn);
-    const room = new Room(roomId, buyIn, paymentService);
+    const room = new Session(roomId, buyIn, paymentService);
 
     this.rooms.set(roomId, room);
     room.addPlayer(playerId, playerName, lightningAddress, this.playerIdToSendFn.get(playerId)!);
     this.playerIdToRoom.set(playerId, roomId);
 
     // Ping back to the player with the room status and id.
-    this.playerIdToSendFn.get(playerId)!({ type: 'room_created', room_id: roomId });
+    this.playerIdToSendFn.get(playerId)!({ type: 'session_created', room_id: roomId });
   }
 
-  private joinRoom(playerId: string, playerName: string, lightningAddress: string, roomId: string): void {
+  private joinSession(playerId: string, playerName: string, lightningAddress: string, roomId: string): void {
     try {
       const room = this.rooms.get(roomId);
       if (room) {
@@ -77,7 +77,7 @@ export class RoomRegistry {
     }
   }
 
-  private leaveRoom(playerId: string) {
+  private leaveSession(playerId: string) {
     const roomId = this.playerIdToRoom.get(playerId);
     if (roomId) {
       const room = this.rooms.get(roomId);
