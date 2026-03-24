@@ -153,7 +153,7 @@ describe('PaymentService', () => {
         subscribeHoldInvoiceAccepted: vi.fn().mockImplementation(
           (_hash: string, cb: (d: number | null) => void) => {
             holdCallbacks.push(cb);
-            return Promise.resolve(() => {});
+            return Promise.resolve(() => { });
           }
         ),
         settleHoldInvoice: vi.fn().mockResolvedValue(undefined),

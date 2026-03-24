@@ -280,4 +280,28 @@ describe('Round — garbage targeting', () => {
     expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
     expect(sentTypes(sends['p3'])).not.toContain('game_garbage_incoming');
   });
+
+  it('pending garbage does not carry over to a new round', () => {
+    const { slots } = makeSlots(['p1', 'p2']);
+    new Round(slots);
+
+    const [pg1_r1, pg2_r1] = MockPlayerGame.instances;
+
+    // p1 sends garbage to p2 during round 1
+    pg1_r1.emit('attack', 4);
+    expect(pg2_r1.addGarbage).toHaveBeenCalledWith(4, expect.any(Number));
+
+    // Round 1 ends
+    pg1_r1.emit('gameOver');
+
+    MockPlayerGame.instances = [];
+    vi.clearAllMocks();
+
+    // Round 2 starts with fresh instances
+    new Round(slots);
+    const [pg1_r2, pg2_r2] = MockPlayerGame.instances;
+
+    expect(pg2_r2.addGarbage).not.toHaveBeenCalled();
+    expect(pg1_r2.addGarbage).not.toHaveBeenCalled();
+  });
 });

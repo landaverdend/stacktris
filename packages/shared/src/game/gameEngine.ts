@@ -9,7 +9,7 @@ import { boardCells } from "./pieces.js";
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 
-export const GARBAGE_DELAY_FRAMES = 60 * 15; // 15 seconds of delay
+export const GARBAGE_DELAY_FRAMES = 60 * 10; // 10 seconds of delay
 
 // Lines cleared → garbage lines sent to opponent. Singles send nothing.
 export const GARBAGE_TABLE: Record<number, number> = {
