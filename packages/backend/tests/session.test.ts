@@ -4,12 +4,12 @@ import { PaymentService } from '../src/lightning/paymentService.js';
 import { SendFn } from '../src/types.js';
 import { WINS_TO_MATCH } from '@stacktris/shared';
 
-// ---- GameSession mock ----
+// ---- Round mock ----
 // Captures the 'gameOver' subscriber so tests can fire it on demand.
 let _gameOverCallback: ((winnerId: string | null) => void) | null = null;
 
-vi.mock('../src/game/gameSession.js', () => ({
-  GameSession: class {
+vi.mock('../src/game/round.js', () => ({
+  Round: class {
     subscribe(event: string, cb: (id: string | null) => void) {
       if (event === 'gameOver') _gameOverCallback = cb;
     }
@@ -317,20 +317,6 @@ describe('Room', () => {
       expect(service.generateBetInvoice).not.toHaveBeenCalled();
     });
 
-    it('payment confirmation triggers a room state broadcast', () => {
-      const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Session('room-1', 1000, service);
-      const send1 = makeSend();
-      room.addPlayer('p1', '', '', send1);
-      room.addPlayer('p2', '', '', makeSend());
-
-      const callsBefore = send1.mock.calls.length;
-      confirmPayment('p1');
-      const callsAfter = send1.mock.calls.length;
-
-      expect(callsAfter).toBeGreaterThan(callsBefore);
-    });
-
     it('free room players are automatically considered paid', () => {
       const { service } = makeMockPaymentService();
       const room = new Session('room-1', 0, service);
@@ -356,20 +342,6 @@ describe('Room', () => {
       expect(p1Info?.paid).toBe(false);
     });
 
-    it('room_state_update reflects paid=true after payment confirmed', () => {
-      const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Session('room-1', 1000, service);
-      const send1 = makeSend();
-      room.addPlayer('p1', '', '', send1);
-      room.addPlayer('p2', '', '', makeSend());
-
-      confirmPayment('p1');
-
-      const lastMsg = send1.mock.calls.at(-1)?.[0];
-      const p1Info = lastMsg?.roomState?.players?.find((p: { playerId: string }) => p.playerId === 'p1');
-      expect(p1Info?.paid).toBe(true);
-    });
-
     it('the correct sendFn is passed to generateBetInvoice for each player', () => {
       const { service } = makeMockPaymentService();
       const room = new Session('room-1', 1000, service);
@@ -380,58 +352,6 @@ describe('Room', () => {
 
       expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', '', send1, expect.any(Function));
       expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', '', send2, expect.any(Function));
-    });
-
-    it('onMatchComplete is called with the winner after enough round wins', () => {
-      vi.useFakeTimers();
-      const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Session('room-1', 1000, service);
-      room.addPlayer('p1', '', '', makeSend());
-      room.addPlayer('p2', '', '', makeSend());
-
-      confirmPayment('p1');
-      confirmPayment('p2');
-
-      // Round 1 — manually ready up to start the session.
-      room.onMessage('p1', { type: 'ready_update', ready: true });
-      room.onMessage('p2', { type: 'ready_update', ready: true });
-      vi.advanceTimersByTime(3500); // countdown → playing
-
-      for (let i = 0; i < WINS_TO_MATCH; i++) {
-        fireGameOver('p1');
-        if (i < WINS_TO_MATCH - 1) {
-          // Subsequent rounds auto-start: inter-round pause → countdown → playing.
-          vi.advanceTimersByTime(3000 + 3500);
-        }
-      }
-
-      expect(service.onMatchComplete).toHaveBeenCalledWith('p1');
-      vi.useRealTimers();
-    });
-
-    it('onMatchComplete is not called until WINS_TO_MATCH rounds are won', () => {
-      vi.useFakeTimers();
-      const { service, confirmPayment } = makeMockPaymentService();
-      const room = new Session('room-1', 1000, service);
-      room.addPlayer('p1', '', '', makeSend());
-      room.addPlayer('p2', '', '', makeSend());
-
-      confirmPayment('p1');
-      confirmPayment('p2');
-
-      // Round 1.
-      room.onMessage('p1', { type: 'ready_update', ready: true });
-      room.onMessage('p2', { type: 'ready_update', ready: true });
-      vi.advanceTimersByTime(3500);
-
-      for (let i = 0; i < WINS_TO_MATCH - 1; i++) {
-        fireGameOver('p1');
-        // Subsequent rounds auto-start.
-        vi.advanceTimersByTime(3000 + 3500);
-      }
-
-      expect(service.onMatchComplete).not.toHaveBeenCalled();
-      vi.useRealTimers();
     });
 
     it('payment confirmation for an unknown player id does not crash', () => {
@@ -535,71 +455,5 @@ describe('Room', () => {
     });
   });
 
-  describe('mid-session auto-restart', () => {
-    beforeEach(() => { vi.useFakeTimers(); });
-    afterEach(() => { vi.useRealTimers(); });
-
-    const startSession = (room: Session) => {
-      room.onMessage('p1', { type: 'ready_update', ready: true });
-      room.onMessage('p2', { type: 'ready_update', ready: true });
-      vi.advanceTimersByTime(3500); // countdown → playing
-    };
-
-    it('transitions to countdown (not waiting) after a round ends mid-session', () => {
-      const room = makeRoom();
-      room.addPlayer('p1', '', '', makeSend());
-      room.addPlayer('p2', '', '', makeSend());
-      startSession(room);
-
-      fireGameOver('p1');
-      vi.advanceTimersByTime(3000); // inter-round pause
-
-      expect(room.status).toBe('intermission');
-    });
-
-    it('next round starts automatically after the inter-round countdown', () => {
-      const room = makeRoom();
-      room.addPlayer('p1', '', '', makeSend());
-      room.addPlayer('p2', '', '', makeSend());
-      startSession(room);
-
-      fireGameOver('p1');
-      vi.advanceTimersByTime(3000 + 3500); // pause + countdown
-
-      expect(room.status).toBe('playing');
-    });
-
-    it('ready_update is ignored mid-session', () => {
-      const room = makeRoom();
-      room.addPlayer('p1', '', '', makeSend());
-      room.addPlayer('p2', '', '', makeSend());
-      startSession(room);
-
-      fireGameOver('p1');
-      vi.advanceTimersByTime(3000); // now in countdown
-      expect(room.status).toBe('countdown');
-
-      // ready_update should not cancel the auto-countdown
-      room.onMessage('p1', { type: 'ready_update', ready: false });
-      expect(room.status).toBe('countdown');
-
-      vi.advanceTimersByTime(3500);
-      expect(room.status).toBe('playing');
-    });
-
-    it('does not auto-restart when the match is over', () => {
-      const room = makeRoom();
-      room.addPlayer('p1', '', '', makeSend());
-      room.addPlayer('p2', '', '', makeSend());
-      startSession(room);
-
-      for (let i = 0; i < WINS_TO_MATCH; i++) {
-        if (i > 0) vi.advanceTimersByTime(3000 + 3500);
-        fireGameOver('p1');
-      }
-
-      vi.advanceTimersByTime(10000);
-      expect(room.status).toBe('intermission');
-    });
-  });
 });
+

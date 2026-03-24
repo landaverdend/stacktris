@@ -120,7 +120,9 @@ export class Session {
     this.fsm.on('finished', () => {
 
       console.log('[Session] finished...')
+      if (this.buyIn > 0) this.paymentService.onMatchComplete(this.matchWinnerId as string)
 
+      this.broadcastRoomStateUpdate();
     })
 
     this.fsm.init();
