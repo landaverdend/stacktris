@@ -20,7 +20,8 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const [pendingGarbage, setPendingGarbage] = useState<PendingGarbage[]>([]);
   const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
   const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
-  const [winnerId, setWinnerId] = useState<string | null | undefined>(undefined);
+  const [roundWinnerId, setRoundWinnerId] = useState<string | null | undefined>(undefined);
+  const [sessionWinnerId, setSessionWinnerId] = useState<string | null>(null);
 
   const [isClientAlive, setIsClientAlive] = useState(true);
 
@@ -29,7 +30,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       const { board, queue, hold } = refs;
       if (!board.current || !queue.current || !hold.current) return;
 
-      setWinnerId(undefined);
+      setRoundWinnerId(undefined);
       setOpponentBoards({});
       setDeadPlayers(new Set())
       setIsClientAlive(true);
@@ -46,11 +47,14 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
     };
 
     const handleGameOver = (msg: { type: 'session_state_update'; roomState: SessionState }) => {
-      if (msg.roomState.status === 'intermission' || msg.roomState.status === 'finished') {
+      if (msg.roomState.status === 'intermission') {
         gameSession.current?.stop();
-
-        setWinnerId(msg.roomState.roundWinnerId);
+        setRoundWinnerId(msg.roomState.roundWinnerId);
+      } else if (msg.roomState.status === 'finished') {
+        gameSession.current?.stop();
+        setSessionWinnerId(msg.roomState.matchWinnerId);
       }
+
 
     };
 
@@ -78,5 +82,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers, isClientAlive };
+  return { pendingGarbage, getTickCount, opponentBoards, winnerId: roundWinnerId, deadPlayers, isClientAlive };
 }

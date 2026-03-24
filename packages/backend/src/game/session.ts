@@ -109,6 +109,7 @@ export class Session {
     this.fsm.on('intermission', () => {
       console.log('[Session] intermission...');
       // Clear out the prior round state
+      this.round?.destroy();
       this.round = null;
 
       setTimeout(() => { this.fsm.transition('countdown') }, INTERMISSION_DURATION)
@@ -118,6 +119,8 @@ export class Session {
 
     // SESSION COMPLETED - somebody won 3 rounds or everyone left
     this.fsm.on('finished', () => {
+      this.round?.destroy();
+      this.round = null;
 
       console.log('[Session] finished...')
       if (this.buyIn > 0) this.paymentService.onMatchComplete(this.matchWinnerId as string)

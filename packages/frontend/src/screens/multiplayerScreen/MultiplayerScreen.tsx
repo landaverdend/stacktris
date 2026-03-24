@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useRoom } from '../../context/SessionContext';
-import { COUNTDOWN_SECONDS } from '@stacktris/shared';
-import { cn } from '../../lib/utils';
+import { COUNTDOWN_SECONDS, PlayerInfo } from '@stacktris/shared';
 import { useConnection } from '../../ws/WSContext';
 import { useMultiplayerGameSession } from '../../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../../render/queue';
@@ -64,7 +63,17 @@ export function MultiplayerScreen() {
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
               {status === 'waiting' && <RoomStagingOverlay />}
               {status === 'countdown' && <CountdownOverlay />}
-              {status === 'intermission' && <IntermissionOverlay />}
+              {status === 'intermission' && (
+                <IntermissionOverlay
+                  roundWinnerId={winnerId ?? null}
+                  players={roomState.players}
+                />
+              )}
+              {status === 'finished' && (
+                <SessionWinnerOverlay
+                  winner={roomState.players.find(p => p.playerId === roomState.matchWinnerId) as PlayerInfo}
+                />
+              )}
               {!isClientAlive && status === 'playing' && <ScrollFlareOverlay />}
 
             </div>
@@ -93,44 +102,6 @@ export function MultiplayerScreen() {
   );
 }
 
-// function RoundOverOverlay({ winnerId, playerId }: { winnerId: string | null; playerId: string | null }) {
-//   const isWinner = winnerId !== null && winnerId === playerId;
-//   const isDraw = winnerId === null;
-
-//   return (
-//     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70">
-//       <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// ROUND TERMINATED</p>
-//       <p
-//         className={cn(
-//           'font-display font-bold leading-none text-5xl tracking-[0.2em]',
-//           isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
-//         )}>
-//         {isDraw ? 'DRAW' : isWinner ? 'ROUND WIN' : 'ROUND LOSS'}
-//       </p>
-//       <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
-//     </div>
-//   );
-// }
-
-// function MatchOverOverlay({ matchWinnerId, playerId }: { matchWinnerId: string | null; playerId: string | null }) {
-//   const isWinner = matchWinnerId !== null && matchWinnerId === playerId;
-//   const isDraw = matchWinnerId === null;
-
-//   return (
-//     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
-//       <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE TERMINATED</p>
-//       <p
-//         className={cn(
-//           'font-display font-bold leading-none text-5xl tracking-[0.2em]',
-//           isWinner ? 'text-magi' : isDraw ? 'text-phosphor' : 'text-alert',
-//         )}>
-//         {isDraw ? 'DRAW' : isWinner ? 'VICTORY' : 'DEFEAT'}
-//       </p>
-//       <p className="text-nerv-dim text-[8px] font-jp tracking-widest mt-1">{isDraw ? '引き分け' : isWinner ? '勝利' : '敗北'}</p>
-//     </div>
-//   );
-// }
-
 function CountdownOverlay() {
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!'>(COUNTDOWN_SECONDS);
 
@@ -143,21 +114,51 @@ function CountdownOverlay() {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE INITIATING</p>
-      <p className="text-bitcoin font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
+      <p className="text-alert font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
         {countdownDisplay}
       </p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest">準備完了 — SYNC COMPLETE</p>
+      <p className="text-nerv-dim text-[15px] font-jp tracking-widest">準備完了 — ROUND START</p>
+    </div>
+  );
+}
+
+function IntermissionOverlay({ roundWinnerId, players }: { roundWinnerId: string | null; players: PlayerInfo[] }) {
+  const winner = players.find(p => p.playerId === roundWinnerId);
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
+      <p className="text-nerv-dim text-xs font-mono tracking-[0.4em] uppercase">// SEQUENCE INTERMISSION</p>
+      {winner && (
+        <>
+          <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '3.5rem' }}>
+            {winner.playerName}
+          </p>
+          <p className="text-bitcoin font-display font-bold text-2xl tracking-widest uppercase">ROUND WIN</p>
+        </>
+      )}
+      {!winner && (
+        <p className="text-nerv-dim text-2xl font-mono tracking-[0.2em]">ROUND OVER</p>
+      )}
+      <p className="text-nerv-dim text-sm font-jp tracking-widest mt-1">シーケンス間</p>
     </div>
   );
 }
 
 
-function IntermissionOverlay() {
+function SessionWinnerOverlay({ winner }: { winner: PlayerInfo }) {
+
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-      <p className="text-nerv-dim text-[9px] font-mono tracking-[0.4em]">// SEQUENCE INTERMISSION</p>
-      <p className="text-nerv-dim text-[8px] font-jp tracking-widest">シーケンス間</p>
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
+      <p className="text-nerv-dim text-xs font-mono tracking-[0.4em] uppercase">// SESSION OVER</p>
+      {winner && (
+        <>
+          <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '3.5rem' }}>
+            {winner.playerName}
+          </p>
+          <p className="text-bitcoin font-display font-bold text-2xl tracking-widest uppercase">SESSION OVER</p>
+        </>
+      )}
+      <p className="text-nerv-dim text-sm font-jp tracking-widest mt-1">シーケンス間</p>
     </div>
-  );
+  )
 }
