@@ -10,6 +10,7 @@ import { RoomStagingOverlay } from './RoomStagingOverlay';
 import { PlayerList } from './PlayerList';
 import { ConnectedBoards } from './ConnectedBoards';
 import { ScrollFlareOverlay } from '../../components/ScrollFlareOverlay';
+import { SessionWinnerOverlay } from './SessionWinnerOverlay';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -73,6 +74,7 @@ export function MultiplayerScreen() {
               {status === 'finished' && (
                 <SessionWinnerOverlay
                   winner={roomState.players.find(p => p.playerId === roomState.matchWinnerId) as PlayerInfo}
+                  potSats={roomState.potSats}
                 />
               )}
 
@@ -145,20 +147,3 @@ function IntermissionOverlay({ roundWinnerId, players }: { roundWinnerId: string
 }
 
 
-function SessionWinnerOverlay({ winner }: { winner: PlayerInfo }) {
-
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
-      <p className="text-nerv-dim text-xs font-mono tracking-[0.4em] uppercase">// SESSION OVER</p>
-      {winner && (
-        <>
-          <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '3.5rem' }}>
-            {winner.playerName}
-          </p>
-          <p className="text-bitcoin font-display font-bold text-2xl tracking-widest uppercase">SESSION OVER</p>
-        </>
-      )}
-      <p className="text-nerv-dim text-sm font-jp tracking-widest mt-1">シーケンス間</p>
-    </div>
-  )
-}
