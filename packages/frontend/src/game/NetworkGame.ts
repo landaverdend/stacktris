@@ -1,6 +1,9 @@
 import {
   EngineEventMap,
+  FRAME_DURATION_MS,
   GameEngine,
+  GameSnapshot,
+  GameState,
   InputBuffer,
   ServerMsg,
 } from '@stacktris/shared';
@@ -8,8 +11,6 @@ import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
 import { Canvases, renderGameState } from '../render';
 
-
-export const TICK_MS = 16; // ~60
 
 export class NetworkGame {
 
@@ -33,8 +34,10 @@ export class NetworkGame {
       this.gameEngine.handleInput(action);
     })
 
-    this.ws.on('game_snapshot', (msg: ServerMsg) => {
-      // this.gameEngine.setState(snapshot);
+    this.ws.on('game_state_update', (msg: { type: 'game_state_update'; snapshot: GameSnapshot }) => {
+      console.log(`Received game state update for frame ${msg.snapshot.frame}`);
+      this.gameEngine.updateState(msg.snapshot);
+      this.frameCount = msg.snapshot.frame;
     })
 
     this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number }) => {
@@ -66,13 +69,13 @@ export class NetworkGame {
         const delta = Math.min(now - this.lastFrameTime, 100);
         this.simTime += delta;
 
-        while (this.simTime >= TICK_MS) {
+        while (this.simTime >= FRAME_DURATION_MS) {
           this.frameCount++;
 
           this.inputHandler.tick(now);
           this.gameEngine.tick();
 
-          this.simTime -= TICK_MS;
+          this.simTime -= FRAME_DURATION_MS;
 
 
           if (this.frameCount % 10 === 0) {

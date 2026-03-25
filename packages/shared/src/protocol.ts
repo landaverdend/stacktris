@@ -1,4 +1,5 @@
 import { Board } from "./game/board.js";
+import { PendingGarbage } from "./game/state.js";
 import { ActivePiece, InputAction, PieceKind } from "./game/types.js";
 
 export const COUNTDOWN_SECONDS = 3;
@@ -16,11 +17,13 @@ export interface RoomInfo {
   createdAt: number;
 }
 
-/** Full state sent to the player controlling this board. */
+/** Full state sent to the player controlling this board. Alongside the frame */
 export interface GameSnapshot {
   board: Board;
-  activePiece: ActivePiece | null;
+  activePiece: ActivePiece;
   holdPiece: PieceKind | null;
+  pendingGarbage: PendingGarbage[];
+  frame: number;
 }
 
 /** Reduced state sent to the opponent (no queue/hold to prevent prefetch advantage). */
@@ -33,7 +36,6 @@ export interface OpponentSnapshot {
 }
 
 // ── Client → Server ───────────────────────────────────────────────────────────
-
 export type InputBuffer = {
   action: InputAction;
   frame: number;
@@ -86,8 +88,8 @@ export type ServerMsg =
   | { type: 'bet_payment_confirmed'; playerId: string }
 
   // Game Ops
-  | { type: 'game_start'; seed: number; }
-  | { type: 'game_snapshot'; snapshot: GameSnapshot }
+  | { type: 'game_start'; seed: number; roundStartTime: number; }
+  | { type: 'game_state_update'; snapshot: GameSnapshot }
   | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
   | { type: 'opponent_board_update'; playerId: string; board: Board }
   | { type: 'game_player_died'; playerId: string }

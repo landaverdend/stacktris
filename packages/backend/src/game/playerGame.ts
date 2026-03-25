@@ -23,11 +23,14 @@ export class PlayerGame {
   }
 
   get snapshot(): GameSnapshot {
+    const state = this.gameEngine.getState();
     return {
-      board: this.gameEngine.getState().board,
-      activePiece: this.gameEngine.getState().activePiece,
-      holdPiece: this.gameEngine.getState().holdPiece,
-    }
+      board: state.board,
+      activePiece: state.activePiece,
+      holdPiece: state.holdPiece,
+      pendingGarbage: state.pendingGarbage,
+      frame: this._frameCount,
+    };
   }
 
   /**
@@ -51,4 +54,12 @@ export class PlayerGame {
       this._frameCount++;
     }
   }
+
+  tickTo(frame: number) {
+    while (this._frameCount < frame) {
+      this.gameEngine.tick();
+      this._frameCount++;
+    }
+  }
+
 }
