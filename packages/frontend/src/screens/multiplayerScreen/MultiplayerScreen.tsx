@@ -34,7 +34,7 @@ export function MultiplayerScreen() {
     [],
   );
 
-  const { pendingGarbage, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive } = useMultiplayerGameSession({
+  const { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive } = useMultiplayerGameSession({
     board: boardRef,
     queue: queueRef,
     hold: holdRef,
@@ -59,7 +59,7 @@ export function MultiplayerScreen() {
         </div>
 
         <div className="flex items-end gap-1">
-          <GarbageMeter garbageStack={pendingGarbage} getCurrentTick={getTickCount} />
+          <GarbageMeter garbageStackRef={pendingGarbageRef} getCurrentTick={getTickCount} />
           <div className="flex flex-col gap-1.5">
             <RoomCodeBar roomId={roomState.roomId} />
 

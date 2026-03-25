@@ -19,7 +19,6 @@ export class NetworkGame {
   private inputHandler: InputHandler;
   private inputBuffer: InputBuffer = [];
 
-
   // Frame timing variables
   private rafId = 0;
   private frameCount = 0;
@@ -27,6 +26,7 @@ export class NetworkGame {
   private simTime = 0;
 
   constructor(seed: number, private readonly ws: WSClient) {
+
     this.gameEngine = new GameEngine({ seed });
 
     this.inputHandler = new InputHandler(action => {
@@ -35,7 +35,6 @@ export class NetworkGame {
     })
 
     this.ws.on('game_state_update', (msg: { type: 'game_state_update'; snapshot: GameSnapshot }) => {
-      console.log(`Received game state update for frame ${msg.snapshot.frame}`);
       this.gameEngine.updateState(msg.snapshot);
       this.frameCount = msg.snapshot.frame;
     })
@@ -95,7 +94,7 @@ export class NetworkGame {
   }
 
   reset(): void {
-    this.gameEngine = new GameEngine();
+    this.gameEngine = new GameEngine({});
   }
 
   stop(): void {

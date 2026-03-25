@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { RefObject, useEffect, useRef } from 'react';
 import { CANVAS_HEIGHT, CELL_SIZE } from '../render/board';
 import { GARBAGE_DELAY_FRAMES, PendingGarbage } from '@stacktris/shared';
 
@@ -32,15 +32,12 @@ function urgencyColor(fraction: number): string {
 }
 
 interface Props {
-  garbageStack: PendingGarbage[];
+  garbageStackRef: RefObject<PendingGarbage[]>;
   getCurrentTick: () => number;
 }
 
-export function GarbageMeter({ garbageStack, getCurrentTick }: Props) {
+export function GarbageMeter({ garbageStackRef, getCurrentTick }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stackRef = useRef(garbageStack);
-
-  useEffect(() => { stackRef.current = garbageStack; }, [garbageStack]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,7 +48,7 @@ export function GarbageMeter({ garbageStack, getCurrentTick }: Props) {
     let rafId: number;
 
     const draw = () => {
-      const stack = stackRef.current;
+      const stack = garbageStackRef.current ?? [];
       const tick = getCurrentTick();
 
       ctx.fillStyle = PIT_COLOR;
