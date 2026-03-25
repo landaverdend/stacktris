@@ -7,6 +7,7 @@ import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../../render
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../render/board';
 import { GarbageMeter } from '../../components/GarbageMeter';
 import { RoomStagingOverlay } from './RoomStagingOverlay';
+import { RoomCodeBar } from './RoomCodeBar';
 import { PlayerList } from './PlayerList';
 import { ConnectedBoards } from './ConnectedBoards';
 import { ScrollFlareOverlay } from '../../components/ScrollFlareOverlay';
@@ -60,6 +61,9 @@ export function MultiplayerScreen() {
         <div className="flex items-end gap-1">
           <GarbageMeter garbageStack={pendingGarbage} getCurrentTick={getTickCount} />
           <div className="flex flex-col gap-1.5">
+            <RoomCodeBar roomId={roomState.roomId} />
+
+
             <div className="relative">
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
               {status === 'waiting' && <RoomStagingOverlay />}
