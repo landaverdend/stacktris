@@ -94,4 +94,5 @@ export type ServerMsg =
   | { type: 'game_player_input'; playerId: string; inputBuffer: InputBuffer }
 
   | { type: 'gravity_update'; level: number }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'payout_pending'; amountSats: number; lightningAddress: string };

@@ -16,7 +16,11 @@ function buildColumn() {
   return [...single, ...single];
 }
 
-export function SessionWinnerOverlay({ winner, potSats }: { winner: PlayerInfo; potSats: number }) {
+export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
+  winner: PlayerInfo;
+  potSats: number;
+  payoutPending?: { amountSats: number; lightningAddress: string };
+}) {
   const [leftScope, animateLeft] = useAnimate();
   const [rightScope, animateRight] = useAnimate();
   const [bgScope, animateBg] = useAnimate();
@@ -139,7 +143,7 @@ export function SessionWinnerOverlay({ winner, potSats }: { winner: PlayerInfo; 
               letterSpacing: '0.06em',
             }}
           >
-            {winner?.playerName}
+            {winner?.playerName?.length > 7 ? winner.playerName.slice(0, 7) + '…' : winner?.playerName}
           </p>
           <p
             className="font-jp text-center text-xs tracking-[0.4em] mt-1"
@@ -197,6 +201,16 @@ export function SessionWinnerOverlay({ winner, potSats }: { winner: PlayerInfo; 
             </span>
           )}
         </div>
+
+        {/* Payout failure notice */}
+        {payoutPending && (
+          <div className="mt-4 border border-alert/40 px-3 py-2 max-w-xs text-center">
+            <p className="font-mono text-[9px] tracking-[0.3em] text-alert/70 uppercase">// Payment pending</p>
+            <p className="font-mono text-[10px] text-alert/60 mt-1 leading-relaxed">
+              Could not send {payoutPending.amountSats} sats to {payoutPending.lightningAddress} — contact the server host to claim your winnings.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

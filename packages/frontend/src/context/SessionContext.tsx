@@ -4,7 +4,7 @@ import { useWS, useConnection } from '../ws/WSContext';
 import type { ConnectionStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
-type RoomStateWithPayment = SessionState & { bolt11?: string; expiresAt?: number; invoicePaid: boolean };
+type RoomStateWithPayment = SessionState & { bolt11?: string; expiresAt?: number; invoicePaid: boolean; payoutPending?: { amountSats: number; lightningAddress: string } };
 interface RoomContextValue {
   connectionStatus: ConnectionStatus;
   roomState: RoomStateWithPayment;
@@ -51,17 +51,24 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       setRoomState(prev => ({ ...prev, invoicePaid: true }));
     };
 
+    const onPayoutPending = (msg: { type: 'payout_pending'; amountSats: number; lightningAddress: string }) => {
+      console.error('[RoomContext] payout pending — server could not pay winner:', msg);
+      setRoomState(prev => ({ ...prev, payoutPending: { amountSats: msg.amountSats, lightningAddress: msg.lightningAddress } }));
+    };
+
     ws.on('session_created', onRoomCreated);
     ws.on('session_joined', onRoomJoined);
     ws.on('session_state_update', onRoomStateUpdate);
     ws.on('bet_invoice_issued', onBetInvoiceIssued);
     ws.on('bet_payment_confirmed', onBetPaymentConfirmed);
+    ws.on('payout_pending', onPayoutPending);
 
     return () => {
       ws.off('session_created', onRoomCreated);
       ws.off('session_joined', onRoomJoined);
       ws.off('session_state_update', onRoomStateUpdate);
       ws.off('bet_invoice_issued', onBetInvoiceIssued);
+      ws.off('payout_pending', onPayoutPending);
     };
   }, [ws]);
 

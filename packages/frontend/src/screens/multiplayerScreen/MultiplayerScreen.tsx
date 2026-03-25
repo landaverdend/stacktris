@@ -75,6 +75,7 @@ export function MultiplayerScreen() {
                 <SessionWinnerOverlay
                   winner={roomState.players.find(p => p.playerId === roomState.matchWinnerId) as PlayerInfo}
                   potSats={roomState.potSats}
+                  payoutPending={roomState.payoutPending}
                 />
               )}
 

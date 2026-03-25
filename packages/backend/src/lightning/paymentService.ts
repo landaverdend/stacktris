@@ -6,6 +6,7 @@ type BetRecord = {
   preimage: Uint8Array;
   paymentHash: string;
   lightningAddress: string;
+  sendFn: SendFn;
   status: 'pending' | 'held' | 'cancelled' | 'settled';
   createdAt: number;
   expiresAt: number;
@@ -47,9 +48,32 @@ export class PaymentService {
 
     // Pay the pot to the winner's lightning address.
     if (potSats > 0 && winnerRecord?.lightningAddress) {
-      await this.client.payToLightningAddress(winnerRecord.lightningAddress, potSats);
-      console.log(`[PaymentService] paid ${potSats} sats to ${winnerRecord.lightningAddress}`);
+      await this.payWithRetry(winnerId, winnerRecord.lightningAddress, potSats, winnerRecord.sendFn);
     }
+  }
+
+  private async payWithRetry(
+    winnerId: string,
+    address: string,
+    amountSats: number,
+    sendFn: SendFn | undefined,
+    attempts = 6,
+    delayMs = 3000,
+  ): Promise<void> {
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await this.client.payToLightningAddress(address, amountSats);
+        console.log(`[PaymentService] paid ${amountSats} sats to ${address}`);
+        return;
+      } catch (err) {
+        console.error(`[PaymentService] payout attempt ${i}/${attempts} failed for ${winnerId}:`, err);
+        if (i < attempts) await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+
+    // All retries exhausted — log for manual recovery and notify the winner.
+    console.error(`[PAYOUT FAILED] winner=${winnerId} address=${address} amount=${amountSats} sats — requires manual payment`);
+    sendFn?.({ type: 'payout_pending', amountSats, lightningAddress: address });
   }
 
   async generateBetInvoice(playerId: string, lightningAddress: string, sendFn: SendFn, onPaid: () => void) {
@@ -66,7 +90,7 @@ export class PaymentService {
       onPaid();
     });
 
-    this.betRecords.set(playerId, { preimage, paymentHash, lightningAddress, status: 'pending', createdAt: Date.now(), expiresAt, settleDeadline: null, unsub });
+    this.betRecords.set(playerId, { preimage, paymentHash, lightningAddress, sendFn, status: 'pending', createdAt: Date.now(), expiresAt, settleDeadline: null, unsub });
 
     sendFn({ type: 'bet_invoice_issued', bolt11: invoice, expiresAt });
   }
