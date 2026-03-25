@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { Board, PendingGarbage, SessionState } from "@stacktris/shared";
+import { Board, InputBuffer, PendingGarbage, SessionState } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
 
@@ -62,17 +62,23 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setDeadPlayers(prev => new Set(prev).add(playerId));
     };
 
+
+    const handleGamePlayerInput = ({ playerId, inputBuffer }: { type: 'game_player_input'; playerId: string; inputBuffer: InputBuffer }) => {
+      console.log('[game_player_input]', playerId, inputBuffer);
+    };
+
     ws.on('game_start', handleGameStart);
     ws.on('opponent_board_update', handleOpponentBoardUpdate);
     ws.on('game_player_died', handleDeadPlayer);
     ws.on('session_state_update', handleGameOver);
-
+    ws.on('game_player_input', handleGamePlayerInput);
 
     return () => {
       ws.off('game_start', handleGameStart);
       ws.off('opponent_board_update', handleOpponentBoardUpdate);
       ws.off('session_state_update', handleGameOver);
       ws.off('game_player_died', handleDeadPlayer)
+      ws.off('game_player_input', handleGamePlayerInput);
 
       unsubGarbage.current?.();
       unsubGameOver.current?.();

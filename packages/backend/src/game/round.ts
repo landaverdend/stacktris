@@ -41,6 +41,8 @@ export class Round {
       case 'game_action':
         const ps = this.playerGames[playerId];
         ps?.handleInput(msg.buffer, msg.frame);
+        // Relay player inputs to other players
+        this.broadcastToAll({ type: 'game_player_input', playerId, inputBuffer: msg.buffer }, playerId);
         break;
       case 'player_died':
         this.broadcastPlayerDeath(playerId);
@@ -163,12 +165,13 @@ export class Round {
     }
   }
 
-  private broadcastToAll(msg: ServerMsg): void {
+  private broadcastToAll(msg: ServerMsg, exceptId?: string): void {
     for (const player of Object.values(this.players)) {
+      if (player.playerId === exceptId) continue;
       player.sendFn(msg);
     }
   }
 
-  // TODO: Relay player inputs to other players (AFTER we've validated the inputs...)
+
 
 }
