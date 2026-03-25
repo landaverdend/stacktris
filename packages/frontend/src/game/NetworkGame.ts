@@ -75,7 +75,7 @@ export class NetworkGame {
           this.simTime -= TICK_MS;
 
 
-          if (this.frameCount % 180 === 0) {
+          if (this.frameCount % 10 === 0) {
             this.ws.send({ type: 'game_action', buffer: this.inputBuffer, frame: this.frameCount });
             this.inputBuffer = [];
           }

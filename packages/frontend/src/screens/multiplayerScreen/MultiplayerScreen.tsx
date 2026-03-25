@@ -34,7 +34,7 @@ export function MultiplayerScreen() {
     [],
   );
 
-  const { pendingGarbage, getTickCount, opponentBoards, winnerId, deadPlayers, isClientAlive } = useMultiplayerGameSession({
+  const { pendingGarbage, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive } = useMultiplayerGameSession({
     board: boardRef,
     queue: queueRef,
     hold: holdRef,
@@ -102,6 +102,7 @@ export function MultiplayerScreen() {
         <ConnectedBoards
           players={roomState.players.filter((p) => p.playerId !== playerId)}
           opponentBoards={opponentBoards}
+          activePieceMapRef={opponentActivePieces}
           deadPlayers={deadPlayers}
         />
       </div>

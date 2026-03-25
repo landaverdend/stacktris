@@ -91,7 +91,7 @@ export type ServerMsg =
   | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
   | { type: 'opponent_board_update'; playerId: string; board: Board }
   | { type: 'game_player_died'; playerId: string }
-  | { type: 'game_player_input'; playerId: string; inputBuffer: InputBuffer }
+  | { type: 'opponent_piece_update'; playerId: string; activePiece: ActivePiece | null }
 
   | { type: 'gravity_update'; level: number }
   | { type: 'error'; message: string }

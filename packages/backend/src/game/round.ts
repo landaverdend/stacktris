@@ -41,8 +41,7 @@ export class Round {
       case 'game_action':
         const ps = this.playerGames[playerId];
         ps?.handleInput(msg.buffer, msg.frame);
-        // Relay player inputs to other players
-        this.broadcastToAll({ type: 'game_player_input', playerId, inputBuffer: msg.buffer }, playerId);
+        if (ps) this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: ps.snapshot.activePiece }, playerId);
         break;
       case 'player_died':
         this.broadcastPlayerDeath(playerId);
@@ -67,7 +66,10 @@ export class Round {
       const pg = new PlayerGame(this.seed);
 
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
-      pg.subscribe('pieceLocked', ({ board }) => this.broadcastBoardUpdate(playerId, board));
+      pg.subscribe('pieceLocked', ({ board }) => {
+        this.broadcastBoardUpdate(playerId, board);
+        this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: null }, playerId);
+      });
       pg.subscribe('gameOver', () => {
         this.broadcastPlayerDeath(playerId);
         this.killPlayer(playerId);

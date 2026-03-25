@@ -1,4 +1,4 @@
-import { Board, PlayerInfo } from '@stacktris/shared';
+import { ActivePiece, Board, PlayerInfo } from '@stacktris/shared';
 import { OpponentBoard } from '../../components/OpponentBoard';
 import { OPPONENT_CELL_SIZE } from '../../render/board';
 
@@ -14,10 +14,11 @@ const EMPTY_BOARD: Board = Array.from({ length: 22 }, () => Array(10).fill(0));
 interface Props {
   players: PlayerInfo[];
   opponentBoards: Record<string, Board>;
+  activePieceMapRef: React.RefObject<Map<string, ActivePiece | null>>;
   deadPlayers: Set<string>;
 }
 
-export function ConnectedBoards({ players, opponentBoards, deadPlayers }: Props) {
+export function ConnectedBoards({ players, opponentBoards, activePieceMapRef, deadPlayers }: Props) {
   const count = players.length;
   if (count === 0) return null;
 
@@ -92,7 +93,9 @@ export function ConnectedBoards({ players, opponentBoards, deadPlayers }: Props)
         {players.map(p => (
           <OpponentBoard
             key={p.playerId}
+            playerId={p.playerId}
             board={opponentBoards[p.playerId] ?? EMPTY_BOARD}
+            activePieceMapRef={activePieceMapRef}
             playerName={p.playerName}
             isDead={deadPlayers.has(p.playerId)}
           />
