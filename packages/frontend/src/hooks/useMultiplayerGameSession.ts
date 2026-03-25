@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { Board, PendingGarbage, SessionState } from "@stacktris/shared";
+import { ActivePiece, Board, InputBuffer, PendingGarbage, SessionState } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
 
@@ -13,6 +13,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const ws = useWS();
 
   const gameSession = useRef<NetworkGame | null>(null);
+  const opponentActivePieces = useRef<Map<string, ActivePiece | null>>(new Map());
 
   const unsubGarbage = useRef<(() => void) | null>(null);
   const unsubGameOver = useRef<(() => void) | null>(null);
@@ -32,8 +33,9 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
       setRoundWinnerId(undefined);
       setOpponentBoards({});
-      setDeadPlayers(new Set())
+      setDeadPlayers(new Set());
       setIsClientAlive(true);
+      opponentActivePieces.current.clear();
 
       gameSession.current = new NetworkGame(msg.seed, ws);
       unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => setPendingGarbage(val));
@@ -43,7 +45,12 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
     };
 
     const handleOpponentBoardUpdate = (msg: { type: 'opponent_board_update'; playerId: string; board: Board }) => {
+      opponentActivePieces.current.set(msg.playerId, null);
       setOpponentBoards(prev => ({ ...prev, [msg.playerId]: msg.board }));
+    };
+
+    const handleOpponentPieceUpdate = (msg: { playerId: string; activePiece: ActivePiece | null }) => {
+      opponentActivePieces.current.set(msg.playerId, msg.activePiece);
     };
 
     const handleGameOver = (msg: { type: 'session_state_update'; roomState: SessionState }) => {
@@ -62,17 +69,19 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setDeadPlayers(prev => new Set(prev).add(playerId));
     };
 
+
     ws.on('game_start', handleGameStart);
     ws.on('opponent_board_update', handleOpponentBoardUpdate);
+    ws.on('opponent_piece_update', handleOpponentPieceUpdate);
     ws.on('game_player_died', handleDeadPlayer);
     ws.on('session_state_update', handleGameOver);
-
 
     return () => {
       ws.off('game_start', handleGameStart);
       ws.off('opponent_board_update', handleOpponentBoardUpdate);
+      ws.off('opponent_piece_update', handleOpponentPieceUpdate);
       ws.off('session_state_update', handleGameOver);
-      ws.off('game_player_died', handleDeadPlayer)
+      ws.off('game_player_died', handleDeadPlayer);
 
       unsubGarbage.current?.();
       unsubGameOver.current?.();
@@ -82,5 +91,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbage, getTickCount, opponentBoards, winnerId: roundWinnerId, deadPlayers, isClientAlive };
+  return { pendingGarbage, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive };
 }
