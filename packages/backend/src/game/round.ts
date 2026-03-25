@@ -188,7 +188,7 @@ export class Round {
   private checkPlayersForStall() {
     const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
     for (const [playerId, pg] of Object.entries(this.playerGames)) {
-      console.log(`Player ${playerId} is at frame ${pg.frameCount}, server is at frame ${serverFrame}`);
+      // console.log(`Player ${playerId} is at frame ${pg.frameCount}, server is at frame ${serverFrame}`);
       const delta = serverFrame - pg.frameCount;
       if (delta > MAX_LAG_FRAMES) {
         pg.tickTo(serverFrame) // advance gravity with no inputs

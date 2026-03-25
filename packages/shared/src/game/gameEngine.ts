@@ -11,7 +11,7 @@ export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock de
 export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 export const FRAME_DURATION_MS = 1000 / 60; // 16.666ms
 
-export const GARBAGE_DELAY_FRAMES = 60 * 10; // 10 seconds of delay
+export const GARBAGE_DELAY_FRAMES = 60 * 4; // 7 seconds of delay
 
 // Lines cleared → garbage lines sent to opponent. Singles send nothing.
 export const GARBAGE_TABLE: Record<number, number> = {
@@ -71,6 +71,7 @@ export class GameEngine {
   }
 
   updateState(snapshot: GameSnapshot): void {
+    this.tickCount = snapshot.frame;
     this.state.board = snapshot.board;
     this.state.activePiece = snapshot.activePiece as ActivePiece;
     this.state.holdPiece = snapshot.holdPiece;

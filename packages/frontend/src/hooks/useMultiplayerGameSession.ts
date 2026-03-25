@@ -18,7 +18,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const unsubGarbage = useRef<(() => void) | null>(null);
   const unsubGameOver = useRef<(() => void) | null>(null);
 
-  const [pendingGarbage, setPendingGarbage] = useState<PendingGarbage[]>([]);
+  const pendingGarbageRef = useRef<PendingGarbage[]>([]);
   const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
   const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
   const [roundWinnerId, setRoundWinnerId] = useState<string | null | undefined>(undefined);
@@ -35,10 +35,14 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setOpponentBoards({});
       setDeadPlayers(new Set());
       setIsClientAlive(true);
+      pendingGarbageRef.current = [];
+
       opponentActivePieces.current.clear();
 
+      console.log(`Starting game with seed ${msg.seed}`);
       gameSession.current = new NetworkGame(msg.seed, ws);
-      unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => setPendingGarbage(val));
+
+      unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => { pendingGarbageRef.current = val; });
       unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setIsClientAlive(false));
 
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
@@ -88,5 +92,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbage, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive };
+  return { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive };
 }
