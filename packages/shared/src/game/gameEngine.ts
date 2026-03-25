@@ -1,13 +1,15 @@
 import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState, gravityForLevel, mulberry32, PendingGarbage } from "./state.js";
-import { InputAction, PieceKind } from "./types.js";
+import { ActivePiece, InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
 import { boardCells } from "./pieces.js";
+import { GameSnapshot } from "../protocol.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
+export const FRAME_DURATION_MS = 1000 / 60; // 16.666ms
 
 export const GARBAGE_DELAY_FRAMES = 60 * 10; // 10 seconds of delay
 
@@ -66,6 +68,13 @@ export class GameEngine {
       this.state.level = this.startLevel;
       this.state.gravity = gravityForLevel(this.startLevel);
     }
+  }
+
+  updateState(snapshot: GameSnapshot): void {
+    this.state.board = snapshot.board;
+    this.state.activePiece = snapshot.activePiece as ActivePiece;
+    this.state.holdPiece = snapshot.holdPiece;
+    this.state.pendingGarbage = snapshot.pendingGarbage;
   }
 
   getState(): GameState {

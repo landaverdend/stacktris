@@ -1,7 +1,6 @@
-import { EngineEventMap, GameEngine, GameState } from '@stacktris/shared';
+import { EngineEventMap, FRAME_DURATION_MS, GameEngine, GameState } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
-import { TICK_MS } from './NetworkGame';
 
 export interface GameStats {
   score: number;
@@ -45,13 +44,13 @@ export class LocalGame {
         const delta = Math.min(now - this.lastFrameTime, 100);
         this.simTime += delta;
 
-        while (this.simTime >= TICK_MS) {
+        while (this.simTime >= FRAME_DURATION_MS) {
           this.frameCount++;
 
           this.inputHandler.tick(now);
           this.gameEngine.tick();
 
-          this.simTime -= TICK_MS;
+          this.simTime -= FRAME_DURATION_MS;
         }
       }
 

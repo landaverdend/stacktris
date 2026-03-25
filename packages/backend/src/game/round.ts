@@ -1,4 +1,4 @@
-import { Board, ClientMsg, Emitter, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, Emitter, FRAME_DURATION_MS, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
@@ -6,6 +6,8 @@ type RoundEventMap = {
   gameOver: string | null; // winnerId, or null for a draw
 };
 
+const MAX_LAG_FRAMES = 120; // 2 seconds @ 60fps
+const WATCHDOG_INTERVAL_MS = 100;
 export class Round {
 
   private players: Record<string, PlayerSlot> = {}
@@ -17,6 +19,9 @@ export class Round {
 
   private gravityLevel = MULTIPLAYER_GRAVITY_CONFIG.START_LEVEL;
   private gravityTimer: ReturnType<typeof setInterval> | null = null;
+
+  private roundStartTime: number;
+  private watchdogInterval: ReturnType<typeof setInterval> | null = null;
 
   // PPT-style targeting: stable player order + per-attacker index into that order
   private playerOrder: string[] = [];
@@ -32,6 +37,9 @@ export class Round {
       this.players[p.playerId] = p;
     }
 
+    this.roundStartTime = Date.now();
+    this.watchdogInterval = setInterval(() => { this.checkPlayersForStall() }, WATCHDOG_INTERVAL_MS);
+
     this.start();
   }
 
@@ -39,6 +47,7 @@ export class Round {
 
     switch (msg.type) {
       case 'game_action':
+        this.handlePlayerInput(playerId, msg.buffer, msg.frame);
         const ps = this.playerGames[playerId];
         ps?.handleInput(msg.buffer, msg.frame);
         if (ps) this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: ps.snapshot.activePiece }, playerId);
@@ -78,11 +87,11 @@ export class Round {
       this.playerGames[playerId] = pg;
     }
 
-    this.broadcastToAll({ type: 'game_start', seed: this.seed });
+    this.broadcastToAll({ type: 'game_start', seed: this.seed, roundStartTime: this.roundStartTime });
 
     // send initial state snapshots to all players
     for (const [playerId, pg] of Object.entries(this.playerGames)) {
-      this.players[playerId].sendFn({ type: 'game_snapshot', snapshot: pg.snapshot });
+      this.players[playerId].sendFn({ type: 'game_state_update', snapshot: pg.snapshot });
       this.broadcastBoardUpdate(playerId, pg.snapshot.board);
     }
 
@@ -90,7 +99,16 @@ export class Round {
   }
 
   public destroy(): void {
-    this.stopGravityTimer();
+
+    if (this.gravityTimer !== null) {
+      clearInterval(this.gravityTimer);
+      this.gravityTimer = null;
+    }
+
+    if (this.watchdogInterval !== null) {
+      clearInterval(this.watchdogInterval);
+      this.watchdogInterval = null;
+    }
   }
 
   private startGravityTimer(): void {
@@ -101,13 +119,6 @@ export class Round {
       this.gravityLevel++;
       this.broadcastToAll({ type: 'gravity_update', level: this.gravityLevel });
     }, MULTIPLAYER_GRAVITY_CONFIG.INTERVAL_MS);
-  }
-
-  private stopGravityTimer(): void {
-    if (this.gravityTimer !== null) {
-      clearInterval(this.gravityTimer);
-      this.gravityTimer = null;
-    }
   }
 
   /** Remove a player from the session — used for both engine game-over and disconnects. */
@@ -123,9 +134,10 @@ export class Round {
 
     if (this.alivePlayers.size <= 1) {
       this.gameEnded = true;
-      this.stopGravityTimer();
       const winnerId = [...this.alivePlayers][0] ?? null;
       this.emitter.emit('gameOver', winnerId);
+
+      this.destroy();
     }
   }
 
@@ -150,6 +162,39 @@ export class Round {
       }
     }
     return null;
+  }
+
+
+  /**
+   * If player comes back from a disconnect, send them the current game state. 
+   * @param playerId - player id of who sent input 
+   * @param buffer - input buffer of actions. 
+   * @param frame - frame of the game 
+   */
+  private handlePlayerInput(playerId: string, buffer: InputBuffer, frame: number) {
+    const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS)
+
+    // Check if the player is too far behind- if so, send a corrective snapshot.
+    if (serverFrame - frame > MAX_LAG_FRAMES) {
+      console.log(`Player ${playerId} is ${serverFrame - frame} frames behind, updating snapshot to server frame ${serverFrame}`);
+      this.players[playerId].sendFn({ type: 'game_state_update', snapshot: this.playerGames[playerId].snapshot });
+    }
+
+  }
+
+  /**
+   * Check if any players are stalled and tick them to the server frame if they are. (If they DC)
+   */
+  private checkPlayersForStall() {
+    const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
+    for (const [playerId, pg] of Object.entries(this.playerGames)) {
+      console.log(`Player ${playerId} is at frame ${pg.frameCount}, server is at frame ${serverFrame}`);
+      const delta = serverFrame - pg.frameCount;
+      if (delta > MAX_LAG_FRAMES) {
+        pg.tickTo(serverFrame) // advance gravity with no inputs
+        this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: pg.snapshot.activePiece }, playerId);
+      }
+    }
   }
 
   private broadcastBoardUpdate(senderId: string, board: Board): void {
