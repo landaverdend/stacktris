@@ -11,6 +11,7 @@ export function RoomStagingOverlay() {
   const { roomState, readyUpdate } = useRoom();
   const [isReady, setIsReady] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [qrExpanded, setQrExpanded] = useState(false);
 
   const { bolt11, invoicePaid, buyIn, potSats } = roomState;
   const canReady = buyIn === 0 || invoicePaid;
@@ -132,13 +133,16 @@ export function RoomStagingOverlay() {
                   <span className="font-display text-sm tracking-[0.4em] text-[#ff7020]/50 mt-1">SATS</span>
                 </div>
                 {/* QR code */}
-                <div className="border border-[rgba(255,100,0,0.3)] p-1.5 bg-white shrink-0">
+                <button
+                  onClick={() => bolt11 && setQrExpanded(true)}
+                  disabled={!bolt11}
+                  className="border border-[rgba(255,100,0,0.3)] p-2 bg-white shrink-0 cursor-pointer disabled:cursor-default hover:border-[rgba(255,100,0,0.8)] transition-colors">
                   {bolt11 ? (
-                    <QRCodeSVG value={`lightning:${bolt11}`} size={108} />
+                    <QRCodeSVG value={`lightning:${bolt11}`} size={148} level="L" marginSize={2} />
                   ) : (
-                    <div className="w-[108px] h-[108px] bg-[rgba(255,100,0,0.06)] animate-pulse" />
+                    <div className="w-[148px] h-[148px] bg-[rgba(255,100,0,0.06)] animate-pulse" />
                   )}
-                </div>
+                </button>
               </div>
 
               {/* Action buttons */}
@@ -195,6 +199,16 @@ export function RoomStagingOverlay() {
           <span className="terminal-blink">▌</span>
         </span>
       </div>
+
+      {/* ── QR fullscreen ── */}
+      {qrExpanded && bolt11 && (
+        <button
+          onClick={() => setQrExpanded(false)}
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black cursor-pointer">
+          <QRCodeSVG value={`lightning:${bolt11}`} size={Math.min(window.innerWidth, window.innerHeight) - 64} level="L" marginSize={3} />
+          <span className="font-mono text-[10px] tracking-widest text-[rgba(255,100,0,0.5)]">TAP TO CLOSE</span>
+        </button>
+      )}
 
       {/* ── Ready button ── */}
       <button
