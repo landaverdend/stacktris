@@ -48,6 +48,7 @@ export type ClientMsg =
   | { type: 'leave_room'; room_id: string }
   | { type: 'ready_update'; ready: boolean }
   | { type: 'set_player_name'; name: string; lightning_address?: string }
+  | { type: 'piece_locked'; board: Board }
 
   // Game Ops
   | { type: 'game_action'; buffer: InputBuffer; frame: number }

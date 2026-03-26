@@ -137,6 +137,8 @@ export class Round {
       const winnerId = [...this.alivePlayers][0] ?? null;
       this.emitter.emit('gameOver', winnerId);
 
+      console.log(`GAME OVER, winner is ${winnerId}`);
+
       this.destroy();
     }
   }
@@ -172,14 +174,15 @@ export class Round {
    * @param frame - frame of the game 
    */
   private handlePlayerInput(playerId: string, buffer: InputBuffer, frame: number) {
-    const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS)
+    const pg = this.playerGames[playerId];
+    if (!pg) return;
+
+    const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
 
     // Check if the player is too far behind- if so, send a corrective snapshot.
     if (serverFrame - frame > MAX_LAG_FRAMES) {
-      console.log(`Player ${playerId} is ${serverFrame - frame} frames behind, updating snapshot to server frame ${serverFrame}`);
-      this.players[playerId].sendFn({ type: 'game_state_update', snapshot: this.playerGames[playerId].snapshot });
+      this.players[playerId].sendFn({ type: 'game_state_update', snapshot: pg.snapshot });
     }
-
   }
 
   /**

@@ -48,7 +48,8 @@ export class NetworkGame {
     })
 
     this.gameEngine.subscribe('gameOver', () => {
-      this.ws.send({ type: 'player_died' });
+      this.inputHandler.detach();
+      setTimeout(() => this.ws.send({ type: 'player_died' }), 600);
     });
   }
 

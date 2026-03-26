@@ -25,7 +25,7 @@ export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, 
     let rafId: number;
     const loop = () => {
       const ctx = canvasRef.current?.getContext('2d');
-      if (ctx) {
+      if (ctx && boardRef.current) {
         const activePiece = activePieceMapRef.current?.get(playerId) ?? null;
         renderBoard(ctx, boardRef.current.slice(BUFFER_ROWS), activePiece, false, 1, OPPONENT_CELL_SIZE);
       }

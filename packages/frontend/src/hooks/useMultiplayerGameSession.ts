@@ -43,7 +43,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       gameSession.current = new NetworkGame(msg.seed, ws);
 
       unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => { pendingGarbageRef.current = val; });
-      unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setIsClientAlive(false));
+      unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setTimeout(() => setIsClientAlive(false), 600));
 
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
     };
