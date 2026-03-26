@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GameEngine, GARBAGE_DELAY_FRAMES } from '../src/game/gameEngine.js';
 import { COLS, ROWS } from '../src/game/board.js';
+import { boardCells } from '../src/game/pieces.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,46 @@ describe('garbage cancellation on line clear', () => {
     fillBottomRows(engine, 4);
     engine.handleInput('hard_drop');
     expect(engine.getState().pendingGarbage.length).toBe(0);
+  });
+});
+
+// ── Active piece shifts up with garbage ───────────────────────────────────────
+
+describe('garbage shifts active piece up', () => {
+  it('does not shift the piece if it is floating above the garbage', () => {
+    const engine = new GameEngine({ seed: 42, gravityMode: 'multiplayer' });
+    // Piece spawns near the top — garbage at the bottom won't reach it
+    engine.addGarbage(2, 0);
+    tickN(engine, GARBAGE_DELAY_FRAMES - 1);
+    const rowBefore = engine.getState().activePiece.row;
+    engine.tick(); // garbage fires
+    expect(engine.getState().activePiece.row).toBe(rowBefore); // no shift
+  });
+
+  it('shifts the piece up only enough to resolve a collision', () => {
+    const engine = new GameEngine({ seed: 42, gravityMode: 'multiplayer' });
+    // Fill the board almost to the top so the piece is sitting near the stack
+    const board = engine.getState().board;
+    for (let r = 4; r < ROWS; r++) board[r].fill(1);
+    // Force piece to sit right on top of the stack at row 3
+    engine.getState().activePiece.row = 3;
+    engine.addGarbage(2, 0);
+    tickN(engine, GARBAGE_DELAY_FRAMES - 1);
+    engine.tick(); // garbage fires — board shifts up 2, piece would overlap
+    const { board: b, activePiece } = engine.getState();
+    for (const [r, c] of boardCells(activePiece)) {
+      if (r >= 0) expect(b[r][c]).toBe(0);
+    }
+  });
+
+  it('active piece does not overlap board cells after garbage is applied', () => {
+    const engine = new GameEngine({ seed: 42, gravityMode: 'multiplayer' });
+    engine.addGarbage(4, 0);
+    tickN(engine, GARBAGE_DELAY_FRAMES);
+    const { board, activePiece } = engine.getState();
+    for (const [r, c] of boardCells(activePiece)) {
+      if (r >= 0) expect(board[r][c]).toBe(0);
+    }
   });
 });
 

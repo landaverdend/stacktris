@@ -168,6 +168,9 @@ export class GameEngine {
     this.setPendingGarbage(this.state.pendingGarbage.filter(g => this.tickCount < g.triggerFrame));
     for (const g of ready) {
       applyGarbageLines(this.state.board, g.lines, g.gap);
+      while (!isValid(this.state.board, this.state.activePiece)) {
+        this.state.activePiece.row--;
+      }
     }
   }
 
