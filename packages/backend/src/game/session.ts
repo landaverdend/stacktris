@@ -195,6 +195,7 @@ export class Session {
 
     // Check if there is only one player left mid-session, if so, end the session.
     if (this._isSessionStarted && this.status !== 'finished' && this.playerCount === 1) {
+      this.matchWinnerId = [...this.players.keys()][0] ?? null;
       this.fsm.transition('finished');
     } else {
       this.broadcastRoomStateUpdate();

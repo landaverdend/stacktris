@@ -123,7 +123,7 @@ function CountdownOverlay() {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-      <p className="text-alert font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
+      <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
         {countdownDisplay}
       </p>
       <p className="text-nerv-dim text-[15px] font-jp tracking-widest">準備完了 — ROUND START</p>
