@@ -11,6 +11,7 @@
   --font-segment: 'DSEG7', monospace;
   /* ── NERV color system ───────────────────────────────────────────────────── */
   --color-bitcoin: #f7931a; /* NERV amber — primary accent */
+  --color-amber: #ff7020;  /* ops/staging hot orange */
   --color-nerv-dim: #7a4010;
   --color-nerv-faint: #1f0d03;
   --color-alert: #cc2200;

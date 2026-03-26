@@ -2,8 +2,21 @@ import { useEffect, useState } from 'react';
 import { useRoom } from '../../context/SessionContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { launchPaymentModal } from '@getalby/bitcoin-connect-react';
-// Complex CSS values that can't be expressed in Tailwind
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const AMBER = '#ff7020';
+const MAGI = '#00ff88';
+
+
+const AMBER_DIM = 'rgba(255,112,32,0.15)';
+const AMBER_BORDER = 'rgba(255,100,0,0.5)';
+const AMBER_BORDER_DEAD = 'rgba(255,100,0,0.08)';
+const MAGI_BORDER = 'rgba(0,255,136,0.5)';
+
 const AMBER_GLOW = '0 0 8px rgba(255,112,32,0.7), 0 0 24px rgba(255,80,0,0.3)';
+const MAGI_GLOW = '0 0 10px rgba(0,255,136,0.6)';
+const MAGI_GLOW_STR = '0 0 10px rgba(0,255,136,0.7)';
+const TERMINAL_GLOW = '0 0 6px rgba(0,255,65,0.6)';
+
 const HAZARD =
   'repeating-linear-gradient(45deg, rgba(180,0,0,0.55) 0px, rgba(180,0,0,0.55) 3px, transparent 3px, transparent 9px)';
 
@@ -57,7 +70,7 @@ export function RoomStagingOverlay() {
         style={{ background: HAZARD }}>
         <div className="flex flex-col">
           <span
-            className="font-display font-bold text-base tracking-[0.2em] text-[#ff7020] w-fit bg-black p-2 border-nerv-dim border"
+            className="font-display font-bold text-base tracking-[0.2em] text-amber w-fit bg-black p-2 border-nerv-dim border"
             style={{ textShadow: AMBER_GLOW }}>
             OP_STAGING
           </span>
@@ -65,8 +78,8 @@ export function RoomStagingOverlay() {
 
         {/* Internal badge */}
         <div className="flex flex-col items-end border border-[rgba(255,100,0,0.45)] px-2 py-1 bg-black">
-          <span className="font-jp font-bold text-xs text-[#ff7020]">内部</span>
-          <span className="font-display font-bold text-xs tracking-widest text-[#ff7020]/60">INTERNAL</span>
+          <span className="font-jp font-bold text-xs text-amber">内部</span>
+          <span className="font-display font-bold text-xs tracking-widest text-amber/60">INTERNAL</span>
         </div>
       </div>
 
@@ -77,18 +90,18 @@ export function RoomStagingOverlay() {
           {buyIn > 0 && (
             <div className="flex items-center justify-between border border-[rgba(255,100,0,0.25)] px-3 py-2 bg-[rgba(255,100,0,0.04)]">
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] tracking-[0.3em] text-[#ff7020]/40 uppercase">// Current Pot</span>
+                <span className="font-mono text-[10px] tracking-[0.3em] text-amber/40 uppercase">// Current Pot</span>
                 <div className="flex items-baseline gap-1.5 mt-0.5">
                   <span
-                    className="font-segment text-3xl leading-none text-[#ff7020]"
+                    className="font-segment text-3xl leading-none text-amber"
                     style={{ textShadow: AMBER_GLOW }}>
                     {potSats}
                   </span>
-                  <span className="font-display text-xs tracking-[0.3em] text-[#ff7020]/50">SATS</span>
+                  <span className="font-display text-xs tracking-[0.3em] text-amber/50">SATS</span>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-0.5">
-                <span className="font-mono text-[10px] tracking-[0.25em] text-[#ff7020]/30">{potSats > 0 ? `${potSats / buyIn}/${roomState.players.length} PAID` : 'NO HOLDS YET'}</span>
+                <span className="font-mono text-[10px] tracking-[0.25em] text-amber/30">{potSats > 0 ? `${potSats / buyIn}/${roomState.players.length} PAID` : 'NO HOLDS YET'}</span>
               </div>
             </div>
           )}
@@ -98,22 +111,22 @@ export function RoomStagingOverlay() {
               {/* Amount row */}
               <div className="flex items-end justify-between gap-3">
                 <div className="flex flex-col">
-                  <span className="font-mono text-[12px] tracking-[0.2em] text-[#ff7020]/40 mb-1">即時送金</span>
+                  <span className="font-mono text-[12px] tracking-[0.2em] text-amber/40 mb-1">即時送金</span>
                   <div className="relative inline-block leading-none">
                     {/* Ghost segments — all segments on, very dim */}
                     <span
                       aria-hidden
-                      className="font-segment text-[56px] leading-none text-[#ff7020]/4 absolute inset-0 select-none">
+                      className="font-segment text-[56px] leading-none text-amber/4 absolute inset-0 select-none">
                       {'8'.repeat(String(buyIn).length)}
                     </span>
                     {/* Active segments */}
                     <span
-                      className="font-segment text-[56px] leading-none text-[#ff7020] relative"
+                      className="font-segment text-[56px] leading-none text-amber relative"
                       style={{ textShadow: AMBER_GLOW }}>
                       {buyIn}
                     </span>
                   </div>
-                  <span className="font-display text-sm tracking-[0.4em] text-[#ff7020]/50 mt-1">SATS</span>
+                  <span className="font-display text-sm tracking-[0.4em] text-amber/50 mt-1">SATS</span>
                 </div>
                 {/* QR code */}
                 <button
@@ -134,7 +147,7 @@ export function RoomStagingOverlay() {
                   <span className="font-mono text-4xl text-alert cursor-default select-none hover:text-alert/70 transition-colors">⚠</span>
                   <div className="absolute bottom-full left-0 mb-2 w-56 hidden group-hover:block z-10">
                     <div className="bg-black border border-[rgba(255,100,0,0.4)] px-3 py-2">
-                      <p className="font-mono text-[15px] tracking-wide text-[#ff7020]/70 leading-relaxed">
+                      <p className="font-mono text-[15px] tracking-wide text-amber/70 leading-relaxed">
                         NOTICE: Disconnecting during an active match will result in immediate forfeiture of staked funds.
                       </p>
                     </div>
@@ -143,13 +156,13 @@ export function RoomStagingOverlay() {
                 <button
                   onClick={copy}
                   disabled={!bolt11}
-                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-[#ff7020] cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
+                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
                   {copied ? '✓ COPIED' : 'COPY INVOICE'}
                 </button>
                 <button
                   onClick={pay}
                   disabled={!bolt11}
-                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-[#ff7020] cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
+                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
                   PAY WALLET
                 </button>
               </div>
@@ -160,7 +173,7 @@ export function RoomStagingOverlay() {
             <div className="flex flex-col items-center gap-1 py-2">
               <span
                 className="font-display font-bold text-2xl tracking-[0.1em] text-magi"
-                style={{ textShadow: '0 0 10px rgba(0,255,136,0.6)' }}>
+                style={{ textShadow: MAGI_GLOW }}>
                 ■ PAYMENT CONFIRMED
               </span>
             </div>
@@ -168,7 +181,7 @@ export function RoomStagingOverlay() {
 
           {buyIn === 0 && (
             <div className="flex flex-col items-center gap-0.5 py-2">
-              <span className="font-mono text-xs tracking-[0.15em] text-[#ff7020]/35">// FREE ENTRY — NO PAYMENT REQUIRED</span>
+              <span className="font-mono text-xs tracking-[0.15em] text-amber/35">// FREE ENTRY — NO PAYMENT REQUIRED</span>
             </div>
           )}
         </div>
@@ -177,7 +190,7 @@ export function RoomStagingOverlay() {
 
       {/* ── Terminal status line ── */}
       <div className="px-3 py-2 border-t border-[rgba(255,100,0,0.12)]">
-        <span className="font-mono text-xs tracking-widest text-terminal" style={{ textShadow: '0 0 6px rgba(0,255,65,0.6)' }}>
+        <span className="font-mono text-xs tracking-widest text-terminal" style={{ textShadow: TERMINAL_GLOW }}>
           {statusLine()}
           <span className="terminal-blink">▌</span>
         </span>
@@ -200,9 +213,9 @@ export function RoomStagingOverlay() {
         className="w-full py-3 font-display font-bold text-2xl tracking-[0.15em] border-t-2 transition-all cursor-pointer disabled:cursor-not-allowed"
         style={{
           background: HAZARD,
-          color: !canReady ? 'rgba(255,112,32,0.15)' : isReady ? '#00ff88' : '#ff7020',
-          borderColor: !canReady ? 'rgba(255,100,0,0.08)' : isReady ? 'rgba(0,255,136,0.5)' : 'rgba(255,100,0,0.5)',
-          textShadow: !canReady ? 'none' : isReady ? '0 0 10px rgba(0,255,136,0.7)' : AMBER_GLOW,
+          color: !canReady ? AMBER_DIM : isReady ? MAGI : AMBER,
+          borderColor: !canReady ? AMBER_BORDER_DEAD : isReady ? MAGI_BORDER : AMBER_BORDER,
+          textShadow: !canReady ? 'none' : isReady ? MAGI_GLOW_STR : AMBER_GLOW,
         }}>
         <span className="bg-black p-2 border-nerv-dim border">
           {!canReady ? 'AWAITING PAYMENT' : isReady ? '■ CANCEL READY' : '◌ INITIATE READY'}
