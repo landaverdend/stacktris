@@ -24,6 +24,7 @@ export const GARBAGE_TABLE: Record<number, number> = {
 export type EngineConfig = {
   seed?: number;
   startLevel?: number;
+  gravityMode?: 'solo' | 'multiplayer';
   initialGameState?: GameState;
 }
 
@@ -61,7 +62,7 @@ export class GameEngine {
     if (!config) {
       this.state = createGameState(this.seed);
     } else {
-      this.state = config.initialGameState ?? createGameState(this.seed);
+      this.state = config.initialGameState ?? createGameState(this.seed, config.gravityMode);
     }
 
     if (this.startLevel > 0 && !config?.initialGameState) {

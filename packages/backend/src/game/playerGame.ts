@@ -14,7 +14,7 @@ export class PlayerGame {
   subscribe: GameEngine['subscribe'];
 
   constructor(seed: number) {
-    this.gameEngine = new GameEngine({ seed });
+    this.gameEngine = new GameEngine({ seed, gravityMode: 'multiplayer' });
     this.subscribe = this.gameEngine.subscribe.bind(this.gameEngine);
   }
 

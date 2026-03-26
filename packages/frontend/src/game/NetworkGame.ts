@@ -27,7 +27,7 @@ export class NetworkGame {
 
   constructor(seed: number, private readonly ws: WSClient) {
 
-    this.gameEngine = new GameEngine({ seed });
+    this.gameEngine = new GameEngine({ seed, gravityMode: 'multiplayer' });
 
     this.inputHandler = new InputHandler(action => {
       this.inputBuffer.push({ action, frame: this.frameCount });
