@@ -25,6 +25,7 @@ export interface GameFrame {
   holdUsed: boolean;
   isGameOver: boolean;
   pendingGarbage: PendingGarbage[];
+  bagPosition: number;
   frame: number;
 }
 

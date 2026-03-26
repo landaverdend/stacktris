@@ -93,6 +93,9 @@ export class SeededPieceBag {
   private queue: PieceKind[] = [];
   private currentBag: PieceKind[] = [];
   private rng: () => number;
+  private nextCount = 0;
+
+  get position(): number { return this.nextCount; }
 
   constructor(seed: number) {
     this.rng = mulberry32(seed);
@@ -104,7 +107,21 @@ export class SeededPieceBag {
   next(): PieceKind {
     const piece = this.queue.shift()!;
     this.queue.push(this.drawOne());
+    this.nextCount++;
     return piece;
+  }
+
+  restoreToPosition(seed: number, position: number): void {
+    this.rng = mulberry32(seed);
+    this.currentBag = [];
+    this.queue = [];
+    this.nextCount = 0;
+    while (this.queue.length < 10) {
+      this.queue.push(this.drawOne());
+    }
+    for (let i = 0; i < position; i++) {
+      this.next();
+    }
   }
 
   peek(count = 10): PieceKind[] {

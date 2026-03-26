@@ -79,6 +79,7 @@ export class GameEngine {
     this.state.isGameOver = frame.isGameOver;
     this.state.pendingGarbage = frame.pendingGarbage;
     this.state.gravity = frame.gravityLevel;
+    this.state.bag.restoreToPosition(this.seed, frame.bagPosition);
   }
 
   getState(): GameState {

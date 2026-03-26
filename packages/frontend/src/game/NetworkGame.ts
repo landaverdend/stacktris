@@ -85,8 +85,8 @@ export class NetworkGame {
 
           // Send out a heartbeat every 5 seconds
           if (this.frameCount % 300 === 0) {
-            const { board, activePiece, holdPiece, holdUsed, isGameOver, gravity, pendingGarbage } = this.gameEngine.getState();
-            this.ws.send({ type: 'game_state_heartbeat', state: { board, activePiece, holdPiece, holdUsed, isGameOver, gravityLevel: gravity, pendingGarbage, frame: this.frameCount } });
+            const { board, activePiece, holdPiece, holdUsed, isGameOver, gravity, pendingGarbage, bag } = this.gameEngine.getState();
+            this.ws.send({ type: 'game_state_heartbeat', state: { board, activePiece, holdPiece, holdUsed, isGameOver, gravityLevel: gravity, pendingGarbage, bagPosition: bag.position, frame: this.frameCount } });
           }
         }
 
