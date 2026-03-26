@@ -2,15 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRoom } from '../../context/SessionContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { launchPaymentModal } from '@getalby/bitcoin-connect-react';
+import { cn } from '../../lib/utils';
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const AMBER = '#ff7020';
-const MAGI = '#00ff88';
-
-
-const AMBER_DIM = 'rgba(255,112,32,0.15)';
-const AMBER_BORDER = 'rgba(255,100,0,0.5)';
-const AMBER_BORDER_DEAD = 'rgba(255,100,0,0.08)';
-const MAGI_BORDER = 'rgba(0,255,136,0.5)';
 
 const AMBER_GLOW = '0 0 8px rgba(255,112,32,0.7), 0 0 24px rgba(255,80,0,0.3)';
 const MAGI_GLOW = '0 0 10px rgba(0,255,136,0.6)';
@@ -210,11 +203,12 @@ export function RoomStagingOverlay() {
       <button
         onClick={handleReady}
         disabled={!canReady}
-        className="w-full py-3 font-display font-bold text-2xl tracking-[0.15em] border-t-2 transition-all cursor-pointer disabled:cursor-not-allowed"
+        className={cn(
+          'w-full py-3 font-display font-bold text-2xl tracking-[0.15em] border-t-2 transition-all cursor-pointer disabled:cursor-not-allowed',
+          !canReady ? 'text-amber/15 border-amber/8' : isReady ? 'text-[#00ff88] border-[#00ff88]/50' : 'text-amber border-amber/50',
+        )}
         style={{
           background: HAZARD,
-          color: !canReady ? AMBER_DIM : isReady ? MAGI : AMBER,
-          borderColor: !canReady ? AMBER_BORDER_DEAD : isReady ? MAGI_BORDER : AMBER_BORDER,
           textShadow: !canReady ? 'none' : isReady ? MAGI_GLOW_STR : AMBER_GLOW,
         }}>
         <span className="bg-black p-2 border-nerv-dim border">

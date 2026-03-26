@@ -12,6 +12,7 @@ import { PlayerList } from './PlayerList';
 import { ConnectedBoards } from './ConnectedBoards';
 import { ScrollFlareOverlay } from '../../components/ScrollFlareOverlay';
 import { SessionWinnerOverlay } from './SessionWinnerOverlay';
+import { truncateName } from '../../lib/utils';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -139,7 +140,7 @@ function IntermissionOverlay({ roundWinnerId, players }: { roundWinnerId: string
       {winner && (
         <>
           <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '3.5rem' }}>
-            {winner.playerName}
+            {truncateName(winner.playerName, 7)}
           </p>
           <p className="text-bitcoin font-display font-bold text-2xl tracking-widest uppercase">ROUND WIN</p>
         </>

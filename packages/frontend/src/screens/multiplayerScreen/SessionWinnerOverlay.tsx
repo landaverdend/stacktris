@@ -1,6 +1,7 @@
 import { useAnimate } from 'motion/react';
 import { useEffect } from 'react';
 import { PlayerInfo } from '@stacktris/shared';
+import { truncateName } from '../../lib/utils';
 
 const GREEN = '#00ff88';
 const GREEN_GLOW = `0 0 14px ${GREEN}, 0 0 36px ${GREEN}66`;
@@ -143,7 +144,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
               letterSpacing: '0.06em',
             }}
           >
-            {winner?.playerName?.length > 7 ? winner.playerName.slice(0, 7) + '…' : winner?.playerName}
+            {winner?.playerName ? truncateName(winner.playerName, 7) : null}
           </p>
           <p
             className="font-jp text-center text-xs tracking-[0.4em] mt-1"

@@ -1,7 +1,6 @@
-import { useMemo } from "react";
 import { PlayerInfo, WINS_TO_MATCH } from "../../../../shared/dist/protocol";
 import { useRoom } from "../../context/SessionContext";
-import { cn } from "../../lib/utils";
+import { cn, truncateName } from "../../lib/utils";
 import { useConnection } from "../../ws/WSContext";
 
 
@@ -32,7 +31,7 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
   const accentAlpha = isYou ? 0.4 : 0.18;
   const accent = `linear-gradient(90deg, rgba(230,140,20,${accentAlpha}), rgba(180,40,60,${accentAlpha}), rgba(110,20,90,${accentAlpha}))`;
 
-  const truncatedName = useMemo(() => { return player.playerName?.slice(0, 9) + '...' }, [player.playerName])
+  const truncatedName = player.playerName ? truncateName(player.playerName, 9) : null;
 
   return (
     <div className="flex flex-col gap-1 min-w-80">

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ActivePiece, Board } from '@stacktris/shared';
 import { renderBoard, OPPONENT_CELL_SIZE } from '../render/board';
 import { ScrollFlareOverlay } from './ScrollFlareOverlay';
-import { cn } from '../lib/utils';
+import { cn, truncateName } from '../lib/utils';
 
 const BUFFER_ROWS = 2;
 const W = 10 * OPPONENT_CELL_SIZE;
@@ -35,9 +35,7 @@ export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, 
     return () => cancelAnimationFrame(rafId);
   }, []); // runs once — reads from refs every frame
 
-  const displayName = playerName
-    ? playerName.length > 10 ? playerName.slice(0, 9) + '…' : playerName
-    : null;
+  const displayName = playerName ? truncateName(playerName, 9) : null;
 
   return (
     <div className="relative ">
