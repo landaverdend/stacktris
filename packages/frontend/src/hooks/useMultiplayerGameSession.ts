@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { ActivePiece, Board, GameSnapshot, InputBuffer, PendingGarbage, SessionState } from "@stacktris/shared";
+import { ActivePiece, Board, PendingGarbage, SessionState } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
 

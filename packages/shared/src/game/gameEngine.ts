@@ -4,7 +4,7 @@ import { createGameState, GameState, gravityForLevel, mulberry32, PendingGarbage
 import { ActivePiece, InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
 import { boardCells } from "./pieces.js";
-import { GameSnapshot } from "../protocol.js";
+import { GameFrame } from "../protocol.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
@@ -70,12 +70,15 @@ export class GameEngine {
     }
   }
 
-  updateState(snapshot: GameSnapshot): void {
-    this.tickCount = snapshot.frame;
-    this.state.board = snapshot.board;
-    this.state.activePiece = snapshot.activePiece as ActivePiece;
-    this.state.holdPiece = snapshot.holdPiece;
-    this.state.pendingGarbage = snapshot.pendingGarbage;
+  updateState(frame: GameFrame): void {
+    this.tickCount = frame.frame;
+    this.state.board = frame.board;
+    this.state.activePiece = frame.activePiece as ActivePiece;
+    this.state.holdPiece = frame.holdPiece;
+    this.state.holdUsed = frame.holdUsed;
+    this.state.isGameOver = frame.isGameOver;
+    this.state.pendingGarbage = frame.pendingGarbage;
+    this.state.gravity = frame.gravityLevel;
   }
 
   getState(): GameState {
@@ -83,7 +86,6 @@ export class GameEngine {
   }
 
   setGravityLevel(level: number): void {
-    this.state.level = level;
     this.state.gravity = gravityForLevel(level);
   }
 

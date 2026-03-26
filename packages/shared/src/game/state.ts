@@ -59,10 +59,11 @@ export function createGameState(seed: number, gravityMode: 'solo' | 'multiplayer
     gravity: gravityForLevel(1),
     gravityAccumulator: 0, // rewinds when threshold of 1 is reached.
 
-
-    lines: 0,
-    level: 0,
     pendingGarbage: [],
+
+    // SOLO MODE
+    lines: 0,
+    level: 0, // for solo mode only.
 
     isGameOver: false,
   }

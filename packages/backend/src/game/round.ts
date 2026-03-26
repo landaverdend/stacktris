@@ -1,10 +1,25 @@
-import { Board, ClientMsg, Emitter, FRAME_DURATION_MS, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, Emitter, FRAME_DURATION_MS, GameFrame, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
 type RoundEventMap = {
   gameOver: string | null; // winnerId, or null for a draw
 };
+
+function isOutOfSync(client: GameFrame, server: GameFrame): boolean {
+  if (client.isGameOver !== server.isGameOver) return true;
+  if (client.gravityLevel !== server.gravityLevel) return true;
+  if (client.holdPiece !== server.holdPiece) return true;
+  if (client.holdUsed !== server.holdUsed) return true;
+
+  // This is bad and we could do some bitwise ops to make this faster
+  for (let r = 0; r < client.board.length; r++) {
+    for (let c = 0; c < client.board[r].length; c++) {
+      if (client.board[r][c] !== server.board[r][c]) return true;
+    }
+  }
+  return false;
+}
 
 const MAX_LAG_FRAMES = 120; // 2 seconds @ 60fps
 const WATCHDOG_INTERVAL_MS = 100;
@@ -40,7 +55,7 @@ export class Round {
     this.roundStartTime = Date.now();
     this.watchdogInterval = setInterval(() => { this.checkPlayersForStall() }, WATCHDOG_INTERVAL_MS);
 
-    this.start();
+    this.startRound();
   }
 
   public onMessage(playerId: string, msg: ClientMsg): void {
@@ -50,8 +65,21 @@ export class Round {
         this.handlePlayerInput(playerId, msg.buffer, msg.frame);
         const ps = this.playerGames[playerId];
         ps?.handleInput(msg.buffer, msg.frame);
-        if (ps) this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: ps.snapshot.activePiece }, playerId);
+        if (ps) this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: ps.toGameFrame().activePiece }, playerId);
         break;
+
+      case 'game_state_heartbeat': {
+        const pg = this.playerGames[playerId];
+        if (!pg) break;
+        const serverFrame = pg.toGameFrame();
+        console.log(`[heartbeat] ${playerId} frame=${msg.state.frame} gravity=${msg.state.gravityLevel} isGameOver=${msg.state.isGameOver}`);
+
+        if (isOutOfSync(msg.state, serverFrame)) {
+          console.warn(`[heartbeat] out of sync for ${playerId} at frame ${msg.state.frame}, sending correction`);
+          this.players[playerId].sendFn({ type: 'game_state_update', frame: serverFrame });
+        }
+        break;
+      }
       case 'player_died':
         this.broadcastPlayerDeath(playerId);
         this.killPlayer(playerId);
@@ -59,7 +87,7 @@ export class Round {
     }
   }
 
-  public start(): void {
+  public startRound(): void {
     this.seed = Math.floor(Math.random() * 2 ** 32);
 
     // Create PlayerGames AFTER seed is finalized so server and client share the same seed
@@ -91,8 +119,8 @@ export class Round {
 
     // send initial state snapshots to all players
     for (const [playerId, pg] of Object.entries(this.playerGames)) {
-      this.players[playerId].sendFn({ type: 'game_state_update', snapshot: pg.snapshot });
-      this.broadcastBoardUpdate(playerId, pg.snapshot.board);
+      this.players[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
+      this.broadcastBoardUpdate(playerId, pg.toGameFrame().board);
     }
 
     this.startGravityTimer();
@@ -113,11 +141,19 @@ export class Round {
 
   private startGravityTimer(): void {
     this.gravityLevel = MULTIPLAYER_GRAVITY_CONFIG.START_LEVEL;
+
+
     this.gravityTimer = setInterval(() => {
       if (this.gameEnded) return;
       if (this.gravityLevel >= MULTIPLAYER_GRAVITY_CONFIG.MAX_LEVEL) return;
+
       this.gravityLevel++;
+      console.log(`[gravity_update] gravity level increased to ${this.gravityLevel}`);
+      for (const pg of Object.values(this.playerGames)) {
+        pg.setGravityLevel(this.gravityLevel);
+      }
       this.broadcastToAll({ type: 'gravity_update', level: this.gravityLevel });
+
     }, MULTIPLAYER_GRAVITY_CONFIG.INTERVAL_MS);
   }
 
@@ -181,7 +217,7 @@ export class Round {
 
     // Check if the player is too far behind- if so, send a corrective snapshot.
     if (serverFrame - frame > MAX_LAG_FRAMES) {
-      this.players[playerId].sendFn({ type: 'game_state_update', snapshot: pg.snapshot });
+      this.players[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
     }
   }
 
@@ -195,7 +231,7 @@ export class Round {
       const delta = serverFrame - pg.frameCount;
       if (delta > MAX_LAG_FRAMES) {
         pg.tickTo(serverFrame) // advance gravity with no inputs
-        this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: pg.snapshot.activePiece }, playerId);
+        this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: pg.toGameFrame().activePiece }, playerId);
       }
     }
   }

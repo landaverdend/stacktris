@@ -1,6 +1,6 @@
 import {
   GameEngine,
-  GameSnapshot,
+  GameFrame,
   InputBuffer,
 } from "@stacktris/shared";
 
@@ -22,12 +22,19 @@ export class PlayerGame {
     this.gameEngine.addGarbage(lines, sentFrame);
   }
 
-  get snapshot(): GameSnapshot {
+  setGravityLevel(level: number): void {
+    this.gameEngine.setGravityLevel(level);
+  }
+
+  toGameFrame(): GameFrame {
     const state = this.gameEngine.getState();
     return {
       board: state.board,
       activePiece: state.activePiece,
+      gravityLevel: state.gravity,
       holdPiece: state.holdPiece,
+      holdUsed: state.holdUsed,
+      isGameOver: state.isGameOver,
       pendingGarbage: state.pendingGarbage,
       frame: this._frameCount,
     };

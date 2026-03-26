@@ -2,7 +2,7 @@ import {
   EngineEventMap,
   FRAME_DURATION_MS,
   GameEngine,
-  GameSnapshot,
+  GameFrame,
   GameState,
   InputBuffer,
   ServerMsg,
@@ -34,9 +34,9 @@ export class NetworkGame {
       this.gameEngine.handleInput(action);
     })
 
-    this.ws.on('game_state_update', (msg: { type: 'game_state_update'; snapshot: GameSnapshot }) => {
-      this.gameEngine.updateState(msg.snapshot);
-      this.frameCount = msg.snapshot.frame;
+    this.ws.on('game_state_update', (msg: { type: 'game_state_update'; frame: GameFrame }) => {
+      this.gameEngine.updateState(msg.frame);
+      this.frameCount = msg.frame.frame;
     })
 
     this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number }) => {
@@ -81,6 +81,12 @@ export class NetworkGame {
           if (this.frameCount % 10 === 0) {
             this.ws.send({ type: 'game_action', buffer: this.inputBuffer, frame: this.frameCount });
             this.inputBuffer = [];
+          }
+
+          // Send out a heartbeat every 5 seconds
+          if (this.frameCount % 300 === 0) {
+            const { board, activePiece, holdPiece, holdUsed, isGameOver, gravity, pendingGarbage } = this.gameEngine.getState();
+            this.ws.send({ type: 'game_state_heartbeat', state: { board, activePiece, holdPiece, holdUsed, isGameOver, gravityLevel: gravity, pendingGarbage, frame: this.frameCount } });
           }
         }
 
