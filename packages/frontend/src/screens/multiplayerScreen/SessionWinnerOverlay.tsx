@@ -129,7 +129,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
 
       {/* ── Center ── */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-16">
-        <span className="font-mono text-[9px] tracking-[0.5em] text-terminal/40 mb-1">
+        <span className="font-mono text-[14px] tracking-[0.02em] text-terminal/40 mb-1">
           SESSION VICTOR:
         </span>
 
@@ -195,7 +195,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
             </>
           ) : (
             <span
-              className="font-mono text-[10px] tracking-[0.3em]"
+              className="font-mono text-[12px] tracking-[0.3em]"
               style={{ color: `${GREEN}40` }}
             >
               // FREE MATCH

@@ -14,9 +14,10 @@ interface Props {
   activePieceMapRef: React.RefObject<Map<string, ActivePiece | null>>;
   playerName?: string;
   isDead?: boolean;
+  isRoundWinner?: boolean;
 }
 
-export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, isDead }: Props) {
+export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, isDead, isRoundWinner }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boardRef = useRef(board);
   boardRef.current = board; // always in sync with latest prop
@@ -41,6 +42,7 @@ export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, 
     <div className="relative ">
       <div className="relative">
         {isDead && <ScrollFlareOverlay fontSize={40} />}
+        {isRoundWinner && <ScrollFlareOverlay word="CLEARED" color="#00ff88" fontSize={22} />}
         <canvas
           ref={canvasRef}
           width={W}

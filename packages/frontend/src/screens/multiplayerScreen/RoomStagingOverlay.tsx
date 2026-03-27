@@ -13,6 +13,34 @@ const TERMINAL_GLOW = '0 0 6px rgba(0,255,65,0.6)';
 const HAZARD =
   'repeating-linear-gradient(45deg, rgba(180,0,0,0.55) 0px, rgba(180,0,0,0.55) 3px, transparent 3px, transparent 9px)';
 
+function InvoiceSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 animate-pulse">
+      {/* Amount row skeleton */}
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-2">
+          <div className="h-3 w-20 bg-amber/10 rounded-sm" />
+          <div className="h-14 w-28 bg-amber/8 rounded-sm" />
+          <div className="h-3 w-10 bg-amber/10 rounded-sm" />
+        </div>
+        {/* QR skeleton */}
+        <div className="border border-amber/10 p-2 shrink-0">
+          <div className="w-[148px] h-[148px] bg-amber/5 flex flex-col items-center justify-center gap-2">
+            <span className="font-mono text-[9px] tracking-[0.3em] text-amber/20 uppercase">GENERATING</span>
+            <span className="font-mono text-[9px] tracking-[0.3em] text-amber/20 uppercase">INVOICE...</span>
+          </div>
+        </div>
+      </div>
+      {/* Button skeletons */}
+      <div className="flex gap-2 items-center">
+        <div className="w-10 h-10 shrink-0 bg-amber/5 rounded-sm" />
+        <div className="flex-1 h-9 bg-amber/8 rounded-sm" />
+        <div className="flex-1 h-9 bg-amber/8 rounded-sm" />
+      </div>
+    </div>
+  );
+}
+
 export function RoomStagingOverlay() {
   const { roomState, readyUpdate } = useRoom();
   const [isReady, setIsReady] = useState(false);
@@ -99,7 +127,9 @@ export function RoomStagingOverlay() {
             </div>
           )}
 
-          {needsPayment && (
+          {needsPayment && !bolt11 && <InvoiceSkeleton />}
+
+          {needsPayment && bolt11 && (
             <div className="flex flex-col gap-4">
               {/* Amount row */}
               <div className="flex items-end justify-between gap-3">
@@ -123,14 +153,9 @@ export function RoomStagingOverlay() {
                 </div>
                 {/* QR code */}
                 <button
-                  onClick={() => bolt11 && setQrExpanded(true)}
-                  disabled={!bolt11}
-                  className="border border-[rgba(255,100,0,0.3)] p-2 bg-white shrink-0 cursor-pointer disabled:cursor-default hover:border-[rgba(255,100,0,0.8)] transition-colors">
-                  {bolt11 ? (
-                    <QRCodeSVG value={`lightning:${bolt11}`} size={148} level="L" marginSize={2} />
-                  ) : (
-                    <div className="w-[148px] h-[148px] bg-[rgba(255,100,0,0.06)] animate-pulse" />
-                  )}
+                  onClick={() => setQrExpanded(true)}
+                  className="border border-[rgba(255,100,0,0.3)] p-2 bg-white shrink-0 cursor-pointer hover:border-[rgba(255,100,0,0.8)] transition-colors">
+                  <QRCodeSVG value={`lightning:${bolt11}`} size={148} level="L" marginSize={2} />
                 </button>
               </div>
 
@@ -148,14 +173,12 @@ export function RoomStagingOverlay() {
                 </div>
                 <button
                   onClick={copy}
-                  disabled={!bolt11}
-                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
+                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer transition-colors">
                   {copied ? '✓ COPIED' : 'COPY INVOICE'}
                 </button>
                 <button
                   onClick={pay}
-                  disabled={!bolt11}
-                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
+                  className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer transition-colors">
                   PAY WALLET
                 </button>
               </div>

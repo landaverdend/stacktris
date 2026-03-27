@@ -6,7 +6,7 @@ import { PaymentService } from "../lightning/paymentService.js";
 // Valid state transitions for a room.
 const VALID_TRANSITIONS: Record<SessionStatus, SessionStatus[]> = {
   waiting: ['countdown'],
-  countdown: ['waiting', 'playing'],
+  countdown: ['waiting', 'playing', 'finished'],
   playing: ['finished', 'intermission'],
   intermission: ['countdown', 'finished'],
   finished: [],

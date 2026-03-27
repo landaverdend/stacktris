@@ -16,9 +16,10 @@ interface Props {
   opponentBoards: Record<string, Board>;
   activePieceMapRef: React.RefObject<Map<string, ActivePiece | null>>;
   deadPlayers: Set<string>;
+  roundWinnerId?: string | null;
 }
 
-export function ConnectedBoards({ players, opponentBoards, activePieceMapRef, deadPlayers }: Props) {
+export function ConnectedBoards({ players, opponentBoards, activePieceMapRef, deadPlayers, roundWinnerId }: Props) {
   const count = players.length;
   if (count === 0) return null;
 
@@ -98,6 +99,7 @@ export function ConnectedBoards({ players, opponentBoards, activePieceMapRef, de
             activePieceMapRef={activePieceMapRef}
             playerName={p.playerName}
             isDead={deadPlayers.has(p.playerId)}
+            isRoundWinner={p.playerId === roundWinnerId}
           />
         ))}
       </div>

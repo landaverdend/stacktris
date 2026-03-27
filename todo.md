@@ -12,9 +12,9 @@ MVP:
 - add a disclaimer saying if you disconnect you lose your funds. DONE
 - lightning address validation (TBD)  DONE
 - allow people to change their lightning address and name. DONE
-- truncated username on certain fields, extract to a function and reuse... 
-- EMERGENCY header thing when that goes off when your stack gets high, reacts to your stack height
-- sound effects?
-- redo menu to be more like NERV
+- truncated username on certain fields, extract to a function and reuse... DONE 
+- EMERGENCY header thing when that goes off when your stack gets high, reacts to your stack height 
+- sound effects? 
+- redo title menu to be more like NERV
 - skeleton for payment
 - add a winner animation for opponent boards/the player

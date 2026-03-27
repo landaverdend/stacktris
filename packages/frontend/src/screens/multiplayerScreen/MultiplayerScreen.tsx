@@ -1,18 +1,15 @@
 import { useRef, useState, useEffect } from 'react';
 import { useRoom } from '../../context/SessionContext';
-import { COUNTDOWN_SECONDS, PlayerInfo } from '@stacktris/shared';
+import { COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { useConnection } from '../../ws/WSContext';
 import { useMultiplayerGameSession } from '../../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../../render/queue';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../render/board';
 import { GarbageMeter } from '../../components/GarbageMeter';
-import { RoomStagingOverlay } from './RoomStagingOverlay';
 import { RoomCodeBar } from './RoomCodeBar';
 import { PlayerList } from './PlayerList';
 import { ConnectedBoards } from './ConnectedBoards';
-import { ScrollFlareOverlay } from '../../components/ScrollFlareOverlay';
-import { SessionWinnerOverlay } from './SessionWinnerOverlay';
-import { truncateName } from '../../lib/utils';
+import { BoardOverlay } from './BoardOverlay';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -67,22 +64,17 @@ export function MultiplayerScreen() {
 
             <div className="relative">
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
-              {status === 'waiting' && <RoomStagingOverlay />}
               {status === 'countdown' && <CountdownOverlay />}
-              {!isClientAlive && (status === 'playing' || status === 'intermission') && <ScrollFlareOverlay />}
-              {status === 'intermission' && (
-                <IntermissionOverlay
-                  roundWinnerId={winnerId ?? null}
-                  players={roomState.players}
-                />
-              )}
-              {status === 'finished' && (
-                <SessionWinnerOverlay
-                  winner={roomState.players.find(p => p.playerId === roomState.matchWinnerId) as PlayerInfo}
-                  potSats={roomState.potSats}
-                  payoutPending={roomState.payoutPending}
-                />
-              )}
+              <BoardOverlay
+                status={status}
+                playerId={playerId ?? ''}
+                isClientAlive={isClientAlive}
+                roundWinnerId={winnerId ?? null}
+                matchWinnerId={roomState.matchWinnerId}
+                players={roomState.players}
+                potSats={roomState.potSats}
+                payoutPending={roomState.payoutPending}
+              />
 
             </div>
           </div>
@@ -105,6 +97,7 @@ export function MultiplayerScreen() {
           opponentBoards={opponentBoards}
           activePieceMapRef={opponentActivePieces}
           deadPlayers={deadPlayers}
+          roundWinnerId={winnerId}
         />
       </div>
     </div>
@@ -127,28 +120,6 @@ function CountdownOverlay() {
         {countdownDisplay}
       </p>
       <p className="text-nerv-dim text-[15px] font-jp tracking-widest">準備完了 — ROUND START</p>
-    </div>
-  );
-}
-
-function IntermissionOverlay({ roundWinnerId, players }: { roundWinnerId: string | null; players: PlayerInfo[] }) {
-  const winner = players.find(p => p.playerId === roundWinnerId);
-
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
-      <p className="text-nerv-dim text-xs font-mono tracking-[0.4em] uppercase">// SEQUENCE INTERMISSION</p>
-      {winner && (
-        <>
-          <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '3.5rem' }}>
-            {truncateName(winner.playerName, 7)}
-          </p>
-          <p className="text-bitcoin font-display font-bold text-2xl tracking-widest uppercase">ROUND WIN</p>
-        </>
-      )}
-      {!winner && (
-        <p className="text-nerv-dim text-2xl font-mono tracking-[0.2em]">ROUND OVER</p>
-      )}
-      <p className="text-nerv-dim text-sm font-jp tracking-widest mt-1">シーケンス間</p>
     </div>
   );
 }
