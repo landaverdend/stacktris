@@ -53,6 +53,59 @@ describe('payout_pending decode', () => {
   });
 });
 
+describe('opcode + id round-trips', () => {
+  it('welcome', () => {
+    const msg = { type: 'welcome' as const, player_id: 'abc-123' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('welcome');
+    expect(decoded.player_id).toBe('abc-123');
+  });
+
+  it('session_created', () => {
+    const msg = { type: 'session_created' as const, room_id: 'room-xyz' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('session_created');
+    expect(decoded.room_id).toBe('room-xyz');
+  });
+
+  it('session_joined', () => {
+    const msg = { type: 'session_joined' as const, room_id: 'room-xyz' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('session_joined');
+    expect(decoded.room_id).toBe('room-xyz');
+  });
+
+  it('bet_payment_confirmed', () => {
+    const msg = { type: 'bet_payment_confirmed' as const, playerId: 'player-42' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('bet_payment_confirmed');
+    expect(decoded.playerId).toBe('player-42');
+  });
+
+  it('game_player_died', () => {
+    const msg = { type: 'game_player_died' as const, playerId: 'player-99' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('game_player_died');
+    expect(decoded.playerId).toBe('player-99');
+  });
+
+  it('error', () => {
+    const msg = { type: 'error' as const, message: 'something went wrong' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('error');
+    expect(decoded.message).toBe('something went wrong');
+  });
+
+  it('first byte is always the correct opcode', () => {
+    expect(encodeServerMsg({ type: 'welcome', player_id: 'x' })[0]).toBe(MsgCode.WELCOME);
+    expect(encodeServerMsg({ type: 'session_created', room_id: 'x' })[0]).toBe(MsgCode.SESSION_CREATED);
+    expect(encodeServerMsg({ type: 'session_joined', room_id: 'x' })[0]).toBe(MsgCode.SESSION_JOINED);
+    expect(encodeServerMsg({ type: 'bet_payment_confirmed', playerId: 'x' })[0]).toBe(MsgCode.BET_PAYMENT_CONFIRMED);
+    expect(encodeServerMsg({ type: 'game_player_died', playerId: 'x' })[0]).toBe(MsgCode.GAME_PLAYER_DIED);
+    expect(encodeServerMsg({ type: 'error', message: 'x' })[0]).toBe(MsgCode.ERROR);
+  });
+});
+
 describe('payout_pending round-trip', () => {
   it('round-trips a small amount', () => {
     const msg = { type: 'payout_pending' as const, amountSats: 21, lightningAddress: 'user@wallet.io' };
