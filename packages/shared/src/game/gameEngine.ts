@@ -323,7 +323,7 @@ export class GameEngine {
       : this.startLevel + 1 + Math.floor((this.state.lines - threshold) / 10);
 
     this.state.level = newLevel;
-    this.state.gravity = gravityForLevel(newLevel);
+    this.state.gravity = gravityForLevel(Math.max(newLevel, 1));
   }
 
   private setPendingGarbage(val: PendingGarbage[]): void {
