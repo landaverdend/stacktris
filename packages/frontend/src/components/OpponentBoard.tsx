@@ -9,15 +9,15 @@ const W = 10 * OPPONENT_CELL_SIZE;
 const H = 20 * OPPONENT_CELL_SIZE;
 
 interface Props {
-  playerId: string;
+  slotIndex: number;
   board: Board;
-  activePieceMapRef: React.RefObject<Map<string, ActivePiece | null>>;
+  activePieceMapRef: React.RefObject<Map<number, ActivePiece | null>>;
   playerName?: string;
   isDead?: boolean;
   isRoundWinner?: boolean;
 }
 
-export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, isDead, isRoundWinner }: Props) {
+export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName, isDead, isRoundWinner }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boardRef = useRef(board);
   boardRef.current = board; // always in sync with latest prop
@@ -27,7 +27,7 @@ export function OpponentBoard({ playerId, board, activePieceMapRef, playerName, 
     const loop = () => {
       const ctx = canvasRef.current?.getContext('2d');
       if (ctx && boardRef.current) {
-        const activePiece = activePieceMapRef.current?.get(playerId) ?? null;
+        const activePiece = activePieceMapRef.current?.get(slotIndex) ?? null;
         renderBoard(ctx, boardRef.current.slice(BUFFER_ROWS), activePiece, false, 1, OPPONENT_CELL_SIZE);
       }
       rafId = requestAnimationFrame(loop);

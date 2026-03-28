@@ -13,14 +13,14 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const ws = useWS();
 
   const gameSession = useRef<NetworkGame | null>(null);
-  const opponentActivePieces = useRef<Map<string, ActivePiece | null>>(new Map());
+  const opponentActivePieces = useRef<Map<number, ActivePiece | null>>(new Map());
 
   const unsubGarbage = useRef<(() => void) | null>(null);
   const unsubGameOver = useRef<(() => void) | null>(null);
 
   const pendingGarbageRef = useRef<PendingGarbage[]>([]);
-  const [opponentBoards, setOpponentBoards] = useState<Record<string, Board>>({});
-  const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
+  const [opponentBoards, setOpponentBoards] = useState<Record<number, Board>>({});
+  const [deadPlayers, setDeadPlayers] = useState<Set<number>>(new Set());
   const [roundWinnerId, setRoundWinnerId] = useState<string | null | undefined>(undefined);
   const [sessionWinnerId, setSessionWinnerId] = useState<string | null>(null);
 
@@ -48,13 +48,13 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
     };
 
-    const handleOpponentBoardUpdate = (msg: { type: 'opponent_board_update'; playerId: string; board: Board }) => {
-      opponentActivePieces.current.set(msg.playerId, null);
-      setOpponentBoards(prev => ({ ...prev, [msg.playerId]: msg.board }));
+    const handleOpponentBoardUpdate = (msg: { type: 'opponent_board_update'; slotIndex: number; board: Board }) => {
+      opponentActivePieces.current.set(msg.slotIndex, null);
+      setOpponentBoards(prev => ({ ...prev, [msg.slotIndex]: msg.board }));
     };
 
-    const handleOpponentPieceUpdate = (msg: { playerId: string; activePiece: ActivePiece | null }) => {
-      opponentActivePieces.current.set(msg.playerId, msg.activePiece);
+    const handleOpponentPieceUpdate = (msg: { slotIndex: number; activePiece: ActivePiece | null }) => {
+      opponentActivePieces.current.set(msg.slotIndex, msg.activePiece);
     };
 
     const handleGameOver = (msg: { type: 'session_state_update'; roomState: SessionState }) => {
@@ -67,8 +67,8 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       }
     };
 
-    const handleDeadPlayer = ({ playerId }: { playerId: string }) => {
-      setDeadPlayers(prev => new Set(prev).add(playerId));
+    const handleDeadPlayer = ({ slotIndex }: { slotIndex: number }) => {
+      setDeadPlayers(prev => new Set(prev).add(slotIndex));
     };
 
     ws.on('game_start', handleGameStart);

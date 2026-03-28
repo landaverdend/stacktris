@@ -65,7 +65,7 @@ export class Round {
         this.handlePlayerInput(playerId, msg.buffer, msg.frame);
         const ps = this.playerGames[playerId];
         ps?.handleInput(msg.buffer, msg.frame);
-        if (ps) this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: ps.toGameFrame().activePiece }, playerId);
+        if (ps) this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: ps.toGameFrame().activePiece }, playerId);
         break;
 
       case 'game_state_heartbeat': {
@@ -105,7 +105,7 @@ export class Round {
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
       pg.subscribe('pieceLocked', ({ board }) => {
         this.broadcastBoardUpdate(playerId, board);
-        this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: null }, playerId);
+        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: null }, playerId);
       });
       pg.subscribe('gameOver', () => {
         this.broadcastPlayerDeath(playerId);
@@ -231,23 +231,24 @@ export class Round {
       const delta = serverFrame - pg.frameCount;
       if (delta > MAX_LAG_FRAMES) {
         pg.tickTo(serverFrame) // advance gravity with no inputs
-        this.broadcastToAll({ type: 'opponent_piece_update', playerId, activePiece: pg.toGameFrame().activePiece }, playerId);
+        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: pg.toGameFrame().activePiece }, playerId);
       }
     }
   }
 
   private broadcastBoardUpdate(senderId: string, board: Board): void {
+    const slotIndex = this.players[senderId].slotIndex;
     for (const id of Object.keys(this.players)) {
       if (id === senderId) continue;
-      this.players[id].sendFn({ type: 'opponent_board_update', playerId: senderId, board });
+      this.players[id].sendFn({ type: 'opponent_board_update', slotIndex, board });
     }
   }
 
   private broadcastPlayerDeath(playerId: string) {
+    const slotIndex = this.players[playerId].slotIndex;
     for (const id of Object.keys(this.players)) {
       if (id === playerId) continue;
-
-      this.players[id].sendFn({ type: 'game_player_died', playerId: playerId })
+      this.players[id].sendFn({ type: 'game_player_died', slotIndex });
     }
   }
 

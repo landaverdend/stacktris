@@ -66,8 +66,8 @@ export function encodeServerMsg(msg: Message): Uint8Array {
     case 'welcome':               return encodeOpcodeAndId(MsgCode.WELCOME, msg.player_id);
     case 'session_created':       return encodeOpcodeAndId(MsgCode.SESSION_CREATED, msg.room_id);
     case 'session_joined':        return encodeOpcodeAndId(MsgCode.SESSION_JOINED, msg.room_id);
-    case 'bet_payment_confirmed': return encodeOpcodeAndId(MsgCode.BET_PAYMENT_CONFIRMED, msg.playerId);
-    case 'game_player_died':      return encodeOpcodeAndId(MsgCode.GAME_PLAYER_DIED, msg.playerId);
+    case 'bet_payment_confirmed': return new Uint8Array([MsgCode.BET_PAYMENT_CONFIRMED, msg.slotIndex]);
+    case 'game_player_died':      return new Uint8Array([MsgCode.GAME_PLAYER_DIED, msg.slotIndex]);
     case 'error':                 return encodeOpcodeAndId(MsgCode.ERROR, msg.message);
     case 'payout_pending':        return encodePayoutPending(msg);
   }
@@ -91,8 +91,8 @@ export function decodeMsg(data: Uint8Array) {
     case MsgCode.WELCOME:               return { type: 'welcome', player_id: UTF8_DECODER.decode(stream.readToEnd()) };
     case MsgCode.SESSION_CREATED:       return { type: 'session_created', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
     case MsgCode.SESSION_JOINED:        return { type: 'session_joined', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.BET_PAYMENT_CONFIRMED: return { type: 'bet_payment_confirmed', playerId: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.GAME_PLAYER_DIED:      return { type: 'game_player_died', playerId: UTF8_DECODER.decode(stream.readToEnd()) };
+    case MsgCode.BET_PAYMENT_CONFIRMED: return { type: 'bet_payment_confirmed', slotIndex: stream.read(1)[0] };
+    case MsgCode.GAME_PLAYER_DIED:      return { type: 'game_player_died', slotIndex: stream.read(1)[0] };
     case MsgCode.ERROR:                 return { type: 'error', message: UTF8_DECODER.decode(stream.readToEnd()) };
     case MsgCode.PAYOUT_PENDING:        return decodePayoutPending(stream);
   }

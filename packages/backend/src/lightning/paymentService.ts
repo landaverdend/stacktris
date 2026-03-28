@@ -76,7 +76,7 @@ export class PaymentService {
     sendFn?.({ type: 'payout_pending', amountSats, lightningAddress: address });
   }
 
-  async generateBetInvoice(playerId: string, lightningAddress: string, sendFn: SendFn, onPaid: () => void) {
+  async generateBetInvoice(playerId: string, slotIndex: number, lightningAddress: string, sendFn: SendFn, onPaid: () => void) {
     const { invoice, paymentHash, preimage, expiresAt } = await this.client.generateHoldInvoice(this.buyIn, `stacktris bet hold invoice`);
 
     const unsub = await this.client.subscribeHoldInvoiceAccepted(paymentHash, (settleDeadline) => {
@@ -86,7 +86,7 @@ export class PaymentService {
       record.settleDeadline = settleDeadline;
       record.unsub();
       record.unsub = () => { }; // prevent double-call if destroy() runs after hold fires
-      sendFn({ type: 'bet_payment_confirmed', playerId });
+      sendFn({ type: 'bet_payment_confirmed', slotIndex });
       onPaid();
     });
 

@@ -60,6 +60,7 @@ export type ClientMsg =
 
 export interface PlayerInfo {
   playerId: string;
+  slotIndex: number;
   playerName: string;
   ready: boolean;
   paid: boolean;
@@ -90,15 +91,15 @@ export type ServerMsg =
   | { type: 'session_joined'; room_id: string }
   | { type: 'session_state_update'; roomState: SessionState }
   | { type: 'bet_invoice_issued'; bolt11: string; expiresAt: number }
-  | { type: 'bet_payment_confirmed'; playerId: string }
+  | { type: 'bet_payment_confirmed'; slotIndex: number }
 
   // Game Ops
   | { type: 'game_start'; seed: number; roundStartTime: number }
   | { type: 'game_state_update'; frame: GameFrame }
   | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
-  | { type: 'opponent_board_update'; playerId: string; board: Board }
-  | { type: 'game_player_died'; playerId: string }
-  | { type: 'opponent_piece_update'; playerId: string; activePiece: ActivePiece | null }
+  | { type: 'opponent_board_update'; slotIndex: number; board: Board }
+  | { type: 'game_player_died'; slotIndex: number }
+  | { type: 'opponent_piece_update'; slotIndex: number; activePiece: ActivePiece | null }
   | { type: 'gravity_update'; level: number }
   | { type: 'error'; message: string }
   | { type: 'payout_pending'; amountSats: number; lightningAddress: string };

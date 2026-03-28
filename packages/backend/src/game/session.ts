@@ -46,6 +46,7 @@ export class Session {
 
   private players: Map<string, PlayerSlot> = new Map();
   private wins: Map<string, number> = new Map();
+  private nextSlot = 0;
 
   private matchWinnerId: string | null = null;
   private roundWinnerId: string | null = null;
@@ -152,11 +153,11 @@ export class Session {
     if (this.status !== 'waiting') throw new Error(`Room ${this.id} is not accepting players`);
 
     console.log(`[Room] added player ${playerId} (${playerName}) to room ${this.id}`);
-    this.players.set(playerId, { playerId, playerName, lightningAddress, sendFn, ready: false, paid: this.buyIn === 0 });
+    this.players.set(playerId, { playerId, slotIndex: this.nextSlot++, playerName, lightningAddress, sendFn, ready: false, paid: this.buyIn === 0 });
     this.wins.set(playerId, 0);
 
     if (this.buyIn > 0) {
-      this.paymentService.generateBetInvoice(playerId, lightningAddress, sendFn, () => {
+      this.paymentService.generateBetInvoice(playerId, this.players.get(playerId)!.slotIndex, lightningAddress, sendFn, () => {
         this.players.get(playerId)!.paid = true;
         this.potSats += this.buyIn;
         this.broadcastRoomStateUpdate();
@@ -238,7 +239,7 @@ export class Session {
 
   private broadcastRoomStateUpdate() {
     const playerInfoArray: PlayerInfo[] = Array.from(this.players.values())
-      .map(p => ({ playerId: p.playerId, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
+      .map(p => ({ playerId: p.playerId, slotIndex: p.slotIndex, playerName: p.playerName, ready: p.ready, paid: p.paid, wins: this.wins.get(p.playerId) ?? 0 }));
 
     this.players.forEach(player => {
       player.sendFn({ type: 'session_state_update', roomState: { players: playerInfoArray, roomId: this.id, status: this.status, matchWinnerId: this.matchWinnerId, buyIn: this.buyIn, roundWinnerId: this.roundWinnerId, potSats: this.potSats } });

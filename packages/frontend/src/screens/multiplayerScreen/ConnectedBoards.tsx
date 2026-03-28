@@ -13,9 +13,9 @@ const EMPTY_BOARD: Board = Array.from({ length: 22 }, () => Array(10).fill(0));
 
 interface Props {
   players: PlayerInfo[];
-  opponentBoards: Record<string, Board>;
-  activePieceMapRef: React.RefObject<Map<string, ActivePiece | null>>;
-  deadPlayers: Set<string>;
+  opponentBoards: Record<number, Board>;
+  activePieceMapRef: React.RefObject<Map<number, ActivePiece | null>>;
+  deadPlayers: Set<number>;
   roundWinnerId?: string | null;
 }
 
@@ -93,12 +93,12 @@ export function ConnectedBoards({ players, opponentBoards, activePieceMapRef, de
       >
         {players.map(p => (
           <OpponentBoard
-            key={p.playerId}
-            playerId={p.playerId}
-            board={opponentBoards[p.playerId] ?? EMPTY_BOARD}
+            key={p.slotIndex}
+            slotIndex={p.slotIndex}
+            board={opponentBoards[p.slotIndex] ?? EMPTY_BOARD}
             activePieceMapRef={activePieceMapRef}
             playerName={p.playerName}
-            isDead={deadPlayers.has(p.playerId)}
+            isDead={deadPlayers.has(p.slotIndex)}
             isRoundWinner={p.playerId === roundWinnerId}
           />
         ))}

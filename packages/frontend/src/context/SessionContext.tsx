@@ -46,7 +46,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       setRoomState(prev => ({ ...prev, bolt11: msg.bolt11 }));
     };
 
-    const onBetPaymentConfirmed = (msg: { type: 'bet_payment_confirmed'; playerId: string }) => {
+    const onBetPaymentConfirmed = (msg: { type: 'bet_payment_confirmed'; slotIndex: number }) => {
       console.log('[RoomContext] bet payment confirmed:', msg);
       setRoomState(prev => ({ ...prev, invoicePaid: true }));
     };

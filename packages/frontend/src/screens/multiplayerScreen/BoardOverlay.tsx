@@ -39,7 +39,7 @@ export function BoardOverlay({
       <>
 
         {!isClientAlive && <ScrollFlareOverlay />}
-        {true && <ScrollFlareOverlay word="CLEARED" color="#00ff88" fontSize={45} />}
+        {isRoundWinner && <ScrollFlareOverlay word="CLEARED" color="#00ff88" fontSize={45} />}
         <IntermissionOverlay roundWinnerId={roundWinnerId} players={players} />
       </>
     );
