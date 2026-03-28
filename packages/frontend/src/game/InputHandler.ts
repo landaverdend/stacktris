@@ -1,7 +1,7 @@
 import { InputAction } from '@stacktris/shared';
 
-const DAS_MS = 133;
-const ARR_MS = 16; // ~1 frame at 60fps
+const DEFAULT_DAS_MS = 150; // Tetris guideline standard (10 frames @ 60fps)
+const DEFAULT_ARR_MS = 16;  // 2 frames @ 60fps — smooth but not jarring
 
 const KEY_MAP: Record<string, InputAction> = {
   ArrowLeft: 'move_left',
@@ -29,9 +29,15 @@ export class InputHandler {
   private onAction: (action: InputAction) => void;
   private held = new Map<string, HeldKey>();
   private bound = false;
+  private dasMs: number;
+  private arrMs: number;
 
   constructor(onAction: (action: InputAction) => void) {
     this.onAction = onAction;
+    const das = Number(localStorage.getItem('das_ms'));
+    const arr = Number(localStorage.getItem('arr_ms'));
+    this.dasMs = Number.isFinite(das) && das > 0 ? das : DEFAULT_DAS_MS;
+    this.arrMs = Number.isFinite(arr) && arr >= 0 ? arr : DEFAULT_ARR_MS;
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
   }
@@ -56,10 +62,10 @@ export class InputHandler {
       if (!REPEATABLE.has(held.action)) continue;
 
       const elapsed = now - held.heldSince;
-      if (elapsed < DAS_MS) continue;
+      if (elapsed < this.dasMs) continue;
 
       // DAS has triggered — start ARR
-      if (held.lastRepeat === null || now - held.lastRepeat >= ARR_MS) {
+      if (held.lastRepeat === null || this.arrMs === 0 || now - held.lastRepeat >= this.arrMs) {
         this.onAction(held.action);
         held.lastRepeat = now;
       }

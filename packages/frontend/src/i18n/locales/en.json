@@ -107,5 +107,11 @@
   },
   "alerts": {
     "enter_room_id": "Please enter a room ID"
+  },
+  "options": {
+    "das": "DAS",
+    "arr": "ARR",
+    "das_tip": "Delayed Auto Shift — how long you must hold a direction key before it starts repeating. Lower = faster response.",
+    "arr_tip": "Auto Repeat Rate — how fast the piece moves while a direction key is held after DAS triggers. 0 = instant slide."
   }
 }

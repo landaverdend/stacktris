@@ -107,5 +107,11 @@
   },
   "multiplayer_nav": {
     "leave_room": "SALIR DE SALA"
+  },
+  "options": {
+    "das": "DAS",
+    "arr": "ARR",
+    "das_tip": "Delayed Auto Shift — tiempo que debes mantener presionada una tecla de dirección antes de que empiece a repetirse. Menor = más rápido.",
+    "arr_tip": "Auto Repeat Rate — velocidad de movimiento mientras mantienes presionada la tecla tras el DAS. 0 = deslizamiento instantáneo."
   }
 }

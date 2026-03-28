@@ -215,6 +215,8 @@ function OptionsModal({ open, onClose, onSave }: {
   const [name, setName] = useState(() => localStorage.getItem('playerName') ?? '');
   const [address, setAddress] = useState(() => localStorage.getItem('lightningAddress') ?? '');
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'checking' | 'ok' | 'invalid' | 'cors'>('idle');
+  const [das, setDas] = useState(() => Number(localStorage.getItem('das_ms') ?? '') || 167);
+  const [arr, setArr] = useState(() => { const v = Number(localStorage.getItem('arr_ms') ?? ''); return Number.isFinite(v) && v >= 0 && localStorage.getItem('arr_ms') !== null ? v : 33; });
   const { t, i18n } = useTranslation();
 
   // Reset fields to current stored values each time modal opens
@@ -223,6 +225,9 @@ function OptionsModal({ open, onClose, onSave }: {
       setName(localStorage.getItem('playerName') ?? '');
       setAddress(localStorage.getItem('lightningAddress') ?? '');
       setVerifyStatus('idle');
+      setDas(Number(localStorage.getItem('das_ms') ?? '') || 167);
+      const storedArr = localStorage.getItem('arr_ms');
+      setArr(storedArr !== null && Number.isFinite(Number(storedArr)) ? Number(storedArr) : 33);
     }
   }, [open]);
 
@@ -248,6 +253,8 @@ function OptionsModal({ open, onClose, onSave }: {
 
   function handleSave() {
     if (!name.trim()) return;
+    localStorage.setItem('das_ms', String(das));
+    localStorage.setItem('arr_ms', String(arr));
     onSave(name.trim(), address.trim());
     onClose();
   }
@@ -311,6 +318,18 @@ function OptionsModal({ open, onClose, onSave }: {
             {t('modal.cors_warning', { domain: address.split('@')[1] })}
           </p>
         )}
+        <SliderRow
+          label={t('options.das')} jp="遅延" unit="ms"
+          value={das} min={0} max={400} step={5}
+          description={t('options.das_tip')}
+          onChange={setDas}
+        />
+        <SliderRow
+          label={t('options.arr')} jp="速度" unit="ms"
+          value={arr} min={0} max={100} step={1}
+          description={t('options.arr_tip')}
+          onChange={setArr}
+        />
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.language')}</span>
           <div className="flex gap-3">
@@ -334,6 +353,56 @@ function OptionsModal({ open, onClose, onSave }: {
 }
 
 // ── Shared primitives ─────────────────────────────────────────────────────────
+
+function SliderRow({ label, jp, unit, value, min, max, step, description, onChange }: {
+  label: string; jp: string; unit: string;
+  value: number; min: number; max: number; step: number;
+  description: string;
+  onChange: (v: number) => void;
+}) {
+  const [tip, setTip] = useState(false);
+  const pct = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className="flex flex-col py-2.5 border-b border-[rgba(0,255,180,0.08)] gap-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{label}</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">{jp}</span>
+          </div>
+          <div className="relative">
+            <button
+              onMouseEnter={() => setTip(true)}
+              onMouseLeave={() => setTip(false)}
+              className="w-[18px] h-[18px] rounded-full border border-[rgba(0,255,180,0.25)] text-[rgba(0,255,180,0.35)] font-mono text-[10px] flex items-center justify-center hover:border-teal hover:text-teal transition-colors cursor-default select-none"
+            >
+              ?
+            </button>
+            {tip && (
+              <div className="absolute left-6 bottom-0 z-50 w-56 bg-black border border-[rgba(0,255,180,0.2)] px-3 py-2 pointer-events-none">
+                <div className="absolute -left-1.5 top-2 w-2.5 h-px bg-[rgba(0,255,180,0.2)]" />
+                <p className="font-mono text-[10px] text-[rgba(0,255,180,0.55)] leading-relaxed">{description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+        <span className="font-display font-bold text-xl tracking-[0.02em] text-magi tabular-nums">
+          {value}<span className="text-[rgba(0,255,180,0.35)] text-sm ml-0.5">{unit}</span>
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full nerv-range"
+        style={{
+          background: `linear-gradient(to right, rgba(0,255,180,0.65) ${pct}%, rgba(0,255,180,0.1) ${pct}%)`,
+        }}
+      />
+    </div>
+  );
+}
 
 function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
   const { t } = useTranslation();
