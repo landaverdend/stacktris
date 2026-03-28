@@ -1,4 +1,4 @@
-import { ClientMsg, COUNTDOWN_SECONDS, InputBuffer, PlayerInfo, RoomInfo, SessionStatus, WINS_TO_MATCH } from "@stacktris/shared";
+import { ClientMsg, COUNTDOWN_SECONDS, PlayerInfo, RoomInfo, SessionStatus, WINS_TO_MATCH } from "@stacktris/shared";
 import { Round } from "./round.js";
 import { PlayerSlot, SendFn } from "../types.js";
 import { PaymentService } from "../lightning/paymentService.js";

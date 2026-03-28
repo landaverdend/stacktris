@@ -53,6 +53,64 @@ describe('payout_pending decode', () => {
   });
 });
 
+describe('client message round-trips', () => {
+  it('create_room', () => {
+    const msg = { type: 'create_room' as const, buy_in: 1000 };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('create_room');
+    expect(decoded.buy_in).toBe(1000);
+  });
+
+  it('create_room with zero buy_in', () => {
+    const msg = { type: 'create_room' as const, buy_in: 0 };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.buy_in).toBe(0);
+  });
+
+  it('join_room', () => {
+    const msg = { type: 'join_room' as const, room_id: 'room-abc' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('join_room');
+    expect(decoded.room_id).toBe('room-abc');
+  });
+
+  it('leave_room', () => {
+    const msg = { type: 'leave_room' as const, room_id: 'room-abc' };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('leave_room');
+    expect(decoded.room_id).toBe('room-abc');
+  });
+
+  it('ready_update true', () => {
+    const msg = { type: 'ready_update' as const, ready: true };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.type).toBe('ready_update');
+    expect(decoded.ready).toBe(true);
+  });
+
+  it('ready_update false', () => {
+    const msg = { type: 'ready_update' as const, ready: false };
+    const decoded = decodeMsg(encodeServerMsg(msg)) as typeof msg;
+    expect(decoded.ready).toBe(false);
+  });
+
+  it('player_died has no payload', () => {
+    const msg = { type: 'player_died' as const };
+    const buf = encodeServerMsg(msg);
+    expect(buf.length).toBe(1);
+    expect(buf[0]).toBe(MsgCode.PLAYER_DIED);
+    expect(decodeMsg(buf)).toEqual({ type: 'player_died' });
+  });
+
+  it('first byte is always the correct opcode', () => {
+    expect(encodeServerMsg({ type: 'create_room', buy_in: 0 })[0]).toBe(MsgCode.CREATE_ROOM);
+    expect(encodeServerMsg({ type: 'join_room', room_id: 'x' })[0]).toBe(MsgCode.JOIN_ROOM);
+    expect(encodeServerMsg({ type: 'leave_room', room_id: 'x' })[0]).toBe(MsgCode.LEAVE_ROOM);
+    expect(encodeServerMsg({ type: 'ready_update', ready: true })[0]).toBe(MsgCode.READY_UPDATE);
+    expect(encodeServerMsg({ type: 'player_died' })[0]).toBe(MsgCode.PLAYER_DIED);
+  });
+});
+
 describe('opcode + id round-trips', () => {
   it('welcome', () => {
     const msg = { type: 'welcome' as const, player_id: 'abc-123' };
