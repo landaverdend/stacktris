@@ -1,0 +1,108 @@
+{
+  "menu": {
+    "solo": "MODO SOLO",
+    "multiplayer": "MULTIJUGADOR",
+    "create": "CREAR PARTIDA",
+    "join": "UNIRSE A SALA",
+    "controls": "CONTROLES",
+    "options": "OPCIONES"
+  },
+  "modal": {
+    "open_sessions": "SESIONES ABIERTAS",
+    "create_one": "CREAR UNA →",
+    "buy_in": "APUESTA",
+    "initialize_session": "INICIAR SESIÓN",
+    "session_id": "ID DE SESIÓN",
+    "connect_to_session": "CONECTAR A SESIÓN",
+    "name": "NOMBRE",
+    "address": "DIRECCIÓN",
+    "verify": "VERIFICAR",
+    "valid": "✓ VÁLIDA",
+    "invalid": "✗ INVÁLIDA",
+    "unconfirmed": "? NO CONFIRMADA",
+    "save_changes": "GUARDAR CAMBIOS",
+    "join": "UNIRSE →",
+    "language": "IDIOMA",
+    "cors_warning": "// no se pudo acceder a {{domain}} — la dirección podría ser válida"
+  },
+  "controls": {
+    "move": "MOVER",
+    "soft_drop": "CAÍDA SUAVE",
+    "rotate_cw": "ROTAR DERECHA",
+    "rotate_ccw": "ROTAR IZQUIERDA",
+    "hard_drop": "CAÍDA RÁPIDA",
+    "hold": "GUARDAR"
+  },
+  "common": {
+    "close": "Cerrar",
+    "copied": "✓ COPIADO",
+    "copy": "COPIAR",
+    "sats": "SATS"
+  },
+  "name_entry": {
+    "warning": "⚠ ADVERTENCIA: ESTE JUEGO CONTIENE LUCES INTERMITENTES QUE PUEDEN AFECTAR A PERSONAS CON EPILEPSIA FOTOSENSIBLE",
+    "enter_name": "INGRESA TU NOMBRE",
+    "placeholder_name": "TU NOMBRE",
+    "lightning_address": "DIRECCIÓN LIGHTNING (REQUERIDA)",
+    "confirm": "CONFIRMAR"
+  },
+  "solo": {
+    "hold": "GUARDAR",
+    "next": "SIGUIENTE",
+    "title": "SOLO",
+    "score": "PUNTAJE",
+    "lines": "LÍNEAS",
+    "level": "NIVEL",
+    "abort": "ABANDONAR"
+  },
+  "navbar": {
+    "copy_room_title": "Clic para copiar ID de sala",
+    "online": "● EN LÍNEA",
+    "syncing": "◌ SYNC...",
+    "offline": "○ SIN CONEXIÓN"
+  },
+  "room_code": {
+    "room": "SALA",
+    "code": "CÓDIGO",
+    "copy": "COPIAR"
+  },
+  "multiplayer": {
+    "hold": "GUARDAR",
+    "next": "SIGUIENTE",
+    "round_start": "準備完了 — INICIO DE RONDA"
+  },
+  "staging": {
+    "current_pot": "// Bote Actual",
+    "paid": "PAGADO",
+    "no_holds": "SIN APUESTAS AÚN",
+    "notice": "AVISO: Desconectarse durante una partida activa resultará en la pérdida inmediata de los fondos apostados.",
+    "copy_invoice": "COPIAR FACTURA",
+    "pay_wallet": "PAGAR CON BILLETERA",
+    "payment_confirmed": "■ PAGO CONFIRMADO",
+    "free_entry": "// ENTRADA LIBRE — SIN PAGO REQUERIDO",
+    "awaiting_payment": "ESPERANDO PAGO",
+    "cancel_ready": "■ CANCELAR LISTO",
+    "initiate_ready": "◌ INICIAR LISTO",
+    "tap_to_close": "TOCA PARA CERRAR"
+  },
+  "winner": {
+    "session_victor": "VICTORIOSO:",
+    "winnings": "// GANANCIAS",
+    "free_match": "// PARTIDA GRATIS",
+    "payment_pending_title": "// Pago pendiente",
+    "payment_pending_body": "No se pudo enviar {{amount}} sats a {{address}} — contacta al anfitrión del servidor para reclamar tus ganancias."
+  },
+  "intermission": {
+    "round_win": "VICTORIA",
+    "round_over": "RONDA TERMINADA"
+  },
+  "players": {
+    "title": "JUGADORES",
+    "player_no": "JUGADOR No.",
+    "ready": "■ LISTO",
+    "waiting": "◌ ESPERANDO"
+  },
+  "alerts": {
+    "enter_room_id": "Por favor ingresa un ID de sala"
+  }
+}

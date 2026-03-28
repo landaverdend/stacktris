@@ -10,22 +10,24 @@ import { GlitchOverlay } from '../components/GlitchOverlay';
 import { Divider } from '../components/Divider';
 import { LightningGraph } from '../components/LightningGraph';
 import { NervModal } from '../components/NervModal';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE = `${window.location.protocol}//${window.location.host}`;
 
 const MENU = [
-  { id: 'solo', label: 'SOLO MODE', jp: 'ソロプレイ' },
-  { id: 'battle', label: 'MULTIPLAYER', jp: 'バトル' },
-  { id: 'create', label: 'CREATE MATCH', jp: '作成' },
-  { id: 'join', label: 'JOIN ROOM', jp: '参加' },
-  { id: 'controls', label: 'CONTROLS', jp: '操作方法' },
-  { id: 'options', label: 'OPTIONS', jp: '設定' },
+  { id: 'solo', key: 'menu.solo', jp: 'ソロプレイ' },
+  { id: 'battle', key: 'menu.multiplayer', jp: 'バトル' },
+  { id: 'create', key: 'menu.create', jp: '作成' },
+  { id: 'join', key: 'menu.join', jp: '参加' },
+  { id: 'controls', key: 'menu.controls', jp: '操作方法' },
+  { id: 'options', key: 'menu.options', jp: '設定' },
 ] as const;
 
 export function TitleScreen() {
   const navigate = useNavigate();
   const { createRoom, joinRoom } = useRoom();
   const { setPlayerInfo } = useConnection();
+  const { t } = useTranslation();
 
   const [modal, setModal] = useState<'battle' | 'create' | 'join' | 'controls' | 'options' | null>(null);
   const close = () => setModal(null);
@@ -37,7 +39,7 @@ export function TitleScreen() {
 
   function handleJoinRoom(roomId: string) {
     if (roomId) { joinRoom(roomId); navigate(`/room/${roomId}`); }
-    else alert('Please enter a room ID');
+    else alert(t('alerts.enter_room_id'));
   }
 
   return (
@@ -64,7 +66,7 @@ export function TitleScreen() {
             <button
               onClick={() => handleItem(item.id)}
               className={cn('w-[12em] flex flex-col items-center justify-between nerv-border nerv-border-teal transition-colors cursor-pointer hover:opacity-70')}>
-              <span className="font-display font-bold text-3xl tracking-[0.03em] text-phosphor">{item.label}</span>
+              <span className="font-display font-bold text-3xl tracking-[0.03em] text-phosphor">{t(item.key)}</span>
               <span className="font-jp text-[15px] opacity-30 text-magi tracking-[0.03em] font-bold">{item.jp}</span>
             </button>
           </div>
@@ -91,6 +93,7 @@ function MultiplayerModal({ open, onClose, onCreateInstead, onJoin }: {
 }) {
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -108,17 +111,17 @@ function MultiplayerModal({ open, onClose, onCreateInstead, onJoin }: {
   }, [open]);
 
   return (
-    <NervModal open={open} title="MULTIPLAYER" titleJp="バトル" onClose={onClose}>
+    <NervModal open={open} title={t('menu.multiplayer')} titleJp="バトル" onClose={onClose}>
       <div className="flex flex-col">
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
-          <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">OPEN SESSIONS</span>
+          <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.open_sessions')}</span>
           <span className={`font-mono text-[11px] text-[rgba(0,255,180,0.5)] transition-opacity ${loading ? 'opacity-100' : 'opacity-0'}`}>◌ SYNC</span>
         </div>
         {rooms.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-3">
             <p className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">セッションなし</p>
             <button className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor hover:opacity-60 transition-opacity cursor-pointer" onClick={onCreateInstead}>
-              CREATE ONE →
+              {t('modal.create_one')}
             </button>
           </div>
         ) : (
@@ -134,13 +137,14 @@ function CreateMatchModal({ open, onClose, onCreate }: {
   onCreate: (sats: number) => void;
 }) {
   const [buyIn, setBuyIn] = useState(21);
+  const { t } = useTranslation();
 
   return (
-    <NervModal open={open} title="CREATE MATCH" titleJp="作成" onClose={onClose}>
+    <NervModal open={open} title={t('menu.create')} titleJp="作成" onClose={onClose}>
       <div className="flex flex-col">
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BUY IN</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.buy_in')}</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
           </div>
           <div className="flex items-center gap-2">
@@ -154,7 +158,7 @@ function CreateMatchModal({ open, onClose, onCreate }: {
           </div>
         </div>
         <div className="pt-5">
-          <NervButton onClick={() => onCreate(buyIn)}>INITIALIZE SESSION</NervButton>
+          <NervButton onClick={() => onCreate(buyIn)}>{t('modal.initialize_session')}</NervButton>
         </div>
       </div>
     </NervModal>
@@ -167,13 +171,14 @@ function JoinRoomModal({ open, onClose, onJoin }: {
 }) {
   const [roomId, setRoomId] = useState('');
   const [buyIn, setBuyIn] = useState(21);
+  const { t } = useTranslation();
 
   return (
-    <NervModal open={open} title="JOIN ROOM" titleJp="参加" onClose={onClose}>
+    <NervModal open={open} title={t('menu.join')} titleJp="参加" onClose={onClose}>
       <div className="flex flex-col gap-0">
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">SESSION ID</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.session_id')}</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">セッションID</span>
           </div>
           <input
@@ -185,7 +190,7 @@ function JoinRoomModal({ open, onClose, onJoin }: {
         </div>
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BUY IN</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.buy_in')}</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
           </div>
           <div className="flex items-center gap-2">
@@ -194,7 +199,7 @@ function JoinRoomModal({ open, onClose, onJoin }: {
           </div>
         </div>
         <div className="pt-5">
-          <NervButton onClick={() => onJoin(roomId)} disabled={!roomId}>CONNECT TO SESSION</NervButton>
+          <NervButton onClick={() => onJoin(roomId)} disabled={!roomId}>{t('modal.connect_to_session')}</NervButton>
         </div>
       </div>
     </NervModal>
@@ -202,22 +207,24 @@ function JoinRoomModal({ open, onClose, onJoin }: {
 }
 
 function ControlsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+
   const controls = [
-    { keys: ['←', '→'], action: 'MOVE', jp: '移動' },
-    { keys: ['↓'], action: 'SOFT DROP', jp: 'ソフトドロップ' },
-    { keys: ['↑', 'X'], action: 'ROTATE CW', jp: '時計回り' },
-    { keys: ['Z'], action: 'ROTATE CCW', jp: '反時計回り' },
-    { keys: ['SPACE'], action: 'HARD DROP', jp: 'ハードドロップ' },
-    { keys: ['C'], action: 'HOLD', jp: 'ホールド' },
+    { keys: ['←', '→'], key: 'controls.move', jp: '移動' },
+    { keys: ['↓'], key: 'controls.soft_drop', jp: 'ソフトドロップ' },
+    { keys: ['↑', 'X'], key: 'controls.rotate_cw', jp: '時計回り' },
+    { keys: ['Z'], key: 'controls.rotate_ccw', jp: '反時計回り' },
+    { keys: ['SPACE'], key: 'controls.hard_drop', jp: 'ハードドロップ' },
+    { keys: ['C'], key: 'controls.hold', jp: 'ホールド' },
   ];
 
   return (
-    <NervModal open={open} title="CONTROLS" titleJp="操作方法" onClose={onClose}>
+    <NervModal open={open} title={t('menu.controls')} titleJp="操作方法" onClose={onClose}>
       <div className="flex flex-col gap-1">
-        {controls.map(({ keys, action, jp }) => (
-          <div key={action} className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)] last:border-0">
+        {controls.map(({ keys, key, jp }) => (
+          <div key={key} className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)] last:border-0">
             <div className="flex items-baseline gap-2">
-              <span className="font-display text-4xl tracking-[0.02em] text-phosphor font-bold">{action}</span>
+              <span className="font-display text-4xl tracking-[0.02em] text-phosphor font-bold">{t(key)}</span>
               <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">{jp}</span>
             </div>
             <div className="flex gap-1.5">
@@ -239,6 +246,7 @@ function OptionsModal({ open, onClose, onSave }: {
   const [name, setName] = useState(() => localStorage.getItem('playerName') ?? '');
   const [address, setAddress] = useState(() => localStorage.getItem('lightningAddress') ?? '');
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'checking' | 'ok' | 'invalid' | 'cors'>('idle');
+  const { t, i18n } = useTranslation();
 
   // Reset fields to current stored values each time modal opens
   useEffect(() => {
@@ -276,11 +284,11 @@ function OptionsModal({ open, onClose, onSave }: {
   }
 
   const verifyLabel: Record<typeof verifyStatus, string> = {
-    idle: 'VERIFY',
+    idle: t('modal.verify'),
     checking: '◌ ...',
-    ok: '✓ VALID',
-    invalid: '✗ INVALID',
-    cors: '? UNCONFIRMED',
+    ok: t('modal.valid'),
+    invalid: t('modal.invalid'),
+    cors: t('modal.unconfirmed'),
   };
   const verifyColor: Record<typeof verifyStatus, string> = {
     idle: 'text-[rgba(0,255,180,0.5)]',
@@ -290,12 +298,14 @@ function OptionsModal({ open, onClose, onSave }: {
     cors: 'text-bitcoin',
   };
 
+  const currentLang = i18n.language?.startsWith('es') ? 'es' : 'en';
+
   return (
-    <NervModal open={open} title="OPTIONS" titleJp="設定" onClose={onClose}>
+    <NervModal open={open} title={t('menu.options')} titleJp="設定" onClose={onClose}>
       <div className="flex flex-col gap-0">
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">NAME</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.name')}</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">名前</span>
           </div>
           <input
@@ -308,7 +318,7 @@ function OptionsModal({ open, onClose, onSave }: {
         </div>
         <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">ADDRESS</span>
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.address')}</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">アドレス</span>
           </div>
           <div className="flex items-center gap-2">
@@ -329,11 +339,25 @@ function OptionsModal({ open, onClose, onSave }: {
         </div>
         {verifyStatus === 'cors' && (
           <p className="font-mono text-[10px] text-bitcoin/60 pt-1.5">
-            // could not reach {address.split('@')[1]} — address may still be valid
+            {t('modal.cors_warning', { domain: address.split('@')[1] })}
           </p>
         )}
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.language')}</span>
+          <div className="flex gap-3">
+            {(['en', 'es'] as const).map(lang => (
+              <button
+                key={lang}
+                onClick={() => i18n.changeLanguage(lang)}
+                className={`font-mono text-sm tracking-widest transition-colors cursor-pointer ${currentLang === lang ? 'text-teal' : 'text-phosphor/30 hover:text-phosphor/60'}`}
+              >
+                {lang.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="pt-5">
-          <NervButton onClick={handleSave} disabled={!name.trim()}>SAVE CHANGES</NervButton>
+          <NervButton onClick={handleSave} disabled={!name.trim()}>{t('modal.save_changes')}</NervButton>
         </div>
       </div>
     </NervModal>
@@ -343,6 +367,7 @@ function OptionsModal({ open, onClose, onSave }: {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
+  const { t } = useTranslation();
   const ageSec = Math.floor((Date.now() - room.createdAt) / 1000);
   const ageLabel = ageSec < 60 ? `${ageSec}s` : `${Math.floor(ageSec / 60)}m`;
 
@@ -362,7 +387,7 @@ function RoomRow({ room, onJoin }: { room: RoomInfo; onJoin: () => void }) {
         <button
           onClick={onJoin}
           className="font-display font-bold text-xl tracking-[0.02em] text-phosphor/40 hover:text-teal transition-colors cursor-pointer border-l border-[rgba(0,255,180,0.1)] pl-4">
-          JOIN →
+          {t('modal.join')}
         </button>
       </div>
     </div>

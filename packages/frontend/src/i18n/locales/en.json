@@ -1,0 +1,108 @@
+{
+  "menu": {
+    "solo": "SOLO MODE",
+    "multiplayer": "MULTIPLAYER",
+    "create": "CREATE MATCH",
+    "join": "JOIN ROOM",
+    "controls": "CONTROLS",
+    "options": "OPTIONS"
+  },
+  "modal": {
+    "open_sessions": "OPEN SESSIONS",
+    "create_one": "CREATE ONE →",
+    "buy_in": "BUY IN",
+    "initialize_session": "INITIALIZE SESSION",
+    "session_id": "SESSION ID",
+    "connect_to_session": "CONNECT TO SESSION",
+    "name": "NAME",
+    "address": "ADDRESS",
+    "verify": "VERIFY",
+    "valid": "✓ VALID",
+    "invalid": "✗ INVALID",
+    "unconfirmed": "? UNCONFIRMED",
+    "save_changes": "SAVE CHANGES",
+    "join": "JOIN →",
+    "language": "LANGUAGE",
+    "cors_warning": "// could not reach {{domain}} — address may still be valid"
+  },
+  "controls": {
+    "move": "MOVE",
+    "soft_drop": "SOFT DROP",
+    "rotate_cw": "ROTATE CW",
+    "rotate_ccw": "ROTATE CCW",
+    "hard_drop": "HARD DROP",
+    "hold": "HOLD"
+  },
+  "common": {
+    "close": "Close",
+    "copied": "✓ COPIED",
+    "copy": "COPY",
+    "sats": "SATS"
+  },
+  "name_entry": {
+    "warning": "⚠ WARNING: THIS GAME CONTAINS FLASHING LIGHTS THAT MAY AFFECT PEOPLE WITH PHOTOSENSITIVE EPILEPSY",
+    "enter_name": "ENTER YOUR NAME",
+    "placeholder_name": "YOUR NAME",
+    "lightning_address": "LIGHTNING ADDRESS (REQUIRED)",
+    "confirm": "CONFIRM"
+  },
+  "solo": {
+    "hold": "HOLD",
+    "next": "NEXT",
+    "title": "SOLO",
+    "score": "SCORE",
+    "lines": "LINES",
+    "level": "LEVEL",
+    "abort": "ABORT"
+  },
+  "navbar": {
+    "copy_room_title": "Click to copy room ID",
+    "online": "● ONLINE",
+    "syncing": "◌ SYNC...",
+    "offline": "○ OFFLINE"
+  },
+  "room_code": {
+    "room": "ROOM",
+    "code": "CODE",
+    "copy": "COPY"
+  },
+  "multiplayer": {
+    "hold": "HOLD",
+    "next": "NEXT",
+    "round_start": "準備完了 — ROUND START"
+  },
+  "staging": {
+    "current_pot": "// Current Pot",
+    "paid": "PAID",
+    "no_holds": "NO HOLDS YET",
+    "notice": "NOTICE: Disconnecting during an active match will result in immediate forfeiture of staked funds.",
+    "copy_invoice": "COPY INVOICE",
+    "pay_wallet": "PAY WALLET",
+    "payment_confirmed": "■ PAYMENT CONFIRMED",
+    "free_entry": "// FREE ENTRY — NO PAYMENT REQUIRED",
+    "awaiting_payment": "AWAITING PAYMENT",
+    "cancel_ready": "■ CANCEL READY",
+    "initiate_ready": "◌ INITIATE READY",
+    "tap_to_close": "TAP TO CLOSE"
+  },
+  "winner": {
+    "session_victor": "SESSION VICTOR:",
+    "winnings": "// WINNINGS",
+    "free_match": "// FREE MATCH",
+    "payment_pending_title": "// Payment pending",
+    "payment_pending_body": "Could not send {{amount}} sats to {{address}} — contact the server host to claim your winnings."
+  },
+  "intermission": {
+    "round_win": "ROUND WIN",
+    "round_over": "ROUND OVER"
+  },
+  "players": {
+    "title": "PLAYERS",
+    "player_no": "PLAYER No.",
+    "ready": "■ READY",
+    "waiting": "◌ WAITING"
+  },
+  "alerts": {
+    "enter_room_id": "Please enter a room ID"
+  }
+}

@@ -1,6 +1,10 @@
+import { useTranslation } from 'react-i18next';
+
 const ORANGE_GLOW = '0 0 4px rgba(255,112,32,0.6)';
 
 export function RoomCodeBar({ roomId }: { roomId: string }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col gap-1">
       <div className="relative h-12">
@@ -13,15 +17,15 @@ export function RoomCodeBar({ roomId }: { roomId: string }) {
         />
         <div className="relative flex items-center h-full px-5 gap-4">
           <div className="flex flex-col items-start leading-none">
-            <span className="font-display font-bold text-[15px] tracking-[0.15em]" style={{ color: '#ff7020', textShadow: ORANGE_GLOW }}>ROOM</span>
-            <span className="font-display font-bold text-[15px] tracking-[0.15em]" style={{ color: '#ff7020', textShadow: ORANGE_GLOW }}>CODE</span>
+            <span className="font-display font-bold text-[15px] tracking-[0.15em]" style={{ color: '#ff7020', textShadow: ORANGE_GLOW }}>{t('room_code.room')}</span>
+            <span className="font-display font-bold text-[15px] tracking-[0.15em]" style={{ color: '#ff7020', textShadow: ORANGE_GLOW }}>{t('room_code.code')}</span>
           </div>
           <div className="h-7 w-px bg-white/10" />
           <span className="font-display font-bold text-2xl tracking-[0.2em] text-phosphor">{roomId}</span>
           <button
             onClick={() => navigator.clipboard.writeText(roomId)}
             className="ml-auto font-mono text-[10px] tracking-widest text-phosphor/40 hover:text-phosphor transition-colors cursor-pointer">
-            COPY
+            {t('room_code.copy')}
           </button>
         </div>
       </div>

@@ -3,6 +3,8 @@ import { useRoom } from '../../context/SessionContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { launchPaymentModal } from '@getalby/bitcoin-connect-react';
 import { cn } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
+
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const AMBER_GLOW = '0 0 8px rgba(255,112,32,0.7), 0 0 24px rgba(255,80,0,0.3)';
@@ -46,6 +48,7 @@ export function RoomStagingOverlay() {
   const [isReady, setIsReady] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrExpanded, setQrExpanded] = useState(false);
+  const { t } = useTranslation();
 
   const { bolt11, invoicePaid, buyIn, potSats } = roomState;
   const canReady = buyIn === 0 || invoicePaid;
@@ -111,7 +114,7 @@ export function RoomStagingOverlay() {
           {buyIn > 0 && (
             <div className="flex items-center justify-between border border-[rgba(255,100,0,0.25)] px-3 py-2 bg-[rgba(255,100,0,0.04)]">
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] tracking-[0.3em] text-amber/40 uppercase">// Current Pot</span>
+                <span className="font-mono text-[10px] tracking-[0.3em] text-amber/40 uppercase">{t('staging.current_pot')}</span>
                 <div className="flex items-baseline gap-1.5 mt-0.5">
                   <span
                     className="font-segment text-3xl leading-none text-amber"
@@ -122,7 +125,9 @@ export function RoomStagingOverlay() {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-0.5">
-                <span className="font-mono text-[10px] tracking-[0.25em] text-amber/30">{potSats > 0 ? `${potSats / buyIn}/${roomState.players.length} PAID` : 'NO HOLDS YET'}</span>
+                <span className="font-mono text-[10px] tracking-[0.25em] text-amber/30">
+                  {potSats > 0 ? `${potSats / buyIn}/${roomState.players.length} ${t('staging.paid')}` : t('staging.no_holds')}
+                </span>
               </div>
             </div>
           )}
@@ -166,7 +171,7 @@ export function RoomStagingOverlay() {
                   <div className="absolute bottom-full left-0 mb-2 w-56 hidden group-hover:block z-10">
                     <div className="bg-black border border-[rgba(255,100,0,0.4)] px-3 py-2">
                       <p className="font-mono text-[15px] tracking-wide text-amber/70 leading-relaxed">
-                        NOTICE: Disconnecting during an active match will result in immediate forfeiture of staked funds.
+                        {t('staging.notice')}
                       </p>
                     </div>
                   </div>
@@ -174,12 +179,12 @@ export function RoomStagingOverlay() {
                 <button
                   onClick={copy}
                   className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer transition-colors">
-                  {copied ? '✓ COPIED' : 'COPY INVOICE'}
+                  {copied ? t('common.copied') : t('staging.copy_invoice')}
                 </button>
                 <button
                   onClick={pay}
                   className="flex-1 py-2 font-display font-bold text-sm tracking-widest border border-[rgba(255,100,0,0.35)] hover:border-[rgba(255,100,0,0.9)] text-amber cursor-pointer transition-colors">
-                  PAY WALLET
+                  {t('staging.pay_wallet')}
                 </button>
               </div>
             </div>
@@ -190,14 +195,14 @@ export function RoomStagingOverlay() {
               <span
                 className="font-display font-bold text-2xl tracking-[0.1em] text-magi"
                 style={{ textShadow: MAGI_GLOW }}>
-                ■ PAYMENT CONFIRMED
+                {t('staging.payment_confirmed')}
               </span>
             </div>
           )}
 
           {buyIn === 0 && (
             <div className="flex flex-col items-center gap-0.5 py-2">
-              <span className="font-mono text-xs tracking-[0.15em] text-amber/35">// FREE ENTRY — NO PAYMENT REQUIRED</span>
+              <span className="font-mono text-xs tracking-[0.15em] text-amber/35">{t('staging.free_entry')}</span>
             </div>
           )}
         </div>
@@ -218,7 +223,7 @@ export function RoomStagingOverlay() {
           onClick={() => setQrExpanded(false)}
           className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black cursor-pointer">
           <QRCodeSVG value={`lightning:${bolt11}`} size={Math.min(window.innerWidth, window.innerHeight) - 64} level="L" marginSize={3} />
-          <span className="font-mono text-[10px] tracking-widest text-[rgba(255,100,0,0.5)]">TAP TO CLOSE</span>
+          <span className="font-mono text-[10px] tracking-widest text-[rgba(255,100,0,0.5)]">{t('staging.tap_to_close')}</span>
         </button>
       )}
 
@@ -235,7 +240,7 @@ export function RoomStagingOverlay() {
           textShadow: !canReady ? 'none' : isReady ? MAGI_GLOW_STR : AMBER_GLOW,
         }}>
         <span className="bg-black p-2 border-nerv-dim border">
-          {!canReady ? 'AWAITING PAYMENT' : isReady ? '■ CANCEL READY' : '◌ INITIATE READY'}
+          {!canReady ? t('staging.awaiting_payment') : isReady ? t('staging.cancel_ready') : t('staging.initiate_ready')}
         </span>
       </button>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '../lib/utils';
 import { Divider } from './Divider';
+import { useTranslation } from 'react-i18next';
 
 interface NervModalProps {
   open: boolean;
@@ -14,6 +15,7 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -78,7 +80,7 @@ export function NervModal({ open, title, titleJp, onClose, children }: NervModal
             onClick={onClose}
             className="w-9 h-9 flex items-center justify-center self-start font-display text-xl font-bold transition-opacity duration-150 cursor-pointer opacity-40 hover:opacity-100"
             style={{ color: '#00ffb4' }}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             ✕
           </button>

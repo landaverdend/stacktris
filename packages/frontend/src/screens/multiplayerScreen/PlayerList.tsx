@@ -2,16 +2,18 @@ import { PlayerInfo, WINS_TO_MATCH } from "../../../../shared/dist/protocol";
 import { useRoom } from "../../context/SessionContext";
 import { cn, truncateName } from "../../lib/utils";
 import { useConnection } from "../../ws/WSContext";
+import { useTranslation } from "react-i18next";
 
 
 
 export function PlayerList() {
   const { roomState } = useRoom();
   const { playerId } = useConnection();
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="font-display font-bold text-4xl tracking-[0.02em] text-alert border-2! rounded-none! nerv-border nerv-border-alert px-2">PLAYERS</span>
+      <span className="font-display font-bold text-4xl tracking-[0.02em] text-alert border-2! rounded-none! nerv-border nerv-border-alert px-2">{t('players.title')}</span>
 
       {roomState.players.map((p, i) => (
         <PlayerRow key={p.playerId} player={p} isYou={p.playerId === playerId} index={i} />
@@ -24,6 +26,7 @@ const ORANGE_GLOW = '0 0 4px rgba(255,112,32,0.6)';
 
 function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolean; index: number }) {
   const { roomState } = useRoom();
+  const { t } = useTranslation();
 
   const pips = Array.from({ length: WINS_TO_MATCH }, (_, i) => i < player.wins ? '■' : '□').join('');
   const alpha = isYou ? 0.55 : 0.28;
@@ -42,7 +45,7 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
           {/* Index number */}
           <div className="flex flex-col items-start -mr-1">
             <span className="font-display font-bold leading-none" style={{ fontSize: '10px', color: '#ff7020', letterSpacing: '0.15em', textShadow: ORANGE_GLOW }}>
-              PLAYER No.
+              {t('players.player_no')}
             </span>
             <span className="font-display font-bold leading-none" style={{ fontSize: '34px', color: '#ff7020', textShadow: ORANGE_GLOW }}>
               {String(index + 1).padStart(2, '0')}
@@ -64,7 +67,7 @@ function PlayerRow({ player, isYou, index }: { player: PlayerInfo; isYou: boolea
 
           {/* Ready status */}
           {roomState.status === 'waiting' && <span className={cn('font-display font-bold text-base tracking-[0.05em] shrink-0', player.ready ? 'text-magi' : 'text-phosphor/25')}>
-            {player.ready ? '■ READY' : '◌ WAITING'}
+            {player.ready ? t('players.ready') : t('players.waiting')}
           </span>}
         </div>
       </div>

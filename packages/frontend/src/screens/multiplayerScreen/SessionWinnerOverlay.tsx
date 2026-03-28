@@ -2,6 +2,7 @@ import { useAnimate } from 'motion/react';
 import { useEffect } from 'react';
 import { PlayerInfo } from '@stacktris/shared';
 import { truncateName } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const GREEN = '#00ff88';
 const GREEN_GLOW = `0 0 14px ${GREEN}, 0 0 36px ${GREEN}66`;
@@ -27,6 +28,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
   const [bgScope, animateBg] = useAnimate();
   const [nameScope, animateName] = useAnimate();
   const [potScope, animatePot] = useAnimate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function run() {
@@ -48,7 +50,6 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
       );
 
       // ── Name slams in ─────────────────────────────────────────────────────
-      // Fast scale-in + strobe combo
       animateName(nameEl, { scale: [4, 1] }, { duration: 0.45, ease: [0.2, 0, 0.1, 1] });
       await animateName(nameEl, { opacity: [0, 1, 0, 1, 0, 1, 0, 1] }, { duration: 0.45, ease: 'linear' });
 
@@ -67,7 +68,6 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
       animateName(nameEl, { opacity: [1, 0.65, 1] }, { duration: 2.2, ease: 'easeInOut', repeat: Infinity });
 
       // ── Pot slams in ──────────────────────────────────────────────────────
-      // Flash bg again when pot appears
       animateBg(bgEl,
         { backgroundColor: ['#000000', '#002211', '#000000', '#001a0e', '#000000'] },
         { duration: 0.4, ease: 'linear' }
@@ -130,7 +130,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
       {/* ── Center ── */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-16">
         <span className="font-mono text-[14px] tracking-[0.02em] text-terminal/40 mb-1">
-          SESSION VICTOR:
+          {t('winner.session_victor')}
         </span>
 
         {/* Winner name */}
@@ -166,7 +166,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
                 className="font-mono text-[9px] tracking-[0.45em]"
                 style={{ color: `${GREEN}55` }}
               >
-                // WINNINGS
+                {t('winner.winnings')}
               </span>
               <div className="flex items-baseline gap-2">
                 {/* ghost segments */}
@@ -198,7 +198,7 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
               className="font-mono text-[12px] tracking-[0.3em]"
               style={{ color: `${GREEN}40` }}
             >
-              // FREE MATCH
+              {t('winner.free_match')}
             </span>
           )}
         </div>
@@ -206,9 +206,9 @@ export function SessionWinnerOverlay({ winner, potSats, payoutPending }: {
         {/* Payout failure notice */}
         {payoutPending && (
           <div className="mt-4 border border-alert/40 px-3 py-2 max-w-xs text-center">
-            <p className="font-mono text-[9px] tracking-[0.3em] text-alert/70 uppercase">// Payment pending</p>
+            <p className="font-mono text-[9px] tracking-[0.3em] text-alert/70 uppercase">{t('winner.payment_pending_title')}</p>
             <p className="font-mono text-[10px] text-alert/60 mt-1 leading-relaxed">
-              Could not send {payoutPending.amountSats} sats to {payoutPending.lightningAddress} — contact the server host to claim your winnings.
+              {t('winner.payment_pending_body', { amount: payoutPending.amountSats, address: payoutPending.lightningAddress })}
             </p>
           </div>
         )}

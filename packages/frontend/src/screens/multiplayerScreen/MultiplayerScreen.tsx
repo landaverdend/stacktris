@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useRoom } from '../../context/SessionContext';
 import { COUNTDOWN_SECONDS } from '@stacktris/shared';
+import { useTranslation } from 'react-i18next';
 import { useConnection } from '../../ws/WSContext';
 import { useMultiplayerGameSession } from '../../hooks/useMultiplayerGameSession';
 import { HOLD_HEIGHT, HOLD_WIDTH, QUEUE_HEIGHT, QUEUE_WIDTH } from '../../render/queue';
@@ -18,6 +19,7 @@ export function MultiplayerScreen() {
   const holdRef = useRef<HTMLCanvasElement>(null);
 
   const { roomState, leaveRoom } = useRoom();
+  const { t } = useTranslation();
 
   const { status } = roomState;
 
@@ -50,7 +52,7 @@ export function MultiplayerScreen() {
         {/* Hold */}
         <div className="flex flex-col gap-1.5 pt-1">
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">HOLD</span>
+            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.hold')}</span>
             <span className="font-jp text-[15px] text-nerv-dim">ホールド</span>
           </div>
           <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
@@ -83,7 +85,7 @@ export function MultiplayerScreen() {
         {/* Next */}
         <div className="flex flex-col gap-1.5 pt-1">
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">NEXT</span>
+            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.next')}</span>
             <span className="font-jp text-[15px] text-nerv-dim">次</span>
           </div>
           <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
@@ -106,6 +108,7 @@ export function MultiplayerScreen() {
 
 function CountdownOverlay() {
   const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!'>(COUNTDOWN_SECONDS);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -119,7 +122,7 @@ function CountdownOverlay() {
       <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
         {countdownDisplay}
       </p>
-      <p className="text-nerv-dim text-[15px] font-jp tracking-widest">準備完了 — ROUND START</p>
+      <p className="text-nerv-dim text-[15px] font-jp tracking-widest">{t('multiplayer.round_start')}</p>
     </div>
   );
 }

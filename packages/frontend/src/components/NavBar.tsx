@@ -1,9 +1,15 @@
 import { useRoom } from '../context/SessionContext';
+import { useTranslation } from 'react-i18next';
 
 export function NavBar() {
   const { connectionStatus, roomState } = useRoom();
+  const { roomId } = roomState;
+  const { t } = useTranslation();
 
-  const { roomId } = roomState
+  const statusLabel =
+    connectionStatus === 'connected' ? t('navbar.online') :
+    connectionStatus === 'connecting' ? t('navbar.syncing') :
+    t('navbar.offline');
 
   return (
     <div className="fixed top-0 inset-x-0 h-10 bg-topbar border-b border-border flex items-center justify-between px-4 z-50">
@@ -21,7 +27,7 @@ export function NavBar() {
       {roomId ? (
         <button
           className="text-nerv-dim hover:text-bitcoin font-mono text-[10px] px-2 py-0.5 border border-border rounded tracking-widest transition-colors"
-          title="Click to copy room ID"
+          title={t('navbar.copy_room_title')}
           onClick={() => navigator.clipboard.writeText(roomId)}
         >
           RM:{roomId.slice(0, 8).toUpperCase()}
@@ -33,9 +39,7 @@ export function NavBar() {
         connectionStatus === 'connecting' ? 'text-yellow-500' :
           'text-alert'
         }`}>
-        {connectionStatus === 'connected' ? '● ONLINE' :
-          connectionStatus === 'connecting' ? '◌ SYNC...' :
-            '○ OFFLINE'}
+        {statusLabel}
       </span>
     </div>
   );
