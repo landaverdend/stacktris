@@ -1,7 +1,7 @@
-import { decode, encode } from '@msgpack/msgpack';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage, Server } from 'http';
 import type { ClientMsg, ServerMsg } from '@stacktris/shared';
+import { encodeMsg, decodeMsg } from '@stacktris/shared';
 import { sessionRegistry } from '../game/sessionRegistry.js';
 
 /** A WebSocket with an attached stable player ID and display name. */
@@ -24,11 +24,6 @@ export class WSServer {
     this.roomRegistry = roomManager;
   }
 
-  /**
-   * On connection, assign a player ID and register the player in the room registry alongside their send function.
-   * @param ws
-   * @param _req
-   */
   private onConnection(ws: WebSocket, _req: IncomingMessage): void {
     const sock = ws as PlayerSocket;
     sock.playerId = crypto.randomUUID();
@@ -39,7 +34,7 @@ export class WSServer {
 
     const sendFn = (msg: ServerMsg) => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(encode(msg));
+        ws.send(encodeMsg(msg));
       }
     }
 
@@ -47,7 +42,7 @@ export class WSServer {
 
     ws.on('message', (data) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = decode(data as Buffer) as any;
+      const raw = decodeMsg(new Uint8Array(data as Buffer)) as any;
       if (raw.type === 'set_player_name') {
         sock.playerName = raw.name ?? '';
         sock.lightningAddress = raw.lightning_address ?? '';
@@ -64,12 +59,5 @@ export class WSServer {
     ws.on('error', (err) => {
       console.error(`[WSServer] socket error (${sock.playerId}):`, err.message);
     });
-  }
-
-
-  send(ws: WebSocket, msg: ServerMsg): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(msg));
-    }
   }
 }

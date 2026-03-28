@@ -50,7 +50,7 @@ describe('PaymentService', () => {
       const service = new PaymentService(client, 1000);
       const send = makeSend();
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', send, vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', send, vi.fn());
 
       expect(client.generateHoldInvoice).toHaveBeenCalledWith(1000, expect.any(String));
       expect(send).toHaveBeenCalledWith(
@@ -62,7 +62,7 @@ describe('PaymentService', () => {
       const { client } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
 
       expect(client.subscribeHoldInvoiceAccepted).toHaveBeenCalledWith(PAYMENT_HASH, expect.any(Function));
     });
@@ -73,12 +73,12 @@ describe('PaymentService', () => {
       const send = makeSend();
       const onPaid = vi.fn();
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', send, onPaid);
+      await service.generateBetInvoice('p1', 2, 'p1@wallet.com', send, onPaid);
       fireHoldAccepted(941621);
 
       expect(onPaid).toHaveBeenCalledOnce();
       expect(send).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'bet_payment_confirmed', playerId: 'p1' })
+        expect.objectContaining({ type: 'bet_payment_confirmed', slotIndex: 2 })
       );
     });
 
@@ -86,7 +86,7 @@ describe('PaymentService', () => {
       const { client, fireHoldAccepted } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
       fireHoldAccepted(941621);
 
       // Invoice is now held — should still be cancellable (e.g. winner refund path).
@@ -100,7 +100,7 @@ describe('PaymentService', () => {
       const { client } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
       await service.cancelHoldInvoice('p1');
 
       expect(client.cancelHoldInvoice).not.toHaveBeenCalled();
@@ -110,7 +110,7 @@ describe('PaymentService', () => {
       const { client, fireHoldAccepted } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
       fireHoldAccepted();
       await service.cancelHoldInvoice('p1');
 
@@ -129,7 +129,7 @@ describe('PaymentService', () => {
       const { client, fireHoldAccepted } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
       fireHoldAccepted(); // make it held so the first cancel hits the NWC
       await service.cancelHoldInvoice('p1');
       await service.cancelHoldInvoice('p1'); // second call — should be no-op
@@ -162,8 +162,8 @@ describe('PaymentService', () => {
       } as unknown as PaymentClient;
 
       const service = new PaymentService(client, 1000);
-      await service.generateBetInvoice('winner', 'winner@wallet.com', makeSend(), vi.fn());
-      await service.generateBetInvoice('loser', 'loser@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('winner', 0, 'winner@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('loser', 1, 'loser@wallet.com', makeSend(), vi.fn());
 
       // Both players pay — fire each hold callback
       holdCallbacks[0]?.(941621); // winner
@@ -181,8 +181,8 @@ describe('PaymentService', () => {
       const service = new PaymentService(client, 1000);
 
       // loser never pays (status stays 'pending')
-      await service.generateBetInvoice('winner', 'winner@wallet.com', makeSend(), vi.fn());
-      await service.generateBetInvoice('loser', 'loser@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('winner', 0, 'winner@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('loser', 1, 'loser@wallet.com', makeSend(), vi.fn());
 
       await service.onMatchComplete('winner');
 
@@ -193,8 +193,8 @@ describe('PaymentService', () => {
       const { client } = makeMockClient();
       const service = new PaymentService(client, 1000);
 
-      await service.generateBetInvoice('winner', 'winner@wallet.com', makeSend(), vi.fn());
-      await service.generateBetInvoice('loser', 'loser@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('winner', 0, 'winner@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('loser', 1, 'loser@wallet.com', makeSend(), vi.fn());
 
       await service.onMatchComplete('winner');
 
@@ -213,8 +213,8 @@ describe('PaymentService', () => {
       });
 
       const service = new PaymentService(client, 1000);
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
-      await service.generateBetInvoice('p2', 'p2@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p2', 1, 'p2@wallet.com', makeSend(), vi.fn());
 
       service.destroy();
 
@@ -228,7 +228,7 @@ describe('PaymentService', () => {
       (client.subscribeHoldInvoiceAccepted as ReturnType<typeof vi.fn>).mockResolvedValue(unsub);
 
       const service = new PaymentService(client, 1000);
-      await service.generateBetInvoice('p1', 'p1@wallet.com', makeSend(), vi.fn());
+      await service.generateBetInvoice('p1', 0, 'p1@wallet.com', makeSend(), vi.fn());
 
       // Fire accepted — the service calls unsub internally when the hold fires
       const cb = (client.subscribeHoldInvoiceAccepted as ReturnType<typeof vi.fn>).mock.calls[0][1];

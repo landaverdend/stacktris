@@ -30,7 +30,7 @@ const makeSend = (): MockSendFn => vi.fn() as unknown as MockSendFn;
 const makeMockPaymentService = () => {
   const callbacks = new Map<string, () => void>();
   const service = {
-    generateBetInvoice: vi.fn((playerId: string, _lightningAddress: string, _sendFn: SendFn, onPaid: () => void) => {
+    generateBetInvoice: vi.fn((playerId: string, _slotIndex: number, _lightningAddress: string, _sendFn: SendFn, onPaid: () => void) => {
       callbacks.set(playerId, onPaid);
       return Promise.resolve(); // must return a thenable — Session chains .catch() on this
     }),
@@ -306,8 +306,8 @@ describe('Room', () => {
       room.addPlayer('p2', '', '', makeSend());
 
       expect(service.generateBetInvoice).toHaveBeenCalledTimes(2);
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', '', expect.any(Function), expect.any(Function));
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', '', expect.any(Function), expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', 0, '', expect.any(Function), expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', 1, '', expect.any(Function), expect.any(Function));
     });
 
     it('generateBetInvoice is not called for free rooms', () => {
@@ -352,8 +352,8 @@ describe('Room', () => {
       room.addPlayer('p1', '', '', send1);
       room.addPlayer('p2', '', '', send2);
 
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', '', send1, expect.any(Function));
-      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', '', send2, expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p1', 0, '', send1, expect.any(Function));
+      expect(service.generateBetInvoice).toHaveBeenCalledWith('p2', 1, '', send2, expect.any(Function));
     });
 
     it('payment confirmation for an unknown player id does not crash', () => {

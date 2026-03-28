@@ -40,6 +40,16 @@ export class ByteStream {
     return firstByte;
   }
 
+  writeFloat32(value: number): void {
+    const buf = new Uint8Array(4);
+    new DataView(buf.buffer).setFloat32(0, value, false); // big-endian
+    this.write(buf);
+  }
+
+  readFloat32(): number {
+    return new DataView(this.read(4).buffer).getFloat32(0, false);
+  }
+
   readToEnd(): Uint8Array {
     return this.read(this.bytes.length - this.position);
   }

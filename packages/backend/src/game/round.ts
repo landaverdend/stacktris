@@ -8,7 +8,8 @@ type RoundEventMap = {
 
 function isOutOfSync(client: GameFrame, server: GameFrame): boolean {
   if (client.isGameOver !== server.isGameOver) return true;
-  if (client.gravityLevel !== server.gravityLevel) return true;
+  // Gravity is synced via gravity_update messages; skip here to avoid false
+  // positives from float32 precision loss in the heartbeat codec roundtrip.
   if (client.holdPiece !== server.holdPiece) return true;
   if (client.holdUsed !== server.holdUsed) return true;
 

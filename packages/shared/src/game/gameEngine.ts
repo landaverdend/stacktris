@@ -169,6 +169,11 @@ export class GameEngine {
     for (const g of ready) {
       applyGarbageLines(this.state.board, g.lines, g.gap);
       while (!isValid(this.state.board, this.state.activePiece)) {
+        if (this.state.activePiece.row <= 0) {
+          this.state.isGameOver = true;
+          this.emitter.emit('gameOver', undefined);
+          return;
+        }
         this.state.activePiece.row--;
       }
     }
