@@ -104,5 +104,8 @@
   },
   "alerts": {
     "enter_room_id": "Por favor ingresa un ID de sala"
+  },
+  "multiplayer_nav": {
+    "leave_room": "SALIR DE SALA"
   }
 }

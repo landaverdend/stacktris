@@ -3,13 +3,21 @@ import { useRoom } from "../../context/SessionContext";
 import { cn, truncateName } from "../../lib/utils";
 import { useConnection } from "../../ws/WSContext";
 import { useTranslation } from "react-i18next";
+import { ControlsButton } from "../../components/ControlsModal";
+import { useNavigate } from "react-router-dom";
 
 
 
 export function PlayerList() {
-  const { roomState } = useRoom();
+  const { roomState, leaveRoom } = useRoom();
   const { playerId } = useConnection();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleLeave = () => {
+    leaveRoom();
+    navigate('/');
+  };
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -18,6 +26,13 @@ export function PlayerList() {
       {roomState.players.map((p, i) => (
         <PlayerRow key={p.playerId} player={p} isYou={p.playerId === playerId} index={i} />
       ))}
+
+      <ControlsButton className="w-full mt-1 py-2 font-display font-bold text-xl tracking-[0.05em] border border-[rgba(0,255,180,0.15)] text-phosphor/30 hover:border-teal hover:text-teal transition-colors cursor-pointer" />
+      <button
+        onClick={handleLeave}
+        className="w-full py-2 font-display font-bold text-xl tracking-[0.05em] border border-[rgba(200,168,130,0.4)] text-alert/70 hover:border-alert hover:text-alert transition-colors cursor-pointer">
+        {t('multiplayer_nav.leave_room')}
+      </button>
     </div>
   )
 }

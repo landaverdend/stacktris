@@ -5,4 +5,3 @@ MVP:
 - sound effects? 
 - redo title menu to be more like NERV
 - controls button on battle screen 
-- spanish?

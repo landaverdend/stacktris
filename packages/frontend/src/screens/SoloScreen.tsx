@@ -4,8 +4,8 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
 import { LocalGame } from '../game/LocalGame';
 import { ScrollFlareOverlay } from '../components/ScrollFlareOverlay';
+import { ControlsButton } from '../components/ControlsModal';
 import { useTranslation } from 'react-i18next';
-
 
 export function SoloScreen() {
   const navigate = useNavigate();
@@ -14,7 +14,6 @@ export function SoloScreen() {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
-
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score] = useState(0);
@@ -32,7 +31,7 @@ export function SoloScreen() {
 
     game.subscribe('gameOver', () => {
       setIsGameOver(true);
-    })
+    });
 
     return () => game.stop();
   }, []);
@@ -53,12 +52,7 @@ export function SoloScreen() {
         {/* Board */}
         <div className="relative flex flex-col gap-1.5">
           {isGameOver && <ScrollFlareOverlay />}
-          <canvas
-            ref={boardRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            className="block nerv-border bg-pit"
-          />
+          <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
         </div>
 
         {/* Next */}
@@ -81,15 +75,16 @@ export function SoloScreen() {
         </div>
 
         <div className="flex flex-col">
-          <StatRow label={t('solo.score')} jp="スコア" value={score.toLocaleString()} />
+          {/* <StatRow label={t('solo.score')} jp="スコア" value={score.toLocaleString()} /> */}
           <StatRow label={t('solo.lines')} jp="ライン" value={String(lines)} />
           <StatRow label={t('solo.level')} jp="レベル" value={String(level)} />
         </div>
 
-        <div className="px-5 py-4 border-t border-[rgba(0,255,180,0.08)]">
+        <div className="px-5 py-4 border-t border-[rgba(0,255,180,0.08)] flex gap-2">
+          <ControlsButton className="flex-1 py-2 font-display font-bold text-2xl tracking-[0.02em] border border-[rgba(0,255,180,0.15)] text-phosphor/30 hover:border-teal hover:text-teal transition-colors cursor-pointer" />
           <button
             onClick={() => navigate('/')}
-            className="w-full py-2 font-display font-bold text-2xl tracking-[0.02em] border border-[rgba(200,168,130,0.15)] text-phosphor/30 hover:border-alert hover:text-alert transition-colors cursor-pointer">
+            className="flex-1 py-2 font-display font-bold text-2xl tracking-[0.02em] border border-[rgba(200,168,130,0.15)] text-phosphor/30 hover:border-alert hover:text-alert transition-colors cursor-pointer">
             {t('solo.abort')}
           </button>
         </div>

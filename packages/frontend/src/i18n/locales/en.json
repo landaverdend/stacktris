@@ -102,6 +102,9 @@
     "ready": "■ READY",
     "waiting": "◌ WAITING"
   },
+  "multiplayer_nav": {
+    "leave_room": "LEAVE ROOM"
+  },
   "alerts": {
     "enter_room_id": "Please enter a room ID"
   }
