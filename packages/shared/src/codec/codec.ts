@@ -4,7 +4,7 @@
 
 // GENERAL STRUCTURE: [opcode: 1 byte][payload: variable length per message]
 
-import { ServerMsg } from "../protocol.js";
+import { Message } from "../protocol.js";
 import { ByteStream } from "./byteStream.js";
 import { encodeVarInt } from "./ops.js";
 
@@ -52,16 +52,16 @@ function encodeOpcodeAndId(opcode: number, id: string): Uint8Array {
 }
 
 // payout_pending format: [opcode: 1 byte][amount: varint][invoice: utf8, rest of buffer]
-export function encodeServerMsg(msg: ServerMsg): Uint8Array {
+export function encodeServerMsg(msg: Message): Uint8Array {
 
   switch (msg.type) {
-    case 'welcome':              return encodeOpcodeAndId(MsgCode.WELCOME, msg.player_id);
-    case 'session_created':      return encodeOpcodeAndId(MsgCode.SESSION_CREATED, msg.room_id);
-    case 'session_joined':       return encodeOpcodeAndId(MsgCode.SESSION_JOINED, msg.room_id);
+    case 'welcome': return encodeOpcodeAndId(MsgCode.WELCOME, msg.player_id);
+    case 'session_created': return encodeOpcodeAndId(MsgCode.SESSION_CREATED, msg.room_id);
+    case 'session_joined': return encodeOpcodeAndId(MsgCode.SESSION_JOINED, msg.room_id);
     case 'bet_payment_confirmed': return encodeOpcodeAndId(MsgCode.BET_PAYMENT_CONFIRMED, msg.playerId);
-    case 'game_player_died':     return encodeOpcodeAndId(MsgCode.GAME_PLAYER_DIED, msg.playerId);
-    case 'error':                return encodeOpcodeAndId(MsgCode.ERROR, msg.message);
-    case 'payout_pending':       return encodePayoutPending(msg);
+    case 'game_player_died': return encodeOpcodeAndId(MsgCode.GAME_PLAYER_DIED, msg.playerId);
+    case 'error': return encodeOpcodeAndId(MsgCode.ERROR, msg.message);
+    case 'payout_pending': return encodePayoutPending(msg);
   }
 
   throw new Error(`Unknown msg: ${msg.type}`);
@@ -72,13 +72,13 @@ export function decodeMsg(data: Uint8Array) {
   const opcode = Number(stream.read(1)[0]);
 
   switch (opcode) {
-    case MsgCode.WELCOME:               return { type: 'welcome', player_id: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.SESSION_CREATED:       return { type: 'session_created', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.SESSION_JOINED:        return { type: 'session_joined', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
+    case MsgCode.WELCOME: return { type: 'welcome', player_id: UTF8_DECODER.decode(stream.readToEnd()) };
+    case MsgCode.SESSION_CREATED: return { type: 'session_created', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
+    case MsgCode.SESSION_JOINED: return { type: 'session_joined', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
     case MsgCode.BET_PAYMENT_CONFIRMED: return { type: 'bet_payment_confirmed', playerId: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.GAME_PLAYER_DIED:      return { type: 'game_player_died', playerId: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.ERROR:                 return { type: 'error', message: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.PAYOUT_PENDING:        return decodePayoutPending(stream);
+    case MsgCode.GAME_PLAYER_DIED: return { type: 'game_player_died', playerId: UTF8_DECODER.decode(stream.readToEnd()) };
+    case MsgCode.ERROR: return { type: 'error', message: UTF8_DECODER.decode(stream.readToEnd()) };
+    case MsgCode.PAYOUT_PENDING: return decodePayoutPending(stream);
   }
 
   throw new Error(`Unknown opcode: ${opcode}`);
@@ -96,7 +96,7 @@ function encodePayoutPending(msg: { type: 'payout_pending'; amountSats: number; 
   return stream.toBytes();
 }
 
-function decodePayoutPending(stream: ByteStream): ServerMsg {
+function decodePayoutPending(stream: ByteStream): Message {
   const amountSats = stream.readVarInt();
   const lightningAddress = UTF8_DECODER.decode(stream.readToEnd());
 

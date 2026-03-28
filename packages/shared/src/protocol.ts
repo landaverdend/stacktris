@@ -80,6 +80,8 @@ export interface SessionState {
   potSats: number; // Confirmed held sats — only increases, accurate even after forfeits
 }
 
+export type Message = ClientMsg | ServerMsg;
+
 // ── Server → Client ───────────────────────────────────────────────────────────
 export type ServerMsg =
   | { type: 'welcome'; player_id: string }
