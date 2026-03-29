@@ -6,6 +6,7 @@ export function NameEntryScreen() {
   const { setPlayerInfo } = useConnection();
   const [name, setName] = useState('');
   const [lightningAddress, setLightningAddress] = useState('');
+  const [showAddressInfo, setShowAddressInfo] = useState(false);
   const { t } = useTranslation();
 
   const canSubmit = name.trim() && lightningAddress.trim();
@@ -53,7 +54,33 @@ export function NameEntryScreen() {
               placeholder="you@wallet.com"
               className="bg-black border border-phosphor/40 text-phosphor font-display text-xl tracking-tight text-center w-full py-3 px-4 outline-none focus:border-phosphor placeholder:text-phosphor/20"
             />
-            <span className="font-display text-[11px] tracking-widest text-phosphor/30">{t('name_entry.lightning_address')}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-display text-[11px] tracking-widest text-phosphor/30">{t('name_entry.lightning_address')}</span>
+              <div className="relative">
+                <button
+                  onClick={() => setShowAddressInfo(v => !v)}
+                  className="w-4 h-4 rounded-full border border-phosphor/30 text-phosphor/40 hover:border-phosphor hover:text-phosphor font-mono text-[9px] leading-none flex items-center justify-center cursor-pointer transition-colors">
+                  ?
+                </button>
+                {showAddressInfo && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-60 bg-black border border-phosphor/25 p-3 flex flex-col gap-2">
+                    <p className="font-mono text-[10px] text-phosphor/70 leading-relaxed">
+                      A Lightning Address is like an email address for receiving Bitcoin payments instantly.
+                    </p>
+                    <p className="font-mono text-[10px] text-phosphor/40 leading-relaxed">
+                      Winnings are sent here automatically. Get one free at:
+                    </p>
+                    <a
+                      href="https://www.walletofsatoshi.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[10px] text-phosphor/70 hover:text-phosphor tracking-wider transition-colors">
+                      walletofsatoshi.com →
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

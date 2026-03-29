@@ -215,6 +215,7 @@ function OptionsModal({ open, onClose, onSave }: {
   const [name, setName] = useState(() => localStorage.getItem('playerName') ?? '');
   const [address, setAddress] = useState(() => localStorage.getItem('lightningAddress') ?? '');
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'checking' | 'ok' | 'invalid' | 'cors'>('idle');
+  const [showAddressInfo, setShowAddressInfo] = useState(false);
   const [das, setDas] = useState(() => Number(localStorage.getItem('das_ms') ?? '') || 167);
   const [arr, setArr] = useState(() => { const v = Number(localStorage.getItem('arr_ms') ?? ''); return Number.isFinite(v) && v >= 0 && localStorage.getItem('arr_ms') !== null ? v : 33; });
   const { t, i18n } = useTranslation();
@@ -296,6 +297,30 @@ function OptionsModal({ open, onClose, onSave }: {
           <div className="flex items-baseline gap-2">
             <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{t('modal.address')}</span>
             <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">アドレス</span>
+            <div className="relative flex items-center" style={{ alignSelf: 'center' }}>
+              <button
+                onClick={() => setShowAddressInfo(v => !v)}
+                className="w-4 h-4 rounded-full border border-teal/40 text-teal/50 hover:border-teal hover:text-teal font-mono text-[9px] leading-none flex items-center justify-center cursor-pointer transition-colors">
+                ?
+              </button>
+              {showAddressInfo && (
+                <div className="absolute left-6 top-0 z-50 w-56 bg-black border border-teal/30 p-3 flex flex-col gap-1.5">
+                  <p className="font-mono text-[10px] text-teal/80 leading-relaxed">
+                    A Lightning Address is like an email address for receiving Bitcoin payments over the Lightning Network.
+                  </p>
+                  <p className="font-mono text-[10px] text-teal/50 leading-relaxed">
+                    Winnings are sent here automatically. Get one free at:
+                  </p>
+                  <a
+                    href="https://www.walletofsatoshi.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[10px] text-teal hover:text-teal/70 tracking-wider transition-colors">
+                    walletofsatoshi.com →
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <input
