@@ -2,7 +2,7 @@ import { ALL_PIECES } from './pieces.js';
 import { Board, emptyBoard, spawnPiece } from './board.js';
 import { ActivePiece, PieceKind } from './types.js';
 
-export { LockDelay } from './pieces.js';
+export type { LockDelay } from './pieces.js';
 
 export const QUEUE_SIZE = 5;
 

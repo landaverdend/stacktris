@@ -43,7 +43,8 @@
     "warning": "⚠ ADVERTENCIA: ESTE JUEGO CONTIENE LUCES INTERMITENTES QUE PUEDEN AFECTAR A PERSONAS CON EPILEPSIA FOTOSENSIBLE",
     "enter_name": "INGRESA TU NOMBRE",
     "placeholder_name": "TU NOMBRE",
-    "lightning_address": "DIRECCIÓN LIGHTNING (REQUERIDA)",
+    "lightning_address": "DIRECCIÓN LIGHTNING",
+    "address_optional": "opcional — sin una, solo puedes jugar partidas gratuitas y modo solitario.",
     "confirm": "CONFIRMAR"
   },
   "solo": {

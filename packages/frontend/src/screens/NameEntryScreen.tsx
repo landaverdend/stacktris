@@ -9,7 +9,7 @@ export function NameEntryScreen() {
   const [showAddressInfo, setShowAddressInfo] = useState(false);
   const { t } = useTranslation();
 
-  const canSubmit = name.trim() && lightningAddress.trim();
+  const canSubmit = name.trim();
 
   const submit = () => {
     if (!canSubmit) return;
@@ -23,7 +23,7 @@ export function NameEntryScreen() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
       {/* Epilepsy warning */}
-      <p className="absolute top-6 left-0 right-0 text-center font-display text-[11px] tracking-[0.15em] text-phosphor/20">
+      <p className="absolute top-6 left-0 right-0 text-center font-display text-[13px] tracking-[0.15em] text-phosphor/40">
         {t('name_entry.warning')}
       </p>
 
@@ -52,10 +52,13 @@ export function NameEntryScreen() {
               onChange={e => setLightningAddress(e.target.value)}
               onKeyDown={handleKey}
               placeholder="you@wallet.com"
-              className="bg-black border border-phosphor/40 text-phosphor font-display text-xl tracking-tight text-center w-full py-3 px-4 outline-none focus:border-phosphor placeholder:text-phosphor/20"
+              className="bg-black border border-phosphor/40 text-phosphor font-display text-3xl tracking-tight text-center w-full py-3 px-4 outline-none focus:border-phosphor placeholder:text-phosphor/20"
             />
+            <p className="font-mono text-[15px] text-phosphor/50 leading-relaxed tracking-wide text-center">
+              {t('name_entry.address_optional')}
+            </p>
             <div className="flex items-center gap-2">
-              <span className="font-display text-[11px] tracking-widest text-phosphor/30">{t('name_entry.lightning_address')}</span>
+              <span className="font-display text-[14px] tracking-widest text-phosphor/50">{t('name_entry.lightning_address')}</span>
               <div className="relative">
                 <button
                   onClick={() => setShowAddressInfo(v => !v)}

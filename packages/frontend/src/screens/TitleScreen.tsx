@@ -325,7 +325,7 @@ function OptionsModal({ open, onClose, onSave }: {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              className="w-44 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-xs text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
+              className="w-44 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-mono text-sm text-right outline-none pb-0.5 placeholder:text-[rgba(0,255,180,0.2)]"
               value={address}
               placeholder="you@wallet.domain"
               onChange={(e) => setAddress(e.target.value)}
@@ -394,7 +394,7 @@ function SliderRow({ label, jp, unit, value, min, max, step, description, onChan
         <div className="flex items-center gap-2">
           <div className="flex items-baseline gap-1.5">
             <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{label}</span>
-            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">{jp}</span>
+            <span className="font-jp text-lg text-[rgba(0,255,180,0.3)]">{jp}</span>
           </div>
           <div className="relative">
             <button

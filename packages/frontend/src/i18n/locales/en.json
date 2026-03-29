@@ -43,7 +43,8 @@
     "warning": "⚠ WARNING: THIS GAME CONTAINS FLASHING LIGHTS THAT MAY AFFECT PEOPLE WITH PHOTOSENSITIVE EPILEPSY",
     "enter_name": "ENTER YOUR NAME",
     "placeholder_name": "YOUR NAME",
-    "lightning_address": "LIGHTNING ADDRESS (REQUIRED)",
+    "lightning_address": "LIGHTNING ADDRESS",
+    "address_optional": "optional — without one you are limited to free games and solo mode only.",
     "confirm": "CONFIRM"
   },
   "solo": {

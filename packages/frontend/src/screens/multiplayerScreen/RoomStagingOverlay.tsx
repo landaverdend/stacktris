@@ -118,7 +118,7 @@ export function RoomStagingOverlay() {
           <div className="flex-1 flex flex-col px-3 pt-2.5 pb-2 gap-2.5">
             {/* Amount */}
             <div className="flex flex-col items-center gap-1">
-              <span className="bg-amber text-black font-jp font-bold text-[14px] px-1 py-0.5 border-2 border-black/50 leading-tight tracking-wider w-fit">
+              <span className="bg-amber text-black font-jp font-bold text-[16px] px-1 py-0.5 border-2 border-black/50 leading-tight tracking-wider w-fit">
                 即時送金
               </span>
               <div className="relative inline-block">
@@ -129,17 +129,17 @@ export function RoomStagingOverlay() {
                   {buyIn}
                 </span>
               </div>
-              <span className="font-mono text-[15px] tracking-[0.4em] text-amber/40">SATS</span>
+              <span className="font-mono text-[18px] tracking-[0.4em] text-amber/40">SATS</span>
             </div>
 
             {/* Hold invoice notice */}
-            <div className="border-l-2 border-amber/30 pl-2 py-0.5 flex flex-col gap-1">
-              <p className="font-mono text-[9px] text-amber/40 leading-relaxed tracking-wide">
+            <div className="border-l-2 border-amber/30 pl-2 py-0.5 flex flex-col gap-1.5">
+              <p className="font-mono text-[11px] text-amber/40 leading-relaxed tracking-wide">
                 {t('staging.hold_notice')}
               </p>
-              <div className="flex items-start gap-1">
-                <span className="text-alert text-[9px] leading-none mt-[1px] shrink-0">!</span>
-                <p className="font-mono text-[9px] text-alert/50 leading-relaxed tracking-wide">
+              <div className="flex items-start gap-1.5">
+                <span className="text-alert text-[11px] leading-none mt-[1px] shrink-0">!</span>
+                <p className="font-mono text-[11px] text-alert/60 leading-relaxed tracking-wide">
                   {t('staging.disconnect_warning')}
                 </p>
               </div>
@@ -149,14 +149,14 @@ export function RoomStagingOverlay() {
             <div className="flex gap-2">
               <button
                 onClick={copy}
-                className="flex-1 py-1.5 font-display font-bold text-xs tracking-widest border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
+                className="flex-1 py-2 font-display font-bold text-base tracking-widest border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
                 {copied ? t('common.copied') : t('staging.copy_invoice')}
               </button>
               <button
                 onClick={() => setQrExpanded(true)}
                 title="Show QR code"
-                className="px-2.5 py-1.5 border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                className="px-3 py-2 border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
+                <svg width="18" height="18" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="1" y="1" width="5" height="5" />
                   <rect x="8" y="1" width="5" height="5" />
                   <rect x="1" y="8" width="5" height="5" />
