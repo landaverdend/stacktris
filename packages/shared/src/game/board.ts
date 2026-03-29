@@ -91,7 +91,9 @@ export function levelFromLines(lines: number): number {
 // ── Ghost piece ───────────────────────────────────────────────────────────────
 
 export function ghostPiece(board: Board, piece: ActivePiece): ActivePiece {
-  return sonicDrop(board, piece);
+  const ghost = { ...piece };
+  sonicDrop(board, ghost);
+  return ghost;
 }
 
 // ── Visible board slice ───────────────────────────────────────────────────────
