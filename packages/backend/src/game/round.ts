@@ -32,7 +32,7 @@ function diffGameFrames(client: GameFrame, server: GameFrame): FrameDiff {
   const cgStr = JSON.stringify(client.pendingGarbage);
   const sgStr = JSON.stringify(server.pendingGarbage);
   if (cgStr !== sgStr)
-    correctionDiffs.push(`pendingGarbage: client=${cgStr} server=${sgStr}`);
+    infoDiffs.push(`pendingGarbage: client=${cgStr} server=${sgStr}`);
 
   const boardDiffs: string[] = [];
   for (let r = 0; r < client.board.length; r++) {
