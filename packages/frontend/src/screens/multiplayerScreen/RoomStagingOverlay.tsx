@@ -118,27 +118,20 @@ export function RoomStagingOverlay() {
         {/* Invoice content */}
         {needsPayment && bolt11 && (
           <div className="flex-1 flex flex-col px-3 pt-2.5 pb-2 gap-2.5">
-            {/* Amount + QR */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-col gap-1">
-                <span className="bg-amber text-black font-jp font-bold text-[14px] px-1 py-0.5 border-2 border-black/50 leading-tight tracking-wider w-fit">
-                  即時送金
+            {/* Amount */}
+            <div className="flex flex-col items-center gap-1">
+              <span className="bg-amber text-black font-jp font-bold text-[14px] px-1 py-0.5 border-2 border-black/50 leading-tight tracking-wider w-fit">
+                即時送金
+              </span>
+              <div className="relative inline-block">
+                <span aria-hidden className="font-segment text-[52px] leading-none text-amber/8 absolute inset-0 select-none pointer-events-none">
+                  {'8'.repeat(String(buyIn).length)}
                 </span>
-                <div className="relative inline-block">
-                  <span aria-hidden className="font-segment text-[52px] leading-none text-amber/8 absolute inset-0 select-none pointer-events-none">
-                    {'8'.repeat(String(buyIn).length)}
-                  </span>
-                  <span className="font-segment text-[52px] leading-none text-amber relative" style={{ textShadow: AMBER_GLOW }}>
-                    {buyIn}
-                  </span>
-                </div>
-                <span className="font-mono text-[9px] tracking-[0.4em] text-amber/40">SATS</span>
+                <span className="font-segment text-[52px] leading-none text-amber relative" style={{ textShadow: AMBER_GLOW }}>
+                  {buyIn}
+                </span>
               </div>
-              <button
-                onClick={() => setQrExpanded(true)}
-                className="border border-amber/20 p-1.5 bg-white shrink-0 cursor-pointer hover:border-amber/60 transition-colors">
-                <QRCodeSVG value={`lightning:${bolt11}`} size={110} level="L" marginSize={1} />
-              </button>
+              <span className="font-mono text-[15px] tracking-[0.4em] text-amber/40">SATS</span>
             </div>
 
             {/* Action buttons */}
@@ -152,6 +145,23 @@ export function RoomStagingOverlay() {
                 onClick={pay}
                 className="flex-1 py-1.5 font-display font-bold text-xs tracking-widest border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
                 {t('staging.pay_wallet')}
+              </button>
+              <button
+                onClick={() => setQrExpanded(true)}
+                title="Show QR code"
+                className="px-2.5 py-1.5 border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="1" y="1" width="5" height="5" />
+                  <rect x="8" y="1" width="5" height="5" />
+                  <rect x="1" y="8" width="5" height="5" />
+                  <rect x="2.5" y="2.5" width="2" height="2" fill="currentColor" stroke="none" />
+                  <rect x="9.5" y="2.5" width="2" height="2" fill="currentColor" stroke="none" />
+                  <rect x="2.5" y="9.5" width="2" height="2" fill="currentColor" stroke="none" />
+                  <rect x="9" y="9" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+                  <rect x="11" y="9" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+                  <rect x="9" y="11" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+                  <rect x="11" y="11" width="1.5" height="1.5" fill="currentColor" stroke="none" />
+                </svg>
               </button>
             </div>
           </div>
