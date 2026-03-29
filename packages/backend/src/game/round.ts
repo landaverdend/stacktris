@@ -6,20 +6,65 @@ type RoundEventMap = {
   gameOver: string | null; // winnerId, or null for a draw
 };
 
-function isOutOfSync(client: GameFrame, server: GameFrame): boolean {
-  if (client.isGameOver !== server.isGameOver) return true;
-  // Gravity is synced via gravity_update messages; skip here to avoid false
-  // positives from float32 precision loss in the heartbeat codec roundtrip.
-  if (client.holdPiece !== server.holdPiece) return true;
-  if (client.holdUsed !== server.holdUsed) return true;
+interface FrameDiff {
+  // Fields that trigger a correction.
+  correctionDiffs: string[];
+  // Fields logged for diagnosis but excluded from the sync check.
+  infoDiffs: string[];
+}
 
-  // This is bad and we could do some bitwise ops to make this faster
+function diffGameFrames(client: GameFrame, server: GameFrame): FrameDiff {
+  const correctionDiffs: string[] = [];
+  const infoDiffs: string[] = [];
+
+  if (client.isGameOver !== server.isGameOver)
+    correctionDiffs.push(`isGameOver: client=${client.isGameOver} server=${server.isGameOver}`);
+
+  if (client.holdPiece !== server.holdPiece)
+    correctionDiffs.push(`holdPiece: client=${client.holdPiece} server=${server.holdPiece}`);
+
+  if (client.holdUsed !== server.holdUsed)
+    correctionDiffs.push(`holdUsed: client=${client.holdUsed} server=${server.holdUsed}`);
+
+  if (client.bagPosition !== server.bagPosition)
+    correctionDiffs.push(`bagPosition: client=${client.bagPosition} server=${server.bagPosition}`);
+
+  const cgStr = JSON.stringify(client.pendingGarbage);
+  const sgStr = JSON.stringify(server.pendingGarbage);
+  if (cgStr !== sgStr)
+    correctionDiffs.push(`pendingGarbage: client=${cgStr} server=${sgStr}`);
+
+  const boardDiffs: string[] = [];
   for (let r = 0; r < client.board.length; r++) {
     for (let c = 0; c < client.board[r].length; c++) {
-      if (client.board[r][c] !== server.board[r][c]) return true;
+      if (client.board[r][c] !== server.board[r][c])
+        boardDiffs.push(`[${r},${c}]: client=${client.board[r][c]} server=${server.board[r][c]}`);
     }
   }
-  return false;
+  if (boardDiffs.length > 0)
+    correctionDiffs.push(`board (${boardDiffs.length} cell(s) differ): ${boardDiffs.slice(0, 10).join(', ')}${boardDiffs.length > 10 ? ` ... +${boardDiffs.length - 10} more` : ''}`);
+
+  // gravityLevel: excluded from corrections (float32 precision loss in heartbeat codec
+  // causes false positives), but logged to correlate corrections with gravity changes.
+  if (client.gravityLevel !== server.gravityLevel)
+    infoDiffs.push(`gravityLevel: client=${client.gravityLevel} server=${server.gravityLevel}`);
+
+  // activePiece: not part of sync check but useful for diagnosing mid-flight drift.
+  const cp = client.activePiece;
+  const sp = server.activePiece;
+  if (cp && sp) {
+    const apDiffs: string[] = [];
+    if (cp.kind !== sp.kind) apDiffs.push(`kind: client=${cp.kind} server=${sp.kind}`);
+    if (cp.row !== sp.row) apDiffs.push(`row: client=${cp.row} server=${sp.row}`);
+    if (cp.col !== sp.col) apDiffs.push(`col: client=${cp.col} server=${sp.col}`);
+    if (cp.rotation !== sp.rotation) apDiffs.push(`rotation: client=${cp.rotation} server=${sp.rotation}`);
+    if (apDiffs.length > 0)
+      infoDiffs.push(`activePiece: ${apDiffs.join(', ')}`);
+  } else if (!!cp !== !!sp) {
+    infoDiffs.push(`activePiece: client=${cp ? 'present' : 'null'} server=${sp ? 'present' : 'null'}`);
+  }
+
+  return { correctionDiffs, infoDiffs };
 }
 
 const MAX_LAG_FRAMES = 120; // 2 seconds @ 60fps
@@ -75,9 +120,14 @@ export class Round {
         const serverFrame = pg.toGameFrame();
         console.log(`[heartbeat] ${playerId} frame=${msg.state.frame} gravity=${msg.state.gravityLevel} isGameOver=${msg.state.isGameOver}`);
 
-        if (isOutOfSync(msg.state, serverFrame)) {
-          console.warn(`[heartbeat] out of sync for ${playerId} at frame ${msg.state.frame}, sending correction`);
+        const { correctionDiffs, infoDiffs } = diffGameFrames(msg.state, serverFrame);
+
+        if (correctionDiffs.length > 0) {
+          const allDiffs = [...correctionDiffs, ...(infoDiffs.length > 0 ? [`[info] ${infoDiffs.join(' | ')}`] : [])];
+          console.warn(`[heartbeat] out of sync for ${this.players[playerId].playerName} at frame ${msg.state.frame}, sending correction\n  ${allDiffs.join('\n  ')}`);
           this.players[playerId].sendFn({ type: 'game_state_update', frame: serverFrame });
+        } else if (infoDiffs.length > 0) {
+          console.log(`[heartbeat] in sync (info) for ${this.players[playerId].playerName} at frame ${msg.state.frame}: ${infoDiffs.join(' | ')}`);
         }
         break;
       }
