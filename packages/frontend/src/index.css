@@ -22,6 +22,11 @@
 
   --color-terminal: #00ff41; /* matrix/hacker terminal green */
 
+  /* ── Eva System Clock ────────────────────────────────────────────────────── */
+  --color-clock-ghost: var(--color-nerv-faint); /* inactive segment shadow */
+  --color-clock-label: var(--color-phosphor);   /* static header/footer labels */
+  --color-clock-border: var(--color-border-hi); /* panel border (static fallback) */
+
   --color-pit: #050505;
   --color-surface: #0c0600;
   --color-surface-2: #140a00;
@@ -408,4 +413,9 @@ input[type='range'].nerv-range::-moz-range-thumb {
   .font-segment {
     font-family: var(--font-segment);
   }
+
+  /* ── Eva Clock reactive color — --clock-current-color set via JS on container ── */
+  .clock-reactive        { color:            var(--clock-current-color, #7a4010); }
+  .clock-reactive-bg     { background-color: var(--clock-current-color, #7a4010); }
+  .clock-reactive-border { border-color:     var(--clock-current-color, #7a4010); }
 }

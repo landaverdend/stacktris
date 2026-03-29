@@ -13,6 +13,8 @@ import { RoomCodeBar } from './RoomCodeBar';
 import { PlayerList } from './PlayerList';
 import { ConnectedBoards } from './ConnectedBoards';
 import { BoardOverlay } from './BoardOverlay';
+import { EvaSystemClock } from '../../components/EvaSystemClock';
+import { NervGridOverlay } from '../../components/NervGridOverlay';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -25,6 +27,15 @@ export function MultiplayerScreen() {
   const { t } = useTranslation();
 
   const { status } = roomState;
+
+  const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (status === 'playing') {
+      setRoundStartedAt(prev => prev ?? Date.now());
+    } else {
+      setRoundStartedAt(null);
+    }
+  }, [status]);
 
   // Leave room  if you navigate away from the page
   useEffect(
@@ -54,6 +65,9 @@ export function MultiplayerScreen() {
   const { playerId } = useConnection();
 
   return (
+    <>
+    <NervGridOverlay dangerSignal={dangerSignal} />
+    <EvaSystemClock roundStartedAt={roundStartedAt} dangerSignal={dangerSignal} />
     <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
       <div className="flex justify-end items-start pt-1">
         <PlayerList />
@@ -116,6 +130,7 @@ export function MultiplayerScreen() {
         />
       </div>
     </div>
+    </>
   );
 }
 
