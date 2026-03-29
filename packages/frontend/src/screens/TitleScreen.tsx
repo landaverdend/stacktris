@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../context/SessionContext';
 import { useConnection } from '../ws/WSContext';
@@ -23,6 +24,41 @@ const MENU = [
   { id: 'controls', key: 'menu.controls', jp: '操作方法' },
   { id: 'options', key: 'menu.options', jp: '設定' },
 ] as const;
+
+function BetaDisclaimer() {
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  function handleClick() {
+    setRect(btnRef.current?.getBoundingClientRect() ?? null);
+    setOpen(v => !v);
+  }
+
+  return (
+    <div className="absolute bottom-0 right-0 translate-x-full pl-1">
+      <button
+        ref={btnRef}
+        onClick={handleClick}
+        className="font-mono text-[15px] text-[rgba(255,180,0,0.55)] tracking-wider hover:text-[rgba(255,180,0,0.85)] transition-colors cursor-pointer">
+        ⚠ BETA
+      </button>
+      {open && rect && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+          <div
+            className="absolute z-[9999] w-64 bg-black border border-[rgba(255,180,0,0.3)] p-3"
+            style={{ top: rect.bottom + window.scrollY + 6, left: rect.right + window.scrollX - 256 }}>
+            <p className="font-mono text-[13px] text-[rgba(255,180,0,0.7)] leading-relaxed">
+              This app is under active development. Any funds lost due to bugs are not the developer's responsibility. Use at your own risk.
+            </p>
+          </div>
+        </>,
+        document.body
+      )}
+    </div>
+  );
+}
 
 export function TitleScreen() {
   const navigate = useNavigate();
@@ -59,6 +95,7 @@ export function TitleScreen() {
             BATTLE TETRIS // ライトニングネットワーク
           </p>
         </div>
+        <BetaDisclaimer />
       </div>
 
       <div className="w-full max-w-sm flex flex-col relative items-center gap-3 z-3">
@@ -137,7 +174,7 @@ function CreateMatchModal({ open, onClose, onCreate }: {
   open: boolean; onClose: () => void;
   onCreate: (sats: number) => void;
 }) {
-  const [buyIn, setBuyIn] = useState(21);
+  const [buyIn, setBuyIn] = useState(0);
   const { t } = useTranslation();
 
   return (
@@ -151,11 +188,11 @@ function CreateMatchModal({ open, onClose, onCreate }: {
           <div className="flex items-center gap-2">
             <input
               type="number"
-              className="w-28 bg-transparent border-b border-[rgba(0,255,180,0.35)] text-teal font-display font-bold text-2xl tracking-[0.02em] text-right outline-none pb-0.5"
+              className="w-32 bg-transparent border-b border-[rgba(255,150,0,0.5)] text-bitcoin font-display font-bold text-3xl tracking-[0.02em] text-right outline-none pb-0.5"
               value={buyIn} min={0}
               onChange={(e) => setBuyIn(Number(e.target.value))}
             />
-            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">sats</span>
+            <span className="font-jp text-[15px] text-[rgba(255,150,0,0.4)]">sats</span>
           </div>
         </div>
         <div className="pt-5">
