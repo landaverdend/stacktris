@@ -2,6 +2,7 @@ import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { ActivePiece, Board, PendingGarbage, SessionState } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
+import { DangerSignal } from "../game/DangerSignal";
 
 type CanvasRefs = {
   board: RefObject<HTMLCanvasElement | null>;
@@ -26,6 +27,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
   const [sessionWinnerId, setSessionWinnerId] = useState<string | null>(null);
 
   const [isClientAlive, setIsClientAlive] = useState(true);
+  const [dangerSignal, setDangerSignal] = useState<DangerSignal | null>(null);
 
   useEffect(() => {
     const handleGameStart = (msg: { type: 'game_start'; seed: number }) => {
@@ -42,6 +44,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
       console.log(`Starting game with seed ${msg.seed}`);
       gameSession.current = new NetworkGame(msg.seed, ws);
+      setDangerSignal(gameSession.current.danger);
 
       unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => { pendingGarbageRef.current = val; });
       unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setTimeout(() => setIsClientAlive(false), 600));
@@ -96,5 +99,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive };
+  return { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive, dangerSignal };
 }

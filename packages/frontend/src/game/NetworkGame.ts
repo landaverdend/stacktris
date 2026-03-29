@@ -10,6 +10,7 @@ import {
 import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
 import { BoardShaker } from './BoardShaker';
+import { DangerSignal } from './DangerSignal';
 import { Canvases, renderGameState } from '../render';
 
 
@@ -20,6 +21,8 @@ export class NetworkGame {
   private inputHandler: InputHandler;
   private inputBuffer: InputBuffer = [];
   private shaker: BoardShaker | null = null;
+
+  readonly danger = new DangerSignal();
 
   // Frame timing variables
   private rafId = 0;
@@ -100,7 +103,9 @@ export class NetworkGame {
         }
       }
 
-      renderGameState(this.gameEngine.getState(), canvases);
+      const state = this.gameEngine.getState();
+      renderGameState(state, canvases);
+      this.danger.update(state.board);
       this.shaker?.tick();
       this.lastFrameTime = now;
       this.rafId = requestAnimationFrame(loop);

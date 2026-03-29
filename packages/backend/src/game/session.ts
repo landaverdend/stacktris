@@ -55,6 +55,7 @@ export class Session {
   private fsm = new RoomStateMachine();
 
   private countdownTimer: NodeJS.Timeout | null = null;
+  private intermissionTimer: NodeJS.Timeout | null = null;
   private readonly COUNTDOWN_DURATION = COUNTDOWN_SECONDS * 1000;
   private round: Round | null = null;
 
@@ -110,17 +111,21 @@ export class Session {
 
     this.fsm.on('intermission', () => {
       console.log('[Session] intermission...');
-      // Clear out the prior round state
       this.round?.destroy();
       this.round = null;
 
-      setTimeout(() => { this.fsm.transition('countdown') }, INTERMISSION_DURATION)
+      this.intermissionTimer = setTimeout(() => {
+        this.intermissionTimer = null;
+        this.fsm.transition('countdown');
+      }, INTERMISSION_DURATION);
 
       this.broadcastRoomStateUpdate();
     })
 
     // SESSION COMPLETED - somebody won 3 rounds or everyone left
     this.fsm.on('finished', () => {
+      if (this.intermissionTimer) { clearTimeout(this.intermissionTimer); this.intermissionTimer = null; }
+      if (this.countdownTimer) { clearTimeout(this.countdownTimer); this.countdownTimer = null; }
       this.round?.destroy();
       this.round = null;
 

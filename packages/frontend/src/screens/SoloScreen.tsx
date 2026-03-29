@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
 import { LocalGame } from '../game/LocalGame';
+import { applyVignette, applyDangerBorder } from '../game/DangerSignal';
 import { ScrollFlareOverlay } from '../components/ScrollFlareOverlay';
 import { ControlsButton } from '../components/ControlsModal';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +16,7 @@ export function SoloScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
   const boardWrapperRef = useRef<HTMLDivElement>(null);
+  const vignetteRef = useRef<HTMLDivElement>(null);
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score] = useState(0);
@@ -37,7 +39,12 @@ export function SoloScreen() {
       setIsGameOver(true);
     });
 
-    return () => game.stop();
+    const unsubDanger = game.danger.subscribe(level => {
+      applyVignette(vignetteRef.current, level);
+      applyDangerBorder(boardRef.current, level);
+    });
+
+    return () => { game.stop(); unsubDanger(); };
   }, []);
 
   return (
@@ -57,6 +64,7 @@ export function SoloScreen() {
         <div ref={boardWrapperRef} className="relative flex flex-col gap-1.5">
           {isGameOver && <ScrollFlareOverlay />}
           <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
+          <div ref={vignetteRef} className="absolute inset-0 pointer-events-none" />
         </div>
 
         {/* Next */}

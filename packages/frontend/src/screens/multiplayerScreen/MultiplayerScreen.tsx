@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { applyVignette, applyDangerBorder } from '../../game/DangerSignal';
 import { useRoom } from '../../context/SessionContext';
 import { COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +19,7 @@ export function MultiplayerScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
   const boardWrapperRef = useRef<HTMLDivElement>(null);
+  const vignetteRef = useRef<HTMLDivElement>(null);
 
   const { roomState, leaveRoom } = useRoom();
   const { t } = useTranslation();
@@ -35,12 +37,24 @@ export function MultiplayerScreen() {
     [],
   );
 
-  const { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive } = useMultiplayerGameSession({
+  const { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive, dangerSignal } = useMultiplayerGameSession({
     board: boardRef,
     queue: queueRef,
     hold: holdRef,
     boardWrapper: boardWrapperRef,
   });
+
+  useEffect(() => {
+    if (!dangerSignal) return;
+    // Sync DOM immediately — the new signal starts at 0, clearing stale state
+    // from the previous round without waiting for the next board change.
+    applyVignette(vignetteRef.current, dangerSignal.value);
+    applyDangerBorder(boardRef.current, dangerSignal.value);
+    return dangerSignal.subscribe(level => {
+      applyVignette(vignetteRef.current, level);
+      applyDangerBorder(boardRef.current, level);
+    });
+  }, [dangerSignal]);
   const { playerId } = useConnection();
 
   return (
@@ -68,6 +82,7 @@ export function MultiplayerScreen() {
 
             <div ref={boardWrapperRef} className="relative">
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
+              <div ref={vignetteRef} className="absolute inset-0 pointer-events-none" />
               {status === 'countdown' && <CountdownOverlay />}
               <BoardOverlay
                 status={status}

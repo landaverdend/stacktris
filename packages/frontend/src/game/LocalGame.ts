@@ -2,6 +2,7 @@ import { EngineEventMap, FRAME_DURATION_MS, GameEngine, GameState } from '@stack
 import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
 import { BoardShaker } from './BoardShaker';
+import { DangerSignal } from './DangerSignal';
 
 export interface GameStats {
   score: number;
@@ -21,6 +22,8 @@ export class LocalGame {
   private inputHandler: InputHandler;
   private shaker: BoardShaker | null = null;
   private rafId = 0;
+
+  readonly danger = new DangerSignal();
 
   private frameCount = 0;
   private lastFrameTime = 0;
@@ -63,7 +66,9 @@ export class LocalGame {
         }
       }
 
-      renderGameState(this.gameEngine.getState(), canvases);
+      const state = this.gameEngine.getState();
+      renderGameState(state, canvases);
+      this.danger.update(state.board);
       this.shaker?.tick();
       this.lastFrameTime = now;
       this.rafId = requestAnimationFrame(loop);

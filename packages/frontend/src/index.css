@@ -99,6 +99,12 @@
   }
 }
 
+/* ── Danger vignette pulse ────────────────────────────────────────────────── */
+@keyframes vignette-breathe {
+  0%, 100% { opacity: 1;    }
+  50%       { opacity: 0.45; }
+}
+
 /* ── Terminal prompt blink ────────────────────────────────────────────────── */
 @keyframes terminal-blink {
   0%, 100% { opacity: 1; }

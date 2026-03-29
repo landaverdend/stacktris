@@ -503,6 +503,37 @@ describe('Room', () => {
     });
   });
 
+  describe('intermission timer', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('does not crash when a player leaves during intermission causing the session to finish', () => {
+      // Regression: the intermission setTimeout was not stored, so it could not be
+      // cancelled when the session transitioned to finished. If a player left mid-
+      // intermission (reducing playerCount to 1), the session moved to finished, but
+      // the pending timer still fired and tried finished → countdown → throw.
+      const room = makeRoom();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+
+      vi.advanceTimersByTime(3500); // countdown → playing
+      expect(room.status).toBe('playing');
+
+      fireGameOver('p2'); // round ends, not enough wins for match → intermission
+      expect(room.status).toBe('intermission');
+
+      // Player leaves mid-intermission: only 1 player remains → session goes to finished
+      room.removePlayer('p1');
+      expect(room.status).toBe('finished');
+
+      // The intermission timer fires — must not throw
+      expect(() => vi.runAllTimers()).not.toThrow();
+      expect(room.status).toBe('finished');
+    });
+  });
+
   describe('disconnect payment behavior', () => {
     it('cancels hold when a player leaves before the session starts', () => {
       const { service } = makeMockPaymentService();
