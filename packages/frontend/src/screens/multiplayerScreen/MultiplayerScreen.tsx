@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
-import { applyVignette, applyDangerBorder } from '../../game/DangerSignal';
+import { applyDangerBorder } from '../../game/DangerSignal';
+import { StaticVignetteOverlay } from '../../components/StaticVignetteOverlay';
 import { useRoom } from '../../context/SessionContext';
 import { COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +20,6 @@ export function MultiplayerScreen() {
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
   const boardWrapperRef = useRef<HTMLDivElement>(null);
-  const vignetteRef = useRef<HTMLDivElement>(null);
 
   const { roomState, leaveRoom } = useRoom();
   const { t } = useTranslation();
@@ -46,12 +46,8 @@ export function MultiplayerScreen() {
 
   useEffect(() => {
     if (!dangerSignal) return;
-    // Sync DOM immediately — the new signal starts at 0, clearing stale state
-    // from the previous round without waiting for the next board change.
-    applyVignette(vignetteRef.current, dangerSignal.value);
     applyDangerBorder(boardRef.current, dangerSignal.value);
     return dangerSignal.subscribe(level => {
-      applyVignette(vignetteRef.current, level);
       applyDangerBorder(boardRef.current, level);
     });
   }, [dangerSignal]);
@@ -82,7 +78,7 @@ export function MultiplayerScreen() {
 
             <div ref={boardWrapperRef} className="relative">
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
-              <div ref={vignetteRef} className="absolute inset-0 pointer-events-none" />
+              <StaticVignetteOverlay dangerSignal={dangerSignal} />
               {status === 'countdown' && <CountdownOverlay />}
               <BoardOverlay
                 status={status}

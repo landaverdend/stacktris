@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { ActivePiece, Board } from '@stacktris/shared';
 import { renderBoard, OPPONENT_CELL_SIZE } from '../render/board';
-import { boardDangerLevel, applyVignette, applyDangerBorderSimple } from '../game/DangerSignal';
+import { boardDangerLevel, applyDangerBorderSimple } from '../game/DangerSignal';
+import { drawStaticVignette } from './StaticVignetteOverlay';
 import { ScrollFlareOverlay } from './ScrollFlareOverlay';
 import { cn, truncateName } from '../lib/utils';
 
@@ -23,10 +24,14 @@ export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName,
   const boardRef = useRef(board);
   boardRef.current = board; // always in sync with latest prop
 
-  const vignetteRef = useRef<HTMLDivElement>(null);
+  const vignetteCanvasRef = useRef<HTMLCanvasElement>(null);
   const borderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Size the vignette canvas buffer once to match its CSS dimensions.
+    const vc = vignetteCanvasRef.current;
+    if (vc) { vc.width = vc.offsetWidth; vc.height = vc.offsetHeight; }
+
     let rafId: number;
     const loop = () => {
       const ctx = canvasRef.current?.getContext('2d');
@@ -34,7 +39,10 @@ export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName,
         const activePiece = activePieceMapRef.current?.get(slotIndex) ?? null;
         renderBoard(ctx, boardRef.current.slice(BUFFER_ROWS), activePiece, false, 1, OPPONENT_CELL_SIZE);
         const danger = boardDangerLevel(boardRef.current);
-        applyVignette(vignetteRef.current, danger);
+        const vctx = vignetteCanvasRef.current?.getContext('2d');
+        if (vctx && vignetteCanvasRef.current) {
+          drawStaticVignette(vctx, vignetteCanvasRef.current.width, vignetteCanvasRef.current.height, danger);
+        }
         applyDangerBorderSimple(borderRef.current, danger);
       }
       rafId = requestAnimationFrame(loop);
@@ -56,7 +64,7 @@ export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName,
           height={H}
           className="bg-pit block"
         />
-        <div ref={vignetteRef} className="absolute inset-0 pointer-events-none" />
+        <canvas ref={vignetteCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
         <div ref={borderRef} className="absolute inset-0 border border-nerv-dim pointer-events-none" />
       </div>
 
