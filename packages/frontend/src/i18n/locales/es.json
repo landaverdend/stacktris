@@ -76,6 +76,8 @@
     "paid": "PAGADO",
     "no_holds": "SIN APUESTAS AÚN",
     "notice": "AVISO: Desconectarse durante una partida activa resultará en la pérdida inmediata de los fondos apostados.",
+    "hold_notice": "// FACTURA RETENIDA — los fondos no se capturan hasta que termine la partida. no se te cobrará si el juego se cancela.",
+    "disconnect_warning": "desconectarse o salir a mitad de la partida resultará en la pérdida de los fondos apostados.",
     "copy_invoice": "COPIAR FACTURA",
     "payment_confirmed": "■ PAGO CONFIRMADO",
     "free_entry": "// ENTRADA LIBRE — SIN PAGO REQUERIDO",

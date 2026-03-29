@@ -132,6 +132,19 @@ export function RoomStagingOverlay() {
               <span className="font-mono text-[15px] tracking-[0.4em] text-amber/40">SATS</span>
             </div>
 
+            {/* Hold invoice notice */}
+            <div className="border-l-2 border-amber/30 pl-2 py-0.5 flex flex-col gap-1">
+              <p className="font-mono text-[9px] text-amber/40 leading-relaxed tracking-wide">
+                {t('staging.hold_notice')}
+              </p>
+              <div className="flex items-start gap-1">
+                <span className="text-alert text-[9px] leading-none mt-[1px] shrink-0">!</span>
+                <p className="font-mono text-[9px] text-alert/50 leading-relaxed tracking-wide">
+                  {t('staging.disconnect_warning')}
+                </p>
+              </div>
+            </div>
+
             {/* Action buttons */}
             <div className="flex gap-2">
               <button

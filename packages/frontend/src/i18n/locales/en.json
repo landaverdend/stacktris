@@ -76,6 +76,8 @@
     "paid": "PAID",
     "no_holds": "NO HOLDS YET",
     "notice": "NOTICE: Disconnecting during an active match will result in immediate forfeiture of staked funds.",
+    "hold_notice": "// HOLD INVOICE — funds are not captured until the match ends. you will not be charged if the game is cancelled.",
+    "disconnect_warning": "disconnecting or leaving mid-match will result in forfeiture of staked funds.",
     "copy_invoice": "COPY INVOICE",
     "payment_confirmed": "■ PAYMENT CONFIRMED",
     "free_entry": "// FREE ENTRY — NO PAYMENT REQUIRED",
