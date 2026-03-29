@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import type { DangerSignal } from '../game/DangerSignal';
 
 // Keep in sync with CSS variables in index.css
-const NERV_DIM = { r: 122, g: 64, b: 16 }; // --color-nerv-dim
-const ALERT = { r: 204, g: 34, b: 0 }; // --color-alert
+const BITCOIN = { r: 247, g: 147, b: 26 }; // --color-bitcoin
+const ALERT   = { r: 204, g: 34,  b: 0  }; // --color-alert
 
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
@@ -61,9 +61,9 @@ export function EvaSystemClock({ roundStartedAt, dangerSignal }: Props) {
       // ── Danger color — drives --clock-current-color on the container ────────
       const d = dangerRef.current;
       const t = Math.pow(d, 0.7);
-      const r = Math.round(lerp(NERV_DIM.r, ALERT.r, t));
-      const g = Math.round(lerp(NERV_DIM.g, ALERT.g, t));
-      const b = Math.round(lerp(NERV_DIM.b, ALERT.b, t));
+      const r = Math.round(lerp(BITCOIN.r, ALERT.r, t));
+      const g = Math.round(lerp(BITCOIN.g, ALERT.g, t));
+      const b = Math.round(lerp(BITCOIN.b, ALERT.b, t));
       container.style.setProperty('--clock-current-color', `rgb(${r},${g},${b})`);
 
       rafId = requestAnimationFrame(tick);

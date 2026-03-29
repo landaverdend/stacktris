@@ -101,9 +101,11 @@ export function RoomStagingOverlay() {
         </div>
 
         {/* Internal badge */}
-        <div className="flex flex-col items-end border border-[rgba(255,100,0,0.45)] px-2 py-1 bg-black">
-          <span className="font-jp font-bold text-xs text-amber">内部</span>
-          <span className="font-display font-bold text-xs tracking-widest text-amber/60">INTERNAL</span>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="bg-amber text-black font-jp font-bold text-[24px] px-1.5 py-0.5 border-2 border-black/40 leading-tight tracking-wider">
+            内部
+          </span>
+          <span className="font-mono text-[9px] tracking-[0.2em] text-amber/50">INTERNAL</span>
         </div>
       </div>
 
@@ -137,9 +139,9 @@ export function RoomStagingOverlay() {
           {needsPayment && bolt11 && (
             <div className="flex flex-col gap-4">
               {/* Amount row */}
-              <div className="flex items-end justify-between gap-3">
-                <div className="flex flex-col">
-                  <span className="font-mono text-[12px] tracking-[0.2em] text-amber/40 mb-1">即時送金</span>
+              <div className="flex flex-wrap items-end justify-between gap-3 min-w-0">
+                <div className="flex flex-col min-w-0">
+                  <span className="bg-amber text-black font-jp font-bold text-[16px] px-1.5 py-0.5 border-2 border-black/40 leading-tight tracking-wider inline-block w-fit mb-1">即時送金</span>
                   <div className="relative inline-block leading-none">
                     {/* Ghost segments — all segments on, very dim */}
                     <span
@@ -159,8 +161,8 @@ export function RoomStagingOverlay() {
                 {/* QR code */}
                 <button
                   onClick={() => setQrExpanded(true)}
-                  className="border border-[rgba(255,100,0,0.3)] p-2 bg-white shrink-0 cursor-pointer hover:border-[rgba(255,100,0,0.8)] transition-colors">
-                  <QRCodeSVG value={`lightning:${bolt11}`} size={148} level="L" marginSize={2} />
+                  className="border border-[rgba(255,100,0,0.3)] p-2 bg-white shrink-0 cursor-pointer hover:border-[rgba(255,100,0,0.8)] transition-colors max-w-full">
+                  <QRCodeSVG value={`lightning:${bolt11}`} size={130} level="L" marginSize={2} />
                 </button>
               </div>
 

@@ -19,6 +19,30 @@ const COLORS: readonly string[] = [
   '#888888', // 8 - garbage
 ];
 
+// ── Thermal gradient for locked cells (EVA-style heat-map) ──────────────────
+// Mirrors the position-analysis displays in NGE: red/orange at the top of the
+// stack, green through the middle, cyan/blue near the floor.
+const GRADIENT_STOPS: [number, number, number][] = [
+  [220, 32,  16 ], // 0.00 — deep red
+  [240, 128, 0  ], // 0.25 — orange
+  [64,  208, 32 ], // 0.50 — green
+  [0,   208, 192], // 0.75 — cyan
+  [32,  48,  224], // 1.00 — blue
+];
+
+function thermalColor(row: number, alpha = 1): string {
+  const t    = row / (ROWS - 1);
+  const seg  = t * (GRADIENT_STOPS.length - 1);
+  const i    = Math.min(Math.floor(seg), GRADIENT_STOPS.length - 2);
+  const f    = seg - i;
+  const [r1, g1, b1] = GRADIENT_STOPS[i];
+  const [r2, g2, b2] = GRADIENT_STOPS[i + 1];
+  const r = Math.round(r1 + (r2 - r1) * f);
+  const g = Math.round(g1 + (g2 - g1) * f);
+  const b = Math.round(b1 + (b2 - b1) * f);
+  return alpha === 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${alpha})`;
+}
+
 const EMPTY_COLOR = '#111111';
 const GHOST_ALPHA = 0.25;
 
@@ -40,11 +64,11 @@ export function renderBoard(
 
   if (dimmed) ctx.globalAlpha = 0.4;
 
-  // ── Locked cells ───────────────────────────────────────────────────────────
+  // ── Locked cells — thermal gradient by row, gray for garbage ──────────────
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const v = board[row]?.[col] ?? 0;
-      ctx.fillStyle = v === 0 ? EMPTY_COLOR : COLORS[v];
+      ctx.fillStyle = v === 0 ? EMPTY_COLOR : v === 8 ? COLORS[8] : thermalColor(row);
       ctx.fillRect(col * cellSize + GAP, row * cellSize + GAP, cellSize - GAP * 2, cellSize - GAP * 2);
     }
   }
@@ -53,17 +77,16 @@ export function renderBoard(
     const cells = pieceOffsets(activePiece);
     const visRow = activePiece.row - BUFFER_ROWS;
 
-    // ── Ghost piece ─────────────────────────────────────────────────────────
+    // ── Ghost piece — thermal color at destination row ───────────────────────
     const ghostRow = ghostDrop(board, cells, visRow, activePiece.col);
     const drop = ghostRow - visRow;
     if (drop > 0) {
-      ctx.globalAlpha = dimmed ? 0.1 : GHOST_ALPHA;
-      ctx.fillStyle = COLORS[pieceColorIndex(activePiece.kind)];
-
+      const ghostAlpha = dimmed ? 0.1 : GHOST_ALPHA;
       for (const [dr, dc] of cells) {
         const r = visRow + drop + dr;
         const c = activePiece.col + dc;
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
+        ctx.fillStyle = thermalColor(r, ghostAlpha);
         ctx.fillRect(c * cellSize + GAP, r * cellSize + GAP, cellSize - GAP * 2, cellSize - GAP * 2);
       }
       ctx.globalAlpha = dimmed ? 0.4 : 1;

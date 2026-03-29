@@ -415,7 +415,7 @@ input[type='range'].nerv-range::-moz-range-thumb {
   }
 
   /* ── Eva Clock reactive color — --clock-current-color set via JS on container ── */
-  .clock-reactive        { color:            var(--clock-current-color, #7a4010); }
-  .clock-reactive-bg     { background-color: var(--clock-current-color, #7a4010); }
-  .clock-reactive-border { border-color:     var(--clock-current-color, #7a4010); }
+  .clock-reactive        { color:            var(--clock-current-color, #f7931a); }
+  .clock-reactive-bg     { background-color: var(--clock-current-color, #f7931a); }
+  .clock-reactive-border { border-color:     var(--clock-current-color, #f7931a); }
 }

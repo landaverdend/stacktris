@@ -66,70 +66,70 @@ export function MultiplayerScreen() {
 
   return (
     <>
-    <NervGridOverlay dangerSignal={dangerSignal} />
-    <EvaSystemClock roundStartedAt={roundStartedAt} dangerSignal={dangerSignal} />
-    <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
-      <div className="flex justify-end items-start pt-1">
-        <PlayerList />
-      </div>
-
-      {/* ── Arena — always mounted, same position ── */}
-      <div className="flex items-start gap-3">
-        {/* Hold */}
-        <div className="flex flex-col gap-1.5 pt-1">
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.hold')}</span>
-            <span className="font-jp text-[15px] text-nerv-dim">ホールド</span>
-          </div>
-          <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
+      <NervGridOverlay dangerSignal={dangerSignal} />
+      <EvaSystemClock roundStartedAt={roundStartedAt} dangerSignal={dangerSignal} />
+      <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
+        <div className="flex justify-end items-start pt-1">
+          <PlayerList />
         </div>
 
-        <div className="flex items-end gap-1">
-          <GarbageMeter garbageStackRef={pendingGarbageRef} getCurrentTick={getTickCount} />
-          <div className="flex flex-col gap-1.5">
-            <RoomCodeBar roomId={roomState.roomId} />
+        {/* ── Arena — always mounted, same position ── */}
+        <div className="flex items-start gap-3">
+          {/* Hold */}
+          <div className="flex flex-col gap-1.5 pt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.hold')}</span>
+              <span className="font-jp text-[15px] text-nerv-dim">ホールド</span>
+            </div>
+            <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
+          </div>
+
+          <div className="flex items-end gap-1">
+            <GarbageMeter garbageStackRef={pendingGarbageRef} getCurrentTick={getTickCount} />
+            <div className="flex flex-col gap-1.5">
+              <RoomCodeBar roomId={roomState.roomId} />
 
 
-            <div ref={boardWrapperRef} className="relative">
-              <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
-              <StaticVignetteOverlay dangerSignal={dangerSignal} />
-              {status === 'countdown' && <CountdownOverlay />}
-              <BoardOverlay
-                status={status}
-                playerId={playerId ?? ''}
-                isClientAlive={isClientAlive}
-                roundWinnerId={winnerId ?? null}
-                matchWinnerId={roomState.matchWinnerId}
-                players={roomState.players}
-                potSats={roomState.potSats}
-                payoutPending={roomState.payoutPending}
-              />
+              <div ref={boardWrapperRef} className="relative">
+                <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
+                <StaticVignetteOverlay dangerSignal={dangerSignal} />
+                {status === 'countdown' && <CountdownOverlay />}
+                <BoardOverlay
+                  status={status}
+                  playerId={playerId ?? ''}
+                  isClientAlive={isClientAlive}
+                  roundWinnerId={winnerId ?? null}
+                  matchWinnerId={roomState.matchWinnerId}
+                  players={roomState.players}
+                  potSats={roomState.potSats}
+                  payoutPending={roomState.payoutPending}
+                />
 
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Next */}
-        <div className="flex flex-col gap-1.5 pt-1">
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.next')}</span>
-            <span className="font-jp text-[15px] text-nerv-dim">次</span>
+          {/* Next */}
+          <div className="flex flex-col gap-1.5 pt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.next')}</span>
+              <span className="font-jp text-[15px] text-nerv-dim">次</span>
+            </div>
+            <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
           </div>
-          <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
+        </div>
+
+        {/* ── Right panel - opponent boards ── */}
+        <div className="flex justify-start items-start pt-1">
+          <ConnectedBoards
+            players={roomState.players.filter((p) => p.playerId !== playerId)}
+            opponentBoards={opponentBoards}
+            activePieceMapRef={opponentActivePieces}
+            deadPlayers={deadPlayers}
+            roundWinnerId={winnerId}
+          />
         </div>
       </div>
-
-      {/* ── Right panel - opponent boards ── */}
-      <div className="flex justify-start items-start pt-1">
-        <ConnectedBoards
-          players={roomState.players.filter((p) => p.playerId !== playerId)}
-          opponentBoards={opponentBoards}
-          activePieceMapRef={opponentActivePieces}
-          deadPlayers={deadPlayers}
-          roundWinnerId={winnerId}
-        />
-      </div>
-    </div>
     </>
   );
 }
