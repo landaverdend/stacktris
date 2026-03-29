@@ -77,8 +77,6 @@
     "no_holds": "NO HOLDS YET",
     "notice": "NOTICE: Disconnecting during an active match will result in immediate forfeiture of staked funds.",
     "copy_invoice": "COPY INVOICE",
-    "pay_wallet": "PAY WALLET",
-    "show_qr": "SHOW QR",
     "payment_confirmed": "■ PAYMENT CONFIRMED",
     "free_entry": "// FREE ENTRY — NO PAYMENT REQUIRED",
     "awaiting_payment": "AWAITING PAYMENT",

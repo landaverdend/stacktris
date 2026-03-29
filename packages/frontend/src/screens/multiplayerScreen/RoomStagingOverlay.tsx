@@ -34,8 +34,6 @@ export function RoomStagingOverlay() {
   const [isReady, setIsReady] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrExpanded, setQrExpanded] = useState(false);
-  const [paymentSent, setPaymentSent] = useState(false);
-  const hasWebLN = typeof (window as any).webln !== 'undefined';
   const { t } = useTranslation();
 
   const { bolt11, invoicePaid, buyIn, potSats } = roomState;
@@ -60,31 +58,13 @@ export function RoomStagingOverlay() {
     });
   };
 
-  const pay = async () => {
-    if (!bolt11) return;
-    const webln = (window as any).webln;
-    if (webln) {
-      try {
-        await webln.enable();
-        // Don't await — hold invoices won't resolve until server settles.
-        // Let the server's WebSocket update invoicePaid instead.
-        webln.sendPayment(bolt11).catch(() => {});
-        setPaymentSent(true);
-      } catch {
-        setQrExpanded(true);
-      }
-    } else {
-      setQrExpanded(true);
-    }
-  };
 
   function statusLine() {
-    if (!bolt11 && buyIn > 0)   return '> GENERATING_INVOICE...';
-    if (!bolt11 && buyIn === 0)  return '> FREE_ENTRY — INITIATE_READY';
-    if (paymentSent && !invoicePaid) return '> PAYMENT_SENT — HOLD_PENDING';
-    if (needsPayment)            return '> AWAITING_PAYMENT';
-    if (isReady)                 return '> OPERATOR_READY — STANDBY';
-    if (invoicePaid)             return '> PAYMENT_CONFIRMED — INITIATE_READY';
+    if (!bolt11 && buyIn > 0)  return '> GENERATING_INVOICE...';
+    if (!bolt11 && buyIn === 0) return '> FREE_ENTRY — INITIATE_READY';
+    if (needsPayment)           return '> AWAITING_PAYMENT';
+    if (isReady)                return '> OPERATOR_READY — STANDBY';
+    if (invoicePaid)            return '> PAYMENT_CONFIRMED — INITIATE_READY';
     return '> FREE_ENTRY — INITIATE_READY';
   }
 
@@ -158,11 +138,6 @@ export function RoomStagingOverlay() {
                 onClick={copy}
                 className="flex-1 py-1.5 font-display font-bold text-xs tracking-widest border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
                 {copied ? t('common.copied') : t('staging.copy_invoice')}
-              </button>
-              <button
-                onClick={pay}
-                className="flex-1 py-1.5 font-display font-bold text-xs tracking-widest border border-amber/25 hover:border-amber/70 text-amber/55 hover:text-amber cursor-pointer transition-colors">
-                {hasWebLN ? t('staging.pay_wallet') : t('staging.show_qr')}
               </button>
               <button
                 onClick={() => setQrExpanded(true)}
