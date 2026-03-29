@@ -27,21 +27,21 @@ function rgba(c: RGB, alpha: number): string {
 }
 
 // ── Thresholds ────────────────────────────────────────────────────────────────
-const VIGNETTE_THRESHOLD = 0.30; // danger level at which vignette begins
-const BORDER_THRESHOLD   = 0.20; // border shifts earlier for a gradual transition
+const VIGNETTE_THRESHOLD = 0.18; // danger level at which vignette begins
+const BORDER_THRESHOLD   = 0.12; // border shifts early
 
 // ── Danger level computation ──────────────────────────────────────────────────
 
 /**
  * Computes a danger level from 0.0 (empty board) to 1.0 (stack at the ceiling).
- * Uses stack height with a power curve so the upper third feels appropriately urgent.
+ * Uses stack height with a power curve — lower exponent = ramps up faster/earlier.
  */
 export function boardDangerLevel(board: Board): number {
   for (let r = VISIBLE_ROW_START; r < ROWS; r++) {
     if (board[r].some(cell => cell !== 0)) {
       const rowsFromTop = r - VISIBLE_ROW_START;
       const raw = 1 - rowsFromTop / VISIBLE_ROWS;
-      return Math.pow(raw, 1.8);
+      return Math.pow(raw, 1.5);
     }
   }
   return 0;
@@ -65,13 +65,13 @@ export function applyVignette(el: HTMLElement | null, danger: number): void {
   }
 
   const t = (danger - VIGNETTE_THRESHOLD) / (1 - VIGNETTE_THRESHOLD);
-  const alpha  = Math.pow(t, 1.5) * 0.75;
-  const spread = 30 + t * 52; // 30px → 82px
+  const alpha  = Math.pow(t, 1.3) * 0.82;
+  const spread = 24 + t * 66; // 24px → 90px
 
   el.style.boxShadow = `inset 0 0 ${spread.toFixed(1)}px ${rgba(COLOR.danger, alpha)}`;
 
-  // Pulse: 2.2s when first entering danger zone → 0.55s when critical
-  const duration = (2.2 - Math.pow(t, 0.8) * 1.65).toFixed(2);
+  // Pulse: 2.0s when first entering danger zone → 0.38s when critical
+  const duration = (2.0 - Math.pow(t, 0.7) * 1.62).toFixed(2);
   el.style.animation = `vignette-breathe ${duration}s ease-in-out infinite`;
 }
 
@@ -79,7 +79,7 @@ export function applyVignette(el: HTMLElement | null, danger: number): void {
 function dangerBorderColor(danger: number): RGB | null {
   if (danger < BORDER_THRESHOLD) return null;
   const t = (danger - BORDER_THRESHOLD) / (1 - BORDER_THRESHOLD);
-  return lerpRGB(COLOR.bitcoin, COLOR.alert, Math.pow(t, 1.2));
+  return lerpRGB(COLOR.bitcoin, COLOR.alert, Math.pow(t, 0.9));
 }
 
 /**
@@ -94,8 +94,9 @@ export function applyDangerBorder(el: HTMLElement | null, danger: number): void 
     el.style.removeProperty('--nb-glow');
     return;
   }
-  el.style.setProperty('--nb-color', rgba(c, 0.85));
-  el.style.setProperty('--nb-glow',  rgba(c, 0.40));
+  const t = (danger - BORDER_THRESHOLD) / (1 - BORDER_THRESHOLD);
+  el.style.setProperty('--nb-color', rgba(c, 0.85 + t * 0.15));
+  el.style.setProperty('--nb-glow',  rgba(c, 0.40 + t * 0.32));
 }
 
 /**
