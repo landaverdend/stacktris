@@ -7,6 +7,7 @@ type CanvasRefs = {
   board: RefObject<HTMLCanvasElement | null>;
   queue: RefObject<HTMLCanvasElement | null>;
   hold: RefObject<HTMLCanvasElement | null>;
+  boardWrapper: RefObject<HTMLDivElement | null>;
 }
 
 export function useMultiplayerGameSession(refs: CanvasRefs) {
@@ -28,8 +29,8 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   useEffect(() => {
     const handleGameStart = (msg: { type: 'game_start'; seed: number }) => {
-      const { board, queue, hold } = refs;
-      if (!board.current || !queue.current || !hold.current) return;
+      const { board, queue, hold, boardWrapper } = refs;
+      if (!board.current || !queue.current || !hold.current || !boardWrapper.current) return;
 
       setRoundWinnerId(undefined);
       setOpponentBoards({});
@@ -45,7 +46,10 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => { pendingGarbageRef.current = val; });
       unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setTimeout(() => setIsClientAlive(false), 600));
 
-      gameSession.current.start({ board: board.current, queue: queue.current, hold: hold.current });
+      gameSession.current.start(
+        { board: board.current, queue: queue.current, hold: hold.current },
+        boardWrapper.current,
+      );
     };
 
     const handleOpponentBoardUpdate = (msg: { type: 'opponent_board_update'; slotIndex: number; board: Board }) => {

@@ -25,7 +25,7 @@ export function ScrollFlareOverlay({
       animate(el, { opacity: [1, 0] }, { duration: 0.1, ease: 'linear', repeat: Infinity });
 
       // Entry: pixels so the math is exact regardless of element size
-      await animate(el, { y: [window.innerHeight, 0] }, { duration: 3.5, ease: 'linear' });
+      await animate(el, { y: [window.innerHeight, 0] }, { duration: 2, ease: 'linear' });
 
       // Seamless loop: el is sized to content (h-auto), so half its height = exactly one set of rows
       const halfH = el.scrollHeight / 2;

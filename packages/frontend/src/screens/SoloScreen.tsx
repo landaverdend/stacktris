@@ -14,6 +14,7 @@ export function SoloScreen() {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
+  const boardWrapperRef = useRef<HTMLDivElement>(null);
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score] = useState(0);
@@ -22,7 +23,10 @@ export function SoloScreen() {
 
   useEffect(() => {
     const game = new LocalGame();
-    game.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! });
+    game.start(
+      { board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! },
+      boardWrapperRef.current!,
+    );
 
     game.subscribe('pieceLocked', () => {
       setLines(game.state.lines);
@@ -50,7 +54,7 @@ export function SoloScreen() {
         </div>
 
         {/* Board */}
-        <div className="relative flex flex-col gap-1.5">
+        <div ref={boardWrapperRef} className="relative flex flex-col gap-1.5">
           {isGameOver && <ScrollFlareOverlay />}
           <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
         </div>

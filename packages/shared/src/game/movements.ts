@@ -47,10 +47,14 @@ export function tryRotate(board: Board, piece: ActivePiece, cw: boolean): boolea
   return false;
 }
 
-export function sonicDrop(board: Board, piece: ActivePiece): ActivePiece {
-  let p = piece;
-  while (canMoveDown(board, p)) applyMovement(p, 'move_down');
-  return p;
+/** Drops the piece to the floor in place. Returns the number of rows fallen. */
+export function sonicDrop(board: Board, piece: ActivePiece): number {
+  let rows = 0;
+  while (canMoveDown(board, piece)) {
+    applyMovement(piece, 'move_down');
+    rows++;
+  }
+  return rows;
 }
 
 

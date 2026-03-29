@@ -17,6 +17,7 @@ export function MultiplayerScreen() {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
+  const boardWrapperRef = useRef<HTMLDivElement>(null);
 
   const { roomState, leaveRoom } = useRoom();
   const { t } = useTranslation();
@@ -38,6 +39,7 @@ export function MultiplayerScreen() {
     board: boardRef,
     queue: queueRef,
     hold: holdRef,
+    boardWrapper: boardWrapperRef,
   });
   const { playerId } = useConnection();
 
@@ -64,7 +66,7 @@ export function MultiplayerScreen() {
             <RoomCodeBar roomId={roomState.roomId} />
 
 
-            <div className="relative">
+            <div ref={boardWrapperRef} className="relative">
               <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
               {status === 'countdown' && <CountdownOverlay />}
               <BoardOverlay

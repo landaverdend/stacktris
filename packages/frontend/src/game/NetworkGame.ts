@@ -9,6 +9,7 @@ import {
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
+import { BoardShaker } from './BoardShaker';
 import { Canvases, renderGameState } from '../render';
 
 
@@ -18,6 +19,7 @@ export class NetworkGame {
 
   private inputHandler: InputHandler;
   private inputBuffer: InputBuffer = [];
+  private shaker: BoardShaker | null = null;
 
   // Frame timing variables
   private rafId = 0;
@@ -61,7 +63,16 @@ export class NetworkGame {
     return this.frameCount;
   }
 
-  start(canvases: Canvases): void {
+  start(canvases: Canvases, boardWrapper: HTMLElement): void {
+    this.shaker = new BoardShaker(boardWrapper);
+
+    this.gameEngine.subscribe('hardDrop', (rows) => {
+      this.shaker?.onHardDrop(rows);
+    });
+    this.gameEngine.subscribe('pieceLocked', ({ linesCleared }) => {
+      this.shaker?.onLinesCleared(linesCleared);
+    });
+
     this.inputHandler.attach();
 
     const loop = (now: number) => {
@@ -77,22 +88,20 @@ export class NetworkGame {
 
           this.simTime -= FRAME_DURATION_MS;
 
-
           if (this.frameCount % 10 === 0) {
             this.ws.send({ type: 'game_action', buffer: this.inputBuffer, frame: this.frameCount });
             this.inputBuffer = [];
           }
 
-          // Send out a heartbeat every 5 seconds
           if (this.frameCount % 300 === 0) {
             const { board, activePiece, holdPiece, holdUsed, isGameOver, gravity, pendingGarbage, bag } = this.gameEngine.getState();
             this.ws.send({ type: 'game_state_heartbeat', state: { board, activePiece, holdPiece, holdUsed, isGameOver, gravityLevel: gravity, pendingGarbage, bagPosition: bag.position, frame: this.frameCount } });
           }
         }
-
       }
 
       renderGameState(this.gameEngine.getState(), canvases);
+      this.shaker?.tick();
       this.lastFrameTime = now;
       this.rafId = requestAnimationFrame(loop);
     };
@@ -107,6 +116,8 @@ export class NetworkGame {
   stop(): void {
     cancelAnimationFrame(this.rafId);
     this.inputHandler.detach();
+    this.shaker?.destroy();
+    this.shaker = null;
   }
 
   subscribe<K extends keyof EngineEventMap>(event: K, fn: (val: EngineEventMap[K]) => void): () => void {

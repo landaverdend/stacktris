@@ -1,6 +1,7 @@
 import { EngineEventMap, FRAME_DURATION_MS, GameEngine, GameState } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
+import { BoardShaker } from './BoardShaker';
 
 export interface GameStats {
   score: number;
@@ -18,6 +19,7 @@ export class LocalGame {
   private gameEngine: GameEngine;
 
   private inputHandler: InputHandler;
+  private shaker: BoardShaker | null = null;
   private rafId = 0;
 
   private frameCount = 0;
@@ -36,7 +38,16 @@ export class LocalGame {
     return this.gameEngine.getState();
   }
 
-  start(canvases: Canvases): void {
+  start(canvases: Canvases, boardWrapper: HTMLElement): void {
+    this.shaker = new BoardShaker(boardWrapper);
+
+    this.gameEngine.subscribe('hardDrop', (rows) => {
+      this.shaker?.onHardDrop(rows);
+    });
+    this.gameEngine.subscribe('pieceLocked', ({ linesCleared }) => {
+      this.shaker?.onLinesCleared(linesCleared);
+    });
+
     this.inputHandler.attach();
 
     const loop = (now: number) => {
@@ -46,15 +57,14 @@ export class LocalGame {
 
         while (this.simTime >= FRAME_DURATION_MS) {
           this.frameCount++;
-
           this.inputHandler.tick(now);
           this.gameEngine.tick();
-
           this.simTime -= FRAME_DURATION_MS;
         }
       }
 
       renderGameState(this.gameEngine.getState(), canvases);
+      this.shaker?.tick();
       this.lastFrameTime = now;
       this.rafId = requestAnimationFrame(loop);
     };
@@ -69,6 +79,8 @@ export class LocalGame {
   stop(): void {
     cancelAnimationFrame(this.rafId);
     this.inputHandler.detach();
+    this.shaker?.destroy();
+    this.shaker = null;
   }
 
   // Wrapper...

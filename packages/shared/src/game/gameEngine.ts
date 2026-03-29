@@ -38,6 +38,7 @@ export type EngineEventMap = {
   pendingGarbage: PendingGarbage[];
   pieceLocked: PieceLockedEvent;
   gameOver: void;
+  hardDrop: number; // rows fallen
 };
 
 /**
@@ -263,10 +264,12 @@ export class GameEngine {
       case 'rotate_ccw':
         moved = tryRotate(this.state.board, this.state.activePiece, false);
         break;
-      case 'hard_drop':
-        sonicDrop(this.state.board, this.state.activePiece);
+      case 'hard_drop': {
+        const rows = sonicDrop(this.state.board, this.state.activePiece);
+        this.emitter.emit('hardDrop', rows);
         this.handleLock();
         return; // no reset logic needed after a hard drop
+      }
 
       // Hold the current piece and spawn a new one
       case 'hold':
