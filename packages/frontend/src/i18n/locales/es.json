@@ -78,6 +78,7 @@
     "notice": "AVISO: Desconectarse durante una partida activa resultará en la pérdida inmediata de los fondos apostados.",
     "copy_invoice": "COPIAR FACTURA",
     "pay_wallet": "PAGAR CON BILLETERA",
+    "show_qr": "MOSTRAR QR",
     "payment_confirmed": "■ PAGO CONFIRMADO",
     "free_entry": "// ENTRADA LIBRE — SIN PAGO REQUERIDO",
     "awaiting_payment": "ESPERANDO PAGO",
