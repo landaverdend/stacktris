@@ -15,6 +15,7 @@ import { ConnectedBoards } from './ConnectedBoards';
 import { BoardOverlay } from './BoardOverlay';
 import { EvaSystemClock } from '../../components/EvaSystemClock';
 import { NervGridOverlay } from '../../components/NervGridOverlay';
+import { TelemetryColumns } from '../../components/TelemetryColumns';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -67,6 +68,7 @@ export function MultiplayerScreen() {
   return (
     <>
       <NervGridOverlay dangerSignal={dangerSignal} />
+      <TelemetryColumns dangerSignal={dangerSignal} />
       <EvaSystemClock roundStartedAt={roundStartedAt} dangerSignal={dangerSignal} />
       <div className="grid grid-cols-[1fr_auto_1fr] min-h-screen pt-14 gap-10 w-full">
         <div className="flex justify-end items-start pt-1">

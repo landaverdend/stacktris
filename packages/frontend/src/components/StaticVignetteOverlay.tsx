@@ -53,8 +53,8 @@ export function drawStaticVignette(ctx: CanvasRenderingContext2D, W: number, H: 
 
   // ── 1. Inset vignette gradient ─────────────────────────────────────────────
   const vigFlicker  = 1 - Math.random() * danger * 0.14;
-  const vigAlpha    = Math.pow(danger, 0.85) * 0.62 * vigFlicker;
-  const innerRadius = Math.hypot(CX, CY) * (0.15 + (1 - danger) * 0.25);
+  const vigAlpha    = Math.pow(danger, 0.85) * 0.38 * vigFlicker;
+  const innerRadius = Math.hypot(CX, CY) * (0.25 + (1 - danger) * 0.25);
   const outerRadius = Math.hypot(CX, CY) * 1.05;
 
   const grad = ctx.createRadialGradient(CX, CY, innerRadius, CX, CY, outerRadius);
@@ -66,7 +66,7 @@ export function drawStaticVignette(ctx: CanvasRenderingContext2D, W: number, H: 
 
   // ── 2. Static noise pixels ─────────────────────────────────────────────────
   const densityJitter = 0.8 + Math.random() * 0.4;
-  const count = Math.floor(danger * danger * 1400 * densityJitter);
+  const count = Math.floor(danger * danger * 700 * densityJitter);
 
   for (let i = 0; i < count; i++) {
     const x = Math.random() * W;
@@ -108,9 +108,9 @@ export function drawStaticVignette(ctx: CanvasRenderingContext2D, W: number, H: 
   }
 
   // ── 5. Edge smear bands ───────────────────────────────────────────────────
-  if (danger > 0.4) {
-    const bw = (danger * danger * 18) | 0;
-    const ba = danger * 0.18;
+  if (danger > 0.55) {
+    const bw = (danger * danger * 12) | 0;
+    const ba = danger * 0.10;
     ctx.fillStyle = `rgba(160,0,0,${ba.toFixed(3)})`;
     ctx.fillRect(0,    0, bw, H);
     ctx.fillRect(W-bw, 0, bw, H);

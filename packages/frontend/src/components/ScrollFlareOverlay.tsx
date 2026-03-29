@@ -45,11 +45,11 @@ export function ScrollFlareOverlay({
   const glow = `0 0 12px ${color}, 0 0 28px ${color}80`;
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0,0,0,0.88)' }} />
+    <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[3px]">
+      <div className="absolute inset-0 bg-black/70" />
       <div ref={scope} className="absolute top-0 left-0 w-full flex flex-col">
         {Array.from({ length: rows * 2 }).map((_, r) => (
-          <div key={r} className="flex justify-around w-full" style={{ lineHeight: 1.05 }}>
+          <div key={r} className="flex justify-around w-full leading-[1.05]">
             {[0, 1].map(c => (
               <span
                 key={c}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { NervGridOverlay } from '../components/NervGridOverlay';
+import { TelemetryColumns } from '../components/TelemetryColumns';
 import { useNavigate } from 'react-router-dom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
@@ -53,6 +54,7 @@ export function SoloScreen() {
   return (
     <>
     <NervGridOverlay dangerSignal={dangerSignal} />
+    <TelemetryColumns dangerSignal={dangerSignal} />
     <div className="flex items-start justify-center min-h-screen pt-14 gap-10">
       {/* Arena */}
       <div className="flex items-start gap-3">
