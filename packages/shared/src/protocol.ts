@@ -100,6 +100,5 @@ export type ServerMsg =
   | { type: 'opponent_board_update'; slotIndex: number; board: Board }
   | { type: 'game_player_died'; slotIndex: number }
   | { type: 'opponent_piece_update'; slotIndex: number; activePiece: ActivePiece | null }
-  | { type: 'gravity_update'; level: number }
   | { type: 'error'; message: string }
   | { type: 'payout_pending'; amountSats: number; lightningAddress: string };

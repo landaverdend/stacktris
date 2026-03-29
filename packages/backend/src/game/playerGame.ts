@@ -22,10 +22,6 @@ export class PlayerGame {
     this.gameEngine.addGarbage(lines, sentFrame);
   }
 
-  setGravityLevel(level: number): void {
-    this.gameEngine.setGravityLevel(level);
-  }
-
   toGameFrame(): GameFrame {
     const state = this.gameEngine.getState();
     return {

@@ -4,12 +4,13 @@ import { createGameState, GameState, gravityForLevel, mulberry32, PendingGarbage
 import { ActivePiece, InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
 import { boardCells } from "./pieces.js";
-import { GameFrame } from "../protocol.js";
+import { GameFrame, MULTIPLAYER_GRAVITY_CONFIG } from "../protocol.js";
 
 
 export const LOCK_DELAY_FRAMES = 30; // 500ms at 60fps, half a second of lock delay.
 export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 export const FRAME_DURATION_MS = 1000 / 60; // 16.666ms
+export const MULTIPLAYER_FRAMES_PER_GRAVITY_LEVEL = MULTIPLAYER_GRAVITY_CONFIG.INTERVAL_MS / FRAME_DURATION_MS;
 
 export const GARBAGE_DELAY_FRAMES = 60 * 4; // 7 seconds of delay
 
@@ -100,6 +101,14 @@ export class GameEngine {
     if (this.state.isGameOver) return;
 
     this.tickCount++;
+
+    if (this.state.gravityMode === 'multiplayer') {
+      const level = Math.min(
+        MULTIPLAYER_GRAVITY_CONFIG.START_LEVEL + Math.floor(this.tickCount / MULTIPLAYER_FRAMES_PER_GRAVITY_LEVEL),
+        MULTIPLAYER_GRAVITY_CONFIG.MAX_LEVEL
+      );
+      this.state.gravity = gravityForLevel(level);
+    }
 
     this.handlePendingGarbage();
 

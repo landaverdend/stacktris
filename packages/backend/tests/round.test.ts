@@ -35,7 +35,6 @@ class MockPlayerGame {
   addGarbage = vi.fn();
   handleInput = vi.fn();
   tickTo = vi.fn();
-  setGravityLevel = vi.fn();
   toGameFrame = vi.fn(() => ({
     board: [], activePiece: null, holdPiece: null, holdUsed: false,
     isGameOver: false, gravityLevel: 0.02, pendingGarbage: [], bagPosition: 0, frame: 0,

@@ -34,7 +34,6 @@ export const MsgCode = {
   OPPONENT_BOARD_UPDATE: 0x19,
   GAME_PLAYER_DIED: 0x1A,
   OPPONENT_PIECE_UPDATE: 0x1B,
-  GRAVITY_UPDATE: 0x1C,
   ERROR: 0x1D,
   PAYOUT_PENDING: 0x1E,
 } as const;
@@ -102,7 +101,6 @@ export function encodeMsg(msg: Message): Uint8Array {
     case 'welcome':               return encodeOpcodeAndId(MsgCode.WELCOME, msg.player_id);
     case 'session_created':       return encodeOpcodeAndId(MsgCode.SESSION_CREATED, msg.room_id);
     case 'session_joined':        return encodeOpcodeAndId(MsgCode.SESSION_JOINED, msg.room_id);
-    case 'gravity_update':        return new Uint8Array([MsgCode.GRAVITY_UPDATE, msg.level]);
     case 'game_start': {
       const stream = new ByteStream();
       stream.writeInt(MsgCode.GAME_START, 1);
@@ -193,7 +191,6 @@ export function decodeMsg(data: Uint8Array) {
     case MsgCode.WELCOME:               return { type: 'welcome', player_id: UTF8_DECODER.decode(stream.readToEnd()) };
     case MsgCode.SESSION_CREATED:       return { type: 'session_created', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
     case MsgCode.SESSION_JOINED:        return { type: 'session_joined', room_id: UTF8_DECODER.decode(stream.readToEnd()) };
-    case MsgCode.GRAVITY_UPDATE:        return { type: 'gravity_update', level: stream.read(1)[0] };
     case MsgCode.GAME_START: {
       const seed = Number(bigEndianToInteger(stream.read(4)));
       const roundStartTime = Number(bigEndianToInteger(stream.read(8)));

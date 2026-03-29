@@ -48,10 +48,6 @@ export class NetworkGame {
       this.gameEngine.addGarbage(msg.lines, msg.triggerFrame);
     })
 
-    this.ws.on('gravity_update', (msg: { level: number }) => {
-      this.gameEngine.setGravityLevel(msg.level);
-    })
-
     this.gameEngine.subscribe('gameOver', () => {
       this.inputHandler.detach();
       setTimeout(() => this.ws.send({ type: 'player_died' }), 600);

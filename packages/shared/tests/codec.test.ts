@@ -596,25 +596,6 @@ const makeSessionState = (overrides: Partial<SessionState> = {}): SessionState =
   ...overrides,
 });
 
-// ── gravity_update ────────────────────────────────────────────────────────────
-
-describe('gravity_update encode/decode', () => {
-  it('encodes to 2 bytes', () => {
-    expect(encodeMsg({ type: 'gravity_update', level: 5 }).length).toBe(2);
-  });
-
-  it('first byte is the GRAVITY_UPDATE opcode', () => {
-    expect(encodeMsg({ type: 'gravity_update', level: 1 })[0]).toBe(MsgCode.GRAVITY_UPDATE);
-  });
-
-  it('round-trips level', () => {
-    for (const level of [1, 10, 20]) {
-      const decoded = decodeMsg(encodeMsg({ type: 'gravity_update', level })) as { type: string; level: number };
-      expect(decoded.level).toBe(level);
-    }
-  });
-});
-
 // ── game_start ────────────────────────────────────────────────────────────────
 
 describe('game_start encode/decode', () => {

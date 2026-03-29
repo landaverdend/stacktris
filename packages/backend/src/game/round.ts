@@ -1,4 +1,4 @@
-import { Board, ClientMsg, Emitter, FRAME_DURATION_MS, GameFrame, InputBuffer, MULTIPLAYER_GRAVITY_CONFIG, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, Emitter, FRAME_DURATION_MS, GameFrame, InputBuffer, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
@@ -77,9 +77,6 @@ export class Round {
   private alivePlayers: Set<string> = new Set();
 
   private gameEnded = false;
-
-  private gravityLevel = MULTIPLAYER_GRAVITY_CONFIG.START_LEVEL;
-  private gravityTimer: ReturnType<typeof setInterval> | null = null;
 
   private roundStartTime: number;
   private watchdogInterval: ReturnType<typeof setInterval> | null = null;
@@ -174,38 +171,14 @@ export class Round {
       this.broadcastBoardUpdate(playerId, pg.toGameFrame().board);
     }
 
-    this.startGravityTimer();
   }
 
   public destroy(): void {
-
-    if (this.gravityTimer !== null) {
-      clearInterval(this.gravityTimer);
-      this.gravityTimer = null;
-    }
 
     if (this.watchdogInterval !== null) {
       clearInterval(this.watchdogInterval);
       this.watchdogInterval = null;
     }
-  }
-
-  private startGravityTimer(): void {
-    this.gravityLevel = MULTIPLAYER_GRAVITY_CONFIG.START_LEVEL;
-
-
-    this.gravityTimer = setInterval(() => {
-      if (this.gameEnded) return;
-      if (this.gravityLevel >= MULTIPLAYER_GRAVITY_CONFIG.MAX_LEVEL) return;
-
-      this.gravityLevel++;
-      console.log(`[gravity_update] gravity level increased to ${this.gravityLevel}`);
-      for (const pg of Object.values(this.playerGames)) {
-        pg.setGravityLevel(this.gravityLevel);
-      }
-      this.broadcastToAll({ type: 'gravity_update', level: this.gravityLevel });
-
-    }, MULTIPLAYER_GRAVITY_CONFIG.INTERVAL_MS);
   }
 
   /** Remove a player from the session — used for both engine game-over and disconnects. */
