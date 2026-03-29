@@ -75,24 +75,37 @@ export function applyVignette(el: HTMLElement | null, danger: number): void {
   el.style.animation = `vignette-breathe ${duration}s ease-in-out infinite`;
 }
 
+// Shared color computation — returns null when below the threshold (safe state).
+function dangerBorderColor(danger: number): RGB | null {
+  if (danger < BORDER_THRESHOLD) return null;
+  const t = (danger - BORDER_THRESHOLD) / (1 - BORDER_THRESHOLD);
+  return lerpRGB(COLOR.bitcoin, COLOR.alert, Math.pow(t, 1.2));
+}
+
 /**
- * Shifts the nerv-border color on the board canvas from bitcoin-orange toward
- * alert-red as danger increases. Resets to the default token when safe.
+ * Shifts the nerv-border color (via CSS custom properties) from bitcoin-orange
+ * toward alert-red. Use this on elements that have the nerv-border class.
  */
 export function applyDangerBorder(el: HTMLElement | null, danger: number): void {
   if (!el) return;
-
-  if (danger < BORDER_THRESHOLD) {
+  const c = dangerBorderColor(danger);
+  if (!c) {
     el.style.removeProperty('--nb-color');
     el.style.removeProperty('--nb-glow');
     return;
   }
-
-  const t = (danger - BORDER_THRESHOLD) / (1 - BORDER_THRESHOLD);
-  const c = lerpRGB(COLOR.bitcoin, COLOR.alert, Math.pow(t, 1.2));
-
   el.style.setProperty('--nb-color', rgba(c, 0.85));
   el.style.setProperty('--nb-glow',  rgba(c, 0.40));
+}
+
+/**
+ * Same color shift for plain bordered elements (e.g. opponent boards) that
+ * don't use nerv-border. Writes directly to borderColor.
+ */
+export function applyDangerBorderSimple(el: HTMLElement | null, danger: number): void {
+  if (!el) return;
+  const c = dangerBorderColor(danger);
+  el.style.borderColor = c ? rgba(c, 0.85) : '';
 }
 
 // ── Signal ────────────────────────────────────────────────────────────────────

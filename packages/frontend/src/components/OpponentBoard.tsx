@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ActivePiece, Board } from '@stacktris/shared';
 import { renderBoard, OPPONENT_CELL_SIZE } from '../render/board';
+import { boardDangerLevel, applyVignette, applyDangerBorderSimple } from '../game/DangerSignal';
 import { ScrollFlareOverlay } from './ScrollFlareOverlay';
 import { cn, truncateName } from '../lib/utils';
 
@@ -22,6 +23,9 @@ export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName,
   const boardRef = useRef(board);
   boardRef.current = board; // always in sync with latest prop
 
+  const vignetteRef = useRef<HTMLDivElement>(null);
+  const borderRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let rafId: number;
     const loop = () => {
@@ -29,6 +33,9 @@ export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName,
       if (ctx && boardRef.current) {
         const activePiece = activePieceMapRef.current?.get(slotIndex) ?? null;
         renderBoard(ctx, boardRef.current.slice(BUFFER_ROWS), activePiece, false, 1, OPPONENT_CELL_SIZE);
+        const danger = boardDangerLevel(boardRef.current);
+        applyVignette(vignetteRef.current, danger);
+        applyDangerBorderSimple(borderRef.current, danger);
       }
       rafId = requestAnimationFrame(loop);
     };
@@ -49,7 +56,8 @@ export function OpponentBoard({ slotIndex, board, activePieceMapRef, playerName,
           height={H}
           className="bg-pit block"
         />
-        <div className="absolute inset-0 border border-nerv-dim pointer-events-none" />
+        <div ref={vignetteRef} className="absolute inset-0 pointer-events-none" />
+        <div ref={borderRef} className="absolute inset-0 border border-nerv-dim pointer-events-none" />
       </div>
 
       {displayName && (
