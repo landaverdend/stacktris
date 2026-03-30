@@ -1,6 +1,6 @@
-import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START, isTSpin } from "./board.js";
+import { applyGarbageLines, clearLines, lockPiece, spawnPiece, Board, isValid, VISIBLE_ROW_START, isTSpin } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
-import { createGameState, GameState, gravityForLevel, mulberry32, PendingGarbage } from "./state.js";
+import { createGameState, GameState, gravityForLevel, PendingGarbage } from "./state.js";
 import { ActivePiece, InputAction, PieceKind } from "./types.js";
 import { Emitter } from "./emitter.js";
 import { boardCells } from "./pieces.js";
@@ -12,7 +12,7 @@ export const MAX_LOCK_RESETS = 25; // 15 moves until the piece locks in place.
 export const FRAME_DURATION_MS = 1000 / 60; // 16.666ms
 export const MULTIPLAYER_FRAMES_PER_GRAVITY_LEVEL = MULTIPLAYER_GRAVITY_CONFIG.INTERVAL_MS / FRAME_DURATION_MS;
 
-export const GARBAGE_DELAY_FRAMES = 60 * 4; // 7 seconds of delay
+export const GARBAGE_DELAY_FRAMES = 60 * 4; // 4 seconds of delay
 
 // Lines cleared → garbage lines sent to opponent. Singles send nothing.
 export const GARBAGE_TABLE: Record<number, number> = {
@@ -60,7 +60,6 @@ export class GameEngine {
   private startLevel: number;
   private state: GameState;
   private tickCount = 0;
-  private garbageRng: () => number;
   private emitter = new Emitter<EngineEventMap>();
 
   subscribe = this.emitter.subscribe.bind(this.emitter);
@@ -68,7 +67,6 @@ export class GameEngine {
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
     this.startLevel = config?.startLevel ?? 0;
-    this.garbageRng = mulberry32(this.seed);
 
     if (!config) {
       this.state = createGameState(this.seed);
@@ -186,6 +184,7 @@ export class GameEngine {
     const ready = this.state.pendingGarbage.filter(g => this.tickCount >= g.triggerFrame);
     if (ready.length === 0) return;
     this.setPendingGarbage(this.state.pendingGarbage.filter(g => this.tickCount < g.triggerFrame));
+    console.log(`[garbage:apply] frame=${this.tickCount} applying ${ready.length} batch(es): ${ready.map(g => `${g.lines}L gap=${g.gap} (triggerFrame=${g.triggerFrame})`).join(', ')}`);
     for (const g of ready) {
       applyGarbageLines(this.state.board, g.lines, g.gap);
       while (!isValid(this.state.board, this.state.activePiece)) {
@@ -228,7 +227,6 @@ export class GameEngine {
 
     // Check if any lines are full and clear them. Update score and level based on the number of lines cleared.
     const tSpin = isTSpin(this.state.board, this.state.activePiece);
-    console.log('tSpin ', tSpin);
     const linesCleared = clearLines(this.state.board);
     let b2bBonus = false;
     if (linesCleared > 0) {
@@ -327,24 +325,38 @@ export class GameEngine {
     }
   }
 
-  addGarbage(n: number, triggerFrame: number): void {
-    const gap = Math.floor(this.garbageRng() * COLS);
+  addGarbage(n: number, triggerFrame: number, gap: number): void {
     this.setPendingGarbage([...this.state.pendingGarbage, { lines: n, triggerFrame: triggerFrame + GARBAGE_DELAY_FRAMES, gap }]);
   }
 
   clearPendingGarbage(n: number): number {
-    const queue = [...this.state.pendingGarbage];
-    while (n > 0 && queue.length > 0) {
-      const first = queue[0];
+    // Only cancel garbage whose attack was sent before this clear frame.
+    // Garbage sent at frame S is stored as triggerFrame = S + GARBAGE_DELAY_FRAMES,
+    // so S = triggerFrame - GARBAGE_DELAY_FRAMES. If S >= tickCount the attacker
+    // struck after (or simultaneous with) this clear and the garbage stands.
+    const cancellable = this.state.pendingGarbage.filter(g => g.triggerFrame - GARBAGE_DELAY_FRAMES <= this.tickCount);
+    const untouched   = this.state.pendingGarbage.filter(g => g.triggerFrame - GARBAGE_DELAY_FRAMES > this.tickCount);
+
+    if (untouched.length > 0) {
+      console.log(`[garbage:cancel] frame=${this.tickCount} skipping ${untouched.length} entr(ies) sent after clear (sentFrames: ${untouched.map(g => g.triggerFrame - GARBAGE_DELAY_FRAMES).join(', ')})`);
+    }
+
+    const linesAvailable = cancellable.reduce((sum, g) => sum + g.lines, 0);
+    while (n > 0 && cancellable.length > 0) {
+      const first = cancellable[0];
       if (first.lines <= n) {
         n -= first.lines;
-        queue.shift();
+        cancellable.shift();
       } else {
-        queue[0] = { ...first, lines: first.lines - n };
+        cancellable[0] = { ...first, lines: first.lines - n };
         n = 0;
       }
     }
-    this.setPendingGarbage(queue);
+    const linesCancelled = linesAvailable - cancellable.reduce((sum, g) => sum + g.lines, 0);
+    if (linesCancelled > 0) {
+      console.log(`[garbage:cancel] frame=${this.tickCount} cancelled=${linesCancelled} remaining queue: ${JSON.stringify([...cancellable, ...untouched])}`);
+    }
+    this.setPendingGarbage([...cancellable, ...untouched]);
     return n; // leftover lines not cancelled = net attack
   }
 

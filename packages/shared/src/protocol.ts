@@ -97,7 +97,7 @@ export type ServerMsg =
   // Game Ops
   | { type: 'game_start'; seed: number; roundStartTime: number }
   | { type: 'game_state_update'; frame: GameFrame }
-  | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number }
+  | { type: 'game_garbage_incoming'; lines: number; triggerFrame: number; gap: number }
   | { type: 'opponent_board_update'; slotIndex: number; board: Board }
   | { type: 'game_player_died'; slotIndex: number }
   | { type: 'opponent_piece_update'; slotIndex: number; activePiece: ActivePiece | null }

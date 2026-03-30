@@ -143,6 +143,7 @@ export function encodeMsg(msg: Message): Uint8Array {
       stream.writeInt(MsgCode.GAME_GARBAGE_INCOMING, 1);
       stream.writeInt(msg.lines, 1);
       stream.writeInt(msg.triggerFrame, 3);
+      stream.writeInt(msg.gap, 1);
       return stream.toBytes();
     }
     case 'opponent_piece_update': {
@@ -214,7 +215,8 @@ export function decodeMsg(data: Uint8Array) {
     case MsgCode.GAME_GARBAGE_INCOMING: {
       const lines = stream.read(1)[0];
       const triggerFrame = Number(bigEndianToInteger(stream.read(3)));
-      return { type: 'game_garbage_incoming', lines, triggerFrame };
+      const gap = stream.read(1)[0];
+      return { type: 'game_garbage_incoming', lines, triggerFrame, gap };
     }
     case MsgCode.OPPONENT_PIECE_UPDATE: {
       const slotIndex = stream.read(1)[0];

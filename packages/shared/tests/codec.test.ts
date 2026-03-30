@@ -502,32 +502,33 @@ describe('bet_invoice_issued encode/decode', () => {
 
 describe('game_garbage_incoming encode/decode', () => {
   it('first byte is the GAME_GARBAGE_INCOMING opcode', () => {
-    const buf = encodeMsg({ type: 'game_garbage_incoming', lines: 2, triggerFrame: 100 });
+    const buf = encodeMsg({ type: 'game_garbage_incoming', lines: 2, triggerFrame: 100, gap: 3 });
     expect(buf[0]).toBe(MsgCode.GAME_GARBAGE_INCOMING);
   });
 
-  it('total length is 5 bytes', () => {
-    const buf = encodeMsg({ type: 'game_garbage_incoming', lines: 1, triggerFrame: 1 });
-    expect(buf.length).toBe(5);
+  it('total length is 6 bytes', () => {
+    const buf = encodeMsg({ type: 'game_garbage_incoming', lines: 1, triggerFrame: 1, gap: 0 });
+    expect(buf.length).toBe(6);
   });
 
-  it('round-trips lines and triggerFrame', () => {
-    const msg = { type: 'game_garbage_incoming' as const, lines: 4, triggerFrame: 3600 };
+  it('round-trips lines, triggerFrame, and gap', () => {
+    const msg = { type: 'game_garbage_incoming' as const, lines: 4, triggerFrame: 3600, gap: 7 };
     const decoded = decodeMsg(encodeMsg(msg)) as typeof msg;
     expect(decoded.type).toBe('game_garbage_incoming');
     expect(decoded.lines).toBe(4);
     expect(decoded.triggerFrame).toBe(3600);
+    expect(decoded.gap).toBe(7);
   });
 
   it('round-trips a large triggerFrame', () => {
-    const msg = { type: 'game_garbage_incoming' as const, lines: 2, triggerFrame: 16_000_000 };
+    const msg = { type: 'game_garbage_incoming' as const, lines: 2, triggerFrame: 16_000_000, gap: 0 };
     const decoded = decodeMsg(encodeMsg(msg)) as typeof msg;
     expect(decoded.triggerFrame).toBe(16_000_000);
   });
 
   it('round-trips all line counts 1-4', () => {
     for (const lines of [1, 2, 3, 4]) {
-      const msg = { type: 'game_garbage_incoming' as const, lines, triggerFrame: 0 };
+      const msg = { type: 'game_garbage_incoming' as const, lines, triggerFrame: 0, gap: 0 };
       const decoded = decodeMsg(encodeMsg(msg)) as typeof msg;
       expect(decoded.lines).toBe(lines);
     }

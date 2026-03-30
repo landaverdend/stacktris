@@ -24,21 +24,21 @@ function fillBottomRows(engine: GameEngine, n: number) {
 describe('addGarbage: queuing', () => {
   it('adds an entry to pendingGarbage', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(3, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(3, GARBAGE_DELAY_FRAMES, 0);
     expect(engine.getState().pendingGarbage.length).toBe(1);
     expect(engine.getState().pendingGarbage[0].lines).toBe(3);
   });
 
   it('triggerFrame is sentFrame + GARBAGE_DELAY_FRAMES', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(2, 5);
+    engine.addGarbage(2, 5, 0);
     expect(engine.getState().pendingGarbage[0].triggerFrame).toBe(5 + GARBAGE_DELAY_FRAMES);
   });
 
   it('multiple addGarbage calls stack in order', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(1, 100);
-    engine.addGarbage(4, 100);
+    engine.addGarbage(1, 100, 0);
+    engine.addGarbage(4, 100, 0);
     expect(engine.getState().pendingGarbage.length).toBe(2);
     expect(engine.getState().pendingGarbage[0].lines).toBe(1);
     expect(engine.getState().pendingGarbage[1].lines).toBe(4);
@@ -49,7 +49,7 @@ describe('addGarbage: queuing', () => {
 describe('garbage timing', () => {
   it('does not apply before triggerFrame is reached', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(2, 0);
+    engine.addGarbage(2, 0, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES - 1);
     expect(engine.getState().pendingGarbage.length).toBe(1);
     expect(engine.getState().board[ROWS - 1].some(c => c === 8)).toBe(false);
@@ -57,7 +57,7 @@ describe('garbage timing', () => {
 
   it('applies on the tick that reaches triggerFrame', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(2, 0);
+    engine.addGarbage(2, 0, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES);
     expect(engine.getState().pendingGarbage.length).toBe(0);
     expect(engine.getState().board[ROWS - 1].some(c => c === 8)).toBe(true);
@@ -66,7 +66,7 @@ describe('garbage timing', () => {
 
   it('applies the correct number of garbage rows', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(4, 0);
+    engine.addGarbage(4, 0, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES);
     const garbageRows = engine.getState().board.filter(row => row.some(c => c === 8));
     expect(garbageRows.length).toBe(4);
@@ -74,8 +74,8 @@ describe('garbage timing', () => {
 
   it('two entries with different delays apply independently', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(1, 0);
-    engine.addGarbage(1, 5);
+    engine.addGarbage(1, 0, 0);
+    engine.addGarbage(1, 5, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES);
     expect(engine.getState().pendingGarbage.length).toBe(1); // second still pending
     expect(engine.getState().board[ROWS - 1].some(c => c === 8)).toBe(true);
@@ -89,7 +89,7 @@ describe('garbage timing', () => {
 describe('garbage cancellation on line clear', () => {
   it('line clears cancel pending garbage from the front of the queue', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(2, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(2, 0, 0);
     fillBottomRows(engine, 3);
     engine.handleInput('hard_drop');
     // 3 lines cleared → 2 attack, 2 pending → queue fully cancelled
@@ -98,7 +98,7 @@ describe('garbage cancellation on line clear', () => {
 
   it('partial cancellation: clears fewer lines than pending', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(4, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(4, 0, 0);
     fillBottomRows(engine, 2);
     engine.handleInput('hard_drop');
     // 2 lines cleared → 1 attack, 4 pending → 3 remain
@@ -108,8 +108,8 @@ describe('garbage cancellation on line clear', () => {
 
   it('cancellation spans multiple queue entries FIFO', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(1, GARBAGE_DELAY_FRAMES);
-    engine.addGarbage(2, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(1, 0, 0);
+    engine.addGarbage(2, 0, 0);
     fillBottomRows(engine, 3);
     engine.handleInput('hard_drop');
     // 3 lines cleared → 2 attack: removes first entry (1) and takes 1 from second → 1 remains
@@ -119,7 +119,7 @@ describe('garbage cancellation on line clear', () => {
 
   it('clearing more lines than queued fully drains the queue', () => {
     const engine = new GameEngine({ seed: 42 });
-    engine.addGarbage(1, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(1, 0, 0);
     fillBottomRows(engine, 4);
     engine.handleInput('hard_drop');
     expect(engine.getState().pendingGarbage.length).toBe(0);
@@ -132,7 +132,7 @@ describe('garbage shifts active piece up', () => {
   it('does not shift the piece if it is floating above the garbage', () => {
     const engine = new GameEngine({ seed: 42, gravityMode: 'multiplayer' });
     // Piece spawns near the top — garbage at the bottom won't reach it
-    engine.addGarbage(2, 0);
+    engine.addGarbage(2, 0, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES - 1);
     const rowBefore = engine.getState().activePiece.row;
     engine.tick(); // garbage fires
@@ -146,7 +146,7 @@ describe('garbage shifts active piece up', () => {
     for (let r = 4; r < ROWS; r++) board[r].fill(1);
     // Force piece to sit right on top of the stack at row 3
     engine.getState().activePiece.row = 3;
-    engine.addGarbage(2, 0);
+    engine.addGarbage(2, 0, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES - 1);
     engine.tick(); // garbage fires — board shifts up 2, piece would overlap
     const { board: b, activePiece } = engine.getState();
@@ -157,7 +157,7 @@ describe('garbage shifts active piece up', () => {
 
   it('active piece does not overlap board cells after garbage is applied', () => {
     const engine = new GameEngine({ seed: 42, gravityMode: 'multiplayer' });
-    engine.addGarbage(4, 0);
+    engine.addGarbage(4, 0, 0);
     tickN(engine, GARBAGE_DELAY_FRAMES);
     const { board, activePiece } = engine.getState();
     for (const [r, c] of boardCells(activePiece)) {
@@ -182,7 +182,7 @@ describe('onAttack callback', () => {
     const onAttack = vi.fn();
     const engine = new GameEngine({ seed: 42 });
     engine.subscribe('attack', onAttack);
-    engine.addGarbage(4, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(4, 0, 0);
     fillBottomRows(engine, 2);
     engine.handleInput('hard_drop');
     expect(onAttack).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe('onAttack callback', () => {
     const onAttack = vi.fn();
     const engine = new GameEngine({ seed: 42 });
     engine.subscribe('attack', onAttack);
-    engine.addGarbage(1, GARBAGE_DELAY_FRAMES);
+    engine.addGarbage(1, 0, 0);
     fillBottomRows(engine, 4);
     engine.handleInput('hard_drop');
     // 1 cancelled, 3 forwarded

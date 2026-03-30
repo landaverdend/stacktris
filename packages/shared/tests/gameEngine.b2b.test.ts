@@ -182,8 +182,7 @@ describe('B2B garbage routing', () => {
     doTetris(engine); // arms chain
 
     // Queue 2 lines of incoming garbage
-    const DELAY = 9999;
-    engine.addGarbage(2, DELAY);
+    engine.addGarbage(2, 0, 0);
 
     const onAttack = vi.fn();
     engine.subscribe('attack', onAttack);

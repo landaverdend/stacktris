@@ -44,8 +44,8 @@ export class NetworkGame {
       this.frameCount = msg.frame.frame;
     })
 
-    this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number }) => {
-      this.gameEngine.addGarbage(msg.lines, msg.triggerFrame);
+    this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number, gap: number }) => {
+      this.gameEngine.addGarbage(msg.lines, msg.triggerFrame, msg.gap);
     })
 
     this.gameEngine.subscribe('gameOver', () => {

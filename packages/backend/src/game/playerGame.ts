@@ -2,12 +2,15 @@ import {
   GameEngine,
   GameFrame,
   InputBuffer,
+  mulberry32,
+  COLS,
 } from "@stacktris/shared";
 
 
 export class PlayerGame {
 
   private gameEngine: GameEngine;
+  private garbageRng: () => number;
   private _frameCount = 0;
   get frameCount() { return this._frameCount; }
 
@@ -15,11 +18,14 @@ export class PlayerGame {
 
   constructor(seed: number) {
     this.gameEngine = new GameEngine({ seed, gravityMode: 'multiplayer' });
+    this.garbageRng = mulberry32(seed);
     this.subscribe = this.gameEngine.subscribe.bind(this.gameEngine);
   }
 
-  addGarbage(lines: number, sentFrame: number): void {
-    this.gameEngine.addGarbage(lines, sentFrame);
+  addGarbage(lines: number, sentFrame: number): number {
+    const gap = Math.floor(this.garbageRng() * COLS);
+    this.gameEngine.addGarbage(lines, sentFrame, gap);
+    return gap;
   }
 
   toGameFrame(): GameFrame {

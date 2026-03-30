@@ -115,7 +115,8 @@ export class Round {
         const pg = this.playerGames[playerId];
         if (!pg) break;
         const serverFrame = pg.toGameFrame();
-        console.log(`[heartbeat] ${playerId} frame=${msg.state.frame} gravity=${msg.state.gravityLevel} isGameOver=${msg.state.isGameOver}`);
+        const frameDelta = serverFrame.frame - msg.state.frame;
+        console.log(`[heartbeat] ${this.players[playerId].playerName} clientFrame=${msg.state.frame} serverFrame=${serverFrame.frame} delta=${frameDelta} isGameOver=${msg.state.isGameOver}`);
 
         const { correctionDiffs, infoDiffs } = diffGameFrames(msg.state, serverFrame);
 
@@ -188,6 +189,7 @@ export class Round {
 
     // Remove from gameplay structures; playerOrder kept as tombstone (advanceTarget skips non-alive)
     // players is intentionally kept so the removed player still receives the final game_over broadcast
+    console.log(`[player] ${this.players[playerId].playerName} eliminated (frame=${this.playerGames[playerId]?.frameCount ?? 'n/a'} aliveRemaining=${this.alivePlayers.size - 1})`);
     delete this.playerGames[playerId];
     delete this.targetIndices[playerId];
     this.alivePlayers.delete(playerId);
@@ -197,7 +199,7 @@ export class Round {
       const winnerId = [...this.alivePlayers][0] ?? null;
       this.emitter.emit('gameOver', winnerId);
 
-      console.log(`GAME OVER, winner is ${winnerId}`);
+      console.log(`[game] over — winner: ${winnerId ? this.players[winnerId]?.playerName : 'draw'}`);
 
       this.destroy();
     }
@@ -206,8 +208,10 @@ export class Round {
   private routeGarbage(attackerId: string, lines: number, triggerFrame: number): void {
     const targetId = this.advanceTarget(attackerId);
     if (!targetId) return;
-    this.playerGames[targetId].addGarbage(lines, triggerFrame);
-    this.players[targetId].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame });
+    const gap = this.playerGames[targetId].addGarbage(lines, triggerFrame);
+    const targetQueue = this.playerGames[targetId].toGameFrame().pendingGarbage;
+    console.log(`[garbage:route] ${this.players[attackerId].playerName} → ${this.players[targetId].playerName}: ${lines}L gap=${gap} sentFrame=${triggerFrame} triggerFrame=${triggerFrame + 240} | targetQueue depth=${targetQueue.length} totalLines=${targetQueue.reduce((s, g) => s + g.lines, 0)}`);
+    this.players[targetId].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame, gap });
   }
 
   /** Returns the next alive target for the attacker and advances their index. */
@@ -251,9 +255,10 @@ export class Round {
   private checkPlayersForStall() {
     const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
     for (const [playerId, pg] of Object.entries(this.playerGames)) {
-      // console.log(`Player ${playerId} is at frame ${pg.frameCount}, server is at frame ${serverFrame}`);
       const delta = serverFrame - pg.frameCount;
       if (delta > MAX_LAG_FRAMES) {
+
+        console.log(`[WATCHDOG] Player ${playerId} is at frame ${pg.frameCount}, server is at frame ${serverFrame}`);
         pg.tickTo(serverFrame) // advance gravity with no inputs
         this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: pg.toGameFrame().activePiece }, playerId);
       }
