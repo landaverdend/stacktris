@@ -93,8 +93,8 @@ export class NetworkGame {
           }
 
           if (this.frameCount % 300 === 0) {
-            const { board, activePiece, holdPiece, holdUsed, isGameOver, gravity, pendingGarbage, bag } = this.gameEngine.getState();
-            this.ws.send({ type: 'game_state_heartbeat', state: { board, activePiece, holdPiece, holdUsed, isGameOver, gravityLevel: gravity, pendingGarbage, bagPosition: bag.position, frame: this.frameCount } });
+            const { board, activePiece, holdPiece, holdUsed, isGameOver, b2b, gravity, pendingGarbage, bag } = this.gameEngine.getState();
+            this.ws.send({ type: 'game_state_heartbeat', state: { board, activePiece, holdPiece, holdUsed, isGameOver, b2b, gravityLevel: gravity, pendingGarbage, bagPosition: bag.position, frame: this.frameCount } });
           }
         }
       }

@@ -88,8 +88,7 @@ export class LocalGame {
     this.shaker = null;
   }
 
-  // Wrapper...
-  subscribe(event: keyof EngineEventMap, fn: (event: EngineEventMap[keyof EngineEventMap]) => void): () => void {
+  subscribe<K extends keyof EngineEventMap>(event: K, fn: (val: EngineEventMap[K]) => void): () => void {
     return this.gameEngine.subscribe(event, fn);
   }
 }

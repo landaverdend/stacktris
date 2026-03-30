@@ -1,4 +1,4 @@
-import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START } from "./board.js";
+import { applyGarbageLines, clearLines, lockPiece, spawnPiece, COLS, Board, isValid, VISIBLE_ROW_START, isTSpin } from "./board.js";
 import { applyMovement, canMoveDown, canMoveLeft, canMoveRight, sonicDrop, tryRotate } from "./movements.js";
 import { createGameState, GameState, gravityForLevel, mulberry32, PendingGarbage } from "./state.js";
 import { ActivePiece, InputAction, PieceKind } from "./types.js";
@@ -22,6 +22,13 @@ export const GARBAGE_TABLE: Record<number, number> = {
   4: 4,
 };
 
+// T-spin lines cleared → garbage lines sent.
+export const T_SPIN_GARBAGE: Record<number, number> = {
+  1: 2,
+  2: 4,
+  3: 6,
+};
+
 export type EngineConfig = {
   seed?: number;
   startLevel?: number;
@@ -32,6 +39,8 @@ export type EngineConfig = {
 export type PieceLockedEvent = {
   board: Board;
   linesCleared: number;
+  b2b: boolean;    // true if this clear triggered a B2B bonus
+  isTSpin: boolean;
 };
 
 export type EngineEventMap = {
@@ -81,6 +90,7 @@ export class GameEngine {
     this.state.holdUsed = frame.holdUsed;
     this.state.isGameOver = frame.isGameOver;
     this.state.pendingGarbage = frame.pendingGarbage;
+    this.state.b2b = frame.b2b;
     this.state.gravity = frame.gravityLevel;
     this.state.bag.restoreToPosition(this.seed, frame.bagPosition);
   }
@@ -217,12 +227,24 @@ export class GameEngine {
     lockPiece(this.state.board, this.state.activePiece);
 
     // Check if any lines are full and clear them. Update score and level based on the number of lines cleared.
+    const tSpin = isTSpin(this.state.board, this.state.activePiece);
+    console.log('tSpin ', tSpin);
     const linesCleared = clearLines(this.state.board);
+    let b2bBonus = false;
     if (linesCleared > 0) {
       this.state.lines += linesCleared;
       this.applyLevelProgression();
 
-      const attack = GARBAGE_TABLE[linesCleared] ?? 0;
+      const isDifficult = linesCleared === 4 || (tSpin && linesCleared > 0);
+      if (isDifficult) {
+        b2bBonus = this.state.b2b;
+        this.state.b2b = true;
+      } else {
+        this.state.b2b = false;
+      }
+
+      const baseAttack = tSpin ? (T_SPIN_GARBAGE[linesCleared] ?? 0) : (GARBAGE_TABLE[linesCleared] ?? 0);
+      const attack = baseAttack + (b2bBonus ? 1 : 0);
       const netAttack = this.clearPendingGarbage(attack);
       if (netAttack > 0) {
         this.emitter.emit('attack', netAttack);
@@ -237,7 +259,7 @@ export class GameEngine {
       return;
     }
 
-    this.emitter.emit('pieceLocked', { board: this.state.board, linesCleared });
+    this.emitter.emit('pieceLocked', { board: this.state.board, linesCleared, b2b: b2bBonus, isTSpin: tSpin });
 
     this.spawnNewPiece();
     this.state.holdUsed = false;

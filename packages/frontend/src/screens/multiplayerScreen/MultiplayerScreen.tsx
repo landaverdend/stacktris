@@ -16,6 +16,7 @@ import { BoardOverlay } from './BoardOverlay';
 import { EvaSystemClock } from '../../components/EvaSystemClock';
 import { NervGridOverlay } from '../../components/NervGridOverlay';
 import { TelemetryColumns } from '../../components/TelemetryColumns';
+import { ComboComponent } from '../../components/ComboComponent';
 
 export function MultiplayerScreen() {
   // Refs for rendering the game state.
@@ -41,7 +42,6 @@ export function MultiplayerScreen() {
   // Leave room  if you navigate away from the page
   useEffect(
     () => {
-
       return () => {
         leaveRoom();
       }
@@ -49,7 +49,7 @@ export function MultiplayerScreen() {
     [],
   );
 
-  const { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive, dangerSignal } = useMultiplayerGameSession({
+  const { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId, deadPlayers, isClientAlive, dangerSignal, showB2b, clearEvent } = useMultiplayerGameSession({
     board: boardRef,
     queue: queueRef,
     hold: holdRef,
@@ -78,12 +78,13 @@ export function MultiplayerScreen() {
         {/* ── Arena — always mounted, same position ── */}
         <div className="flex items-start gap-3">
           {/* Hold */}
-          <div className="flex flex-col gap-1.5 pt-1">
+          <div className="relative flex flex-col gap-1.5 pt-1">
             <div className="flex items-baseline gap-1.5">
               <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{t('multiplayer.hold')}</span>
               <span className="font-jp text-[15px] text-nerv-dim">ホールド</span>
             </div>
             <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
+            <ComboComponent showB2b={showB2b} clearEvent={clearEvent} />
           </div>
 
           <div className="flex items-end gap-1">

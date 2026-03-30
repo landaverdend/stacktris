@@ -65,7 +65,8 @@ export function spawnPiece(board: Board, kind: PieceKind): ActivePiece {
     timeOnFloor: 0,
 
     highestRowIndex: VISIBLE_ROW_START - 2,
-    totalResets: 0
+    totalResets: 0,
+    lastActionWasRotation: false,
   }
 
   return piece;
@@ -101,4 +102,22 @@ export function ghostPiece(board: Board, piece: ActivePiece): ActivePiece {
 /** Returns only the 20 visible rows (strips the 2-row invisible buffer). */
 export function visibleBoard(board: Board): number[][] {
   return board.slice(VISIBLE_ROW_START);
+}
+
+// ── T-spin detection (3-corner rule) ─────────────────────────────────────────
+
+function isOccupied(board: Board, r: number, c: number): boolean {
+  return r < 0 || r >= ROWS || c < 0 || c >= COLS || board[r][c] !== 0;
+}
+
+/** Returns true if the piece qualifies as a T-spin at its current position. */
+export function isTSpin(board: Board, piece: ActivePiece): boolean {
+  if (piece.kind !== 'T' || !piece.lastActionWasRotation) return false;
+  const cr = piece.row + 1;
+  const cc = piece.col + 1;
+  const corners = [
+    [cr - 1, cc - 1], [cr - 1, cc + 1],
+    [cr + 1, cc - 1], [cr + 1, cc + 1],
+  ] as const;
+  return corners.filter(([r, c]) => isOccupied(board, r, c)).length >= 3;
 }

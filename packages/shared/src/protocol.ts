@@ -24,6 +24,7 @@ export interface GameFrame {
   holdPiece: PieceKind | null;
   holdUsed: boolean;
   isGameOver: boolean;
+  b2b: boolean;
   pendingGarbage: PendingGarbage[];
   bagPosition: number;
   frame: number;

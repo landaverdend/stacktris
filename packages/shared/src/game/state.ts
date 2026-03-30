@@ -35,6 +35,8 @@ export interface GameState {
   // combo: number;
   pendingGarbage: PendingGarbage[];
 
+  b2b: boolean; // whether the last difficult clear (Tetris / T-spin) is still active
+
   isGameOver: boolean;
 }
 
@@ -60,6 +62,7 @@ export function createGameState(seed: number, gravityMode: 'solo' | 'multiplayer
     gravityAccumulator: 0, // rewinds when threshold of 1 is reached.
 
     pendingGarbage: [],
+    b2b: false,
 
     // SOLO MODE
     lines: 0,

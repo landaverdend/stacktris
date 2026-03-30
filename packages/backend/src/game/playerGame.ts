@@ -31,6 +31,7 @@ export class PlayerGame {
       holdPiece: state.holdPiece,
       holdUsed: state.holdUsed,
       isGameOver: state.isGameOver,
+      b2b: state.b2b,
       pendingGarbage: state.pendingGarbage,
       bagPosition: state.bag.position,
       frame: this._frameCount,

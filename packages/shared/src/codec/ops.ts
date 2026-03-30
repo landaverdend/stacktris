@@ -64,6 +64,7 @@ export function unpackActivePiece(b0: number, b1: number): ActivePiece | null {
     timeOnFloor: 0,
     highestRowIndex: 0,
     totalResets: 0,
+    lastActionWasRotation: false,
   };
 }
 

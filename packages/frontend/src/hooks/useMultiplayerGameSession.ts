@@ -1,4 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { ClearEvent } from "../components/ComboComponent";
 import { ActivePiece, Board, PendingGarbage, SessionState } from "@stacktris/shared";
 import { useWS } from "../ws/WSContext";
 import { NetworkGame } from "../game/NetworkGame";
@@ -28,6 +29,9 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const [isClientAlive, setIsClientAlive] = useState(true);
   const [dangerSignal, setDangerSignal] = useState<DangerSignal | null>(null);
+  const [showB2b, setShowB2b] = useState(false);
+  const [clearEvent, setClearEvent] = useState<ClearEvent | null>(null);
+  const clearKeyRef = useRef(0);
 
   useEffect(() => {
     const handleGameStart = (msg: { type: 'game_start'; seed: number }) => {
@@ -38,6 +42,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
       setOpponentBoards({});
       setDeadPlayers(new Set());
       setIsClientAlive(true);
+      setShowB2b(false);
       pendingGarbageRef.current = [];
 
       opponentActivePieces.current.clear();
@@ -48,6 +53,13 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
       unsubGarbage.current = gameSession.current.subscribe('pendingGarbage', (val) => { pendingGarbageRef.current = val; });
       unsubGameOver.current = gameSession.current.subscribe('gameOver', () => setTimeout(() => setIsClientAlive(false), 600));
+      gameSession.current.subscribe('pieceLocked', ({ b2b, linesCleared, isTSpin }) => {
+        if (b2b) setShowB2b(true);
+        else if (linesCleared > 0) setShowB2b(false);
+        if (linesCleared === 4 || (isTSpin && linesCleared > 0)) {
+          setClearEvent({ key: ++clearKeyRef.current, isTSpin, lines: linesCleared });
+        }
+      });
 
       gameSession.current.start(
         { board: board.current, queue: queue.current, hold: hold.current },
@@ -99,5 +111,5 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
 
   const getTickCount = useCallback(() => gameSession.current?.currentFrame ?? 0, []);
 
-  return { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive, dangerSignal };
+  return { pendingGarbageRef, getTickCount, opponentBoards, opponentActivePieces, winnerId: roundWinnerId, deadPlayers, isClientAlive, dangerSignal, showB2b, clearEvent };
 }

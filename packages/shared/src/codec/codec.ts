@@ -240,7 +240,7 @@ function encodeGameFrame(f: GameFrame, stream: ByteStream): void {
   stream.writeInt(ap1, 1);
   stream.writeFloat32(f.gravityLevel);
   stream.writeInt(packPieceKind(f.holdPiece), 1);
-  stream.writeInt((f.holdUsed ? 0x01 : 0x00) | (f.isGameOver ? 0x02 : 0x00), 1);
+  stream.writeInt((f.holdUsed ? 0x01 : 0x00) | (f.isGameOver ? 0x02 : 0x00) | (f.b2b ? 0x04 : 0x00), 1);
   stream.writeInt(f.bagPosition, 2);
   stream.writeInt(f.frame, 3);
   stream.writeInt(f.pendingGarbage.length, 1);
@@ -260,6 +260,7 @@ function decodeGameFrame(stream: ByteStream): GameFrame {
   const flags = stream.read(1)[0];
   const holdUsed = (flags & 0x01) !== 0;
   const isGameOver = (flags & 0x02) !== 0;
+  const b2b = (flags & 0x04) !== 0;
   const bagPosition = Number(bigEndianToInteger(stream.read(2)));
   const frame = Number(bigEndianToInteger(stream.read(3)));
   const pendingCount = stream.read(1)[0];
@@ -270,7 +271,7 @@ function decodeGameFrame(stream: ByteStream): GameFrame {
     const gap = stream.read(1)[0];
     pendingGarbage.push({ lines, triggerFrame, gap });
   }
-  return { board, activePiece, gravityLevel, holdPiece, holdUsed, isGameOver, bagPosition, frame, pendingGarbage };
+  return { board, activePiece, gravityLevel, holdPiece, holdUsed, isGameOver, b2b, bagPosition, frame, pendingGarbage };
 }
 
 // ── SessionState helpers ──────────────────────────────────────────────────────

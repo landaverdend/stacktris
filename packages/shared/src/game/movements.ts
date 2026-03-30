@@ -4,17 +4,11 @@ import { ActivePiece, MovementAction } from "./types.js";
 
 
 export function applyMovement(piece: ActivePiece, action: MovementAction) {
-
+  piece.lastActionWasRotation = false;
   switch (action) {
-    case 'move_down':
-      piece.row += 1;
-      break;
-    case 'move_left':
-      piece.col -= 1;
-      break;
-    case 'move_right':
-      piece.col += 1;
-      break;
+    case 'move_down':  piece.row += 1;  break;
+    case 'move_left':  piece.col -= 1;  break;
+    case 'move_right': piece.col += 1;  break;
   }
 }
 
@@ -41,6 +35,7 @@ export function tryRotate(board: Board, piece: ActivePiece, cw: boolean): boolea
       piece.rotation = nextRot;
       piece.row = candidate.row;
       piece.col = candidate.col;
+      piece.lastActionWasRotation = true;
       return true;
     }
   }
