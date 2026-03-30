@@ -54,9 +54,11 @@ export class PaymentService {
           console.log(`[PaymentService] skipping loser ${id} — status=${record.status}`);
           return Promise.resolve();
         }
+
         console.log(`[PaymentService] settling hold invoice for loser ${id} (hash=${record.paymentHash})`);
+
         return this.client.settleHoldInvoice(record.preimage)
-          .then(() => console.log(`[PaymentService] settled loser ${id}`))
+          .then(() => { record.status = 'settled'; console.log(`[PaymentService] settled loser ${id}`); })
           .catch(err => { throw Object.assign(err, { _playerId: id }); });
       }),
       winnerRecord.status === 'held'
