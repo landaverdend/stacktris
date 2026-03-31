@@ -1,107 +1,156 @@
 # Anti-Cheat & Sync Design
 
-## Problem
+## Architecture overview
 
-The server runs a headless game for each player by ticking the `GameEngine` reactively — only when input batches arrive. If a client tabs out, the browser suspends `requestAnimationFrame`, the frame counter freezes, and inputs stop arriving. The server's simulation for that player stalls too.
+The server runs an independent headless `GameEngine` simulation for each player — the same deterministic engine the client runs, seeded identically. The client is trusted for inputs and frame timing within a lag window; the server is authoritative for everything else.
 
-This creates two issues:
-1. **Tab-out freeze exploit** — a player can pause their game (and garbage timers, which are frame-relative) while opponents continue playing.
-2. **Desync on return** — when the client resumes, their local state has diverged from what the server would have simulated.
+```
+client                              server
+──────────────────────────────────────────────────────
+GameEngine (local, responsive)      GameEngine (headless, authoritative)
+  ↑ inputs land instantly             ↑ inputs arrive ~RTT later
+  ↓ renders every frame               ↓ only ticks when inputs arrive
+                                        or watchdog fires
+```
+
+Cross-player interactions — garbage routing, attack accounting, game-over detection — happen exclusively on the server. The client never talks to another player's sim directly.
 
 ---
 
-## Design
+## Input handling
 
-### Server-side wall clock
+The client batches inputs every 10 frames and sends them as `game_action`:
 
-When a round starts, record:
-
-```ts
-this.roundStartTime = Date.now();
+```
+{ type: 'game_action', buffer: [{frame, action}, ...], frame: upToFrame }
 ```
 
-The expected frame at any point in time is:
+The server replays them in frame order, then ticks the sim forward to `upToFrame`:
 
-```ts
-const FRAME_DURATION_MS = 1000 / 60; // ~16.67ms
-const expectedFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
+```
+client sends: upToFrame=1000, inputs=[{frame:992, move_left}, {frame:997, hard_drop}]
+
+server: tick 980→992, apply move_left
+        tick 992→997, apply hard_drop
+        tick 997→1000
 ```
 
-Send `expectedFrame` in the `game_start` message so clients initialize their local frame counter to the same origin.
+Inputs are sorted by frame on arrival (`handleInput` in `PlayerGame`), so out-of-order delivery is harmless.
 
 ---
 
-### Two cases: normal latency vs. tab-out
+## Heartbeat & correction
 
-#### Case 1 — Normal latency (always present, always acceptable)
+Every 300 frames (~5 seconds) the client sends a `game_state_heartbeat` containing its current board, active piece, hold, bag position, and pending garbage queue. The server diffs this against its own sim:
 
-Every input batch arrives at the server slightly in the past due to RTT. This is expected and the current reactive model handles it correctly. The client's reported `upToFrame` is trusted:
+**Correction fields** (trigger a `game_state_update` snapshot if they differ):
+- `board` — cell-by-cell comparison
+- `isGameOver`
+- `holdPiece` / `holdUsed`
+- `bagPosition`
 
-```
-client sends: frame=1000, inputs=[{frame:992, move_left}, {frame:997, hard_drop}]
+**Info-only fields** (logged but not corrected):
+- `gravityLevel` — float32 precision loss in the codec causes false positives
+- `activePiece` — mid-flight, expected to drift slightly
+- `pendingGarbage` — garbage queue is kept in sync via `garbage_queue_sync` (see below), so heartbeat drift here is diagnostic only
 
-server ticks player: 980 → 992, applies move_left
-server ticks player: 992 → 997, applies hard_drop
-server ticks player: 997 → 1000  ← upToFrame
-```
+When a correction is sent, the client calls `engine.updateState()` which replaces the relevant fields and re-syncs.
 
-No special handling needed. The shared deterministic engine + seed keeps both sides in sync.
+---
 
-#### Case 2 — Tab-out / extreme lag
+## Tab-out / stall prevention
 
-The wall clock advances but the client's reported frame stops. Once a player falls more than `MAX_LAG_FRAMES` behind the expected frame, the server stops waiting and begins force-ticking their game with zero inputs:
+The server records `roundStartTime = Date.now()` at round start. A watchdog fires every 100ms:
 
 ```ts
-const MAX_LAG_FRAMES = 120; // 2 seconds
-
-// In the server's tick interval (~100ms):
-const expected = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
-for (const [id, pg] of this.playerGames) {
-  if (expected - pg.frameCount > MAX_LAG_FRAMES) {
-    pg.tickTo(expected); // advances under gravity with no inputs
-  }
+const serverFrame = Math.floor((Date.now() - roundStartTime) / FRAME_DURATION_MS);
+if (serverFrame - pg.frameCount > MAX_LAG_FRAMES) { // 120 frames = 2 seconds
+  pg.tickTo(serverFrame); // advance with zero inputs — gravity and lock delay still fire
 }
 ```
 
-Gravity still applies during these ticks. Pieces fall and lock. This is the natural game penalty for tabbing out — no special punishment needed.
+This prevents the tab-out freeze exploit: a player who pauses their browser still has their pieces fall and lock on the server. When they return, their client receives a correction at the next heartbeat.
+
+Stale inputs (arriving more than `MAX_LAG_FRAMES` behind the current server frame) are detected on `game_action` receipt and answered with an immediate `game_state_update` snapshot, discarding the stale buffer.
 
 ---
 
-### Handling stale inputs on return
+## Garbage system (server-authoritative)
 
-When the client returns and sends a `game_action`, compare its reported frame against the server's current frame for that player:
+### Routing
+
+When a player clears lines, their server-side engine emits an `attack` event with the line count. `Round` routes this to a target player's `PlayerGame.addGarbage()`, which queues it with a `triggerFrame = sentFrame + GARBAGE_DELAY_FRAMES` (240 frames, ~4 seconds).
+
+Targeting cycles PPT-style through alive players in a stable order, advancing one slot per attack.
+
+### Why the server owns the queue
+
+Garbage queue mutations happen on the server sim in two situations:
+
+1. **Add** — `addGarbage` is called when an opponent attacks.
+2. **Cancel** — `clearPendingGarbage` is called when the receiving player's server sim processes a line clear.
+
+Both mutations are invisible to the receiving client unless the server explicitly notifies it. Before the current design, only adds were communicated (`game_garbage_incoming`). Cancellations were silent. This caused the client to hold ghost garbage entries that the server had already removed, leading to board divergence when the ghost entry fired at `triggerFrame`.
+
+**Incident evidence** (from `debug_logs/Logs-logs-2026-03-30 21_14_53.txt`):
+```
+frame 1500: client pendingGarbage=[{lines:4, triggerFrame:1631, gap:7}]
+            server pendingGarbage=[]
+
+frame 1800: board (96 cells differ) — ghost garbage applied at triggerFrame 1631
+            bagPosition: client=30, server=31  ← downstream cascade
+            holdPiece: client=L, server=S
+```
+
+The client applied 4 garbage lines the server had already cancelled. The board shifted up, consuming one extra piece from the bag, offsetting every future draw by 1.
+
+### The fix: `garbage_queue_sync`
+
+The server subscribes to the `pendingGarbage` engine event on each player's `GameEngine`. This event fires on every `setPendingGarbage` call — both adds and cancellations:
 
 ```ts
-const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
-if (serverFrame - message.frame > MAX_LAG_FRAMES) {
-  // inputs are stale — server has already ticked past this point
-  // discard the inputs and send an authoritative snapshot
-  this.send(playerId, { type: 'game_snapshot', snapshot: pg.getSnapshot() });
-  return;
-}
-// otherwise process normally
+pg.subscribe('pendingGarbage', (queue) => {
+  players[playerId].sendFn({ type: 'garbage_queue_sync', queue });
+});
 ```
 
-The client snaps its board state to the server's ground truth on receipt of the snapshot.
+The client replaces its queue wholesale on receipt:
+
+```ts
+ws.on('garbage_queue_sync', (msg) => {
+  gameEngine.syncGarbageQueue(msg.queue);
+});
+```
+
+`syncGarbageQueue` calls `setPendingGarbage` internally, which fires the client-side `pendingGarbage` event so UI subscribers (e.g. `GarbageMeter`) stay current.
+
+There is no partial update, no per-entry ack, no sequence number. The server's queue is the truth; the client replaces its queue every time it hears otherwise.
+
+### Optimistic local cancel
+
+The client still runs `clearPendingGarbage` locally when it clears lines, so the garbage meter reacts immediately without waiting for a server round-trip. The next `garbage_queue_sync` from the server will correct any discrepancy — if the server cancelled more or less than the client did, the client queue snaps to match.
 
 ---
 
-### Key invariant
+## What the server is authoritative for
 
-The server only force-ticks a player **after they've fallen past the lag window**. Until then, the client's `upToFrame` is trusted and the reactive model is sufficient. The wall clock is a threshold detector, not a frame-by-frame override.
-
-```
-within window  → client's frame is trusted, reactive tick, no intervention
-outside window → server force-ticks with zero inputs, stale inputs discarded, snapshot sent on reconnect
-```
+| Domain | Authority | Mechanism |
+|---|---|---|
+| Board state | Server | Heartbeat diff → `game_state_update` correction |
+| Bag / piece sequence | Server | Shared seed + heartbeat `bagPosition` check |
+| Garbage routing | Server | `Round.routeGarbage` — client never routes |
+| Garbage queue contents | Server | `garbage_queue_sync` on every queue mutation |
+| Game-over detection | Server | `Round.killPlayer` → `gameOver` event |
+| Targeting order | Server | PPT-style round-robin, server-managed |
+| Tab-out ticking | Server | Watchdog force-ticks stalled players |
 
 ---
 
-### Why retroactive compensation isn't needed
+## What clients are trusted for
 
-In a shooter, lag compensation matters because two players interact in the same spatial moment (did the bullet connect?). In Tetris, each player's board is fully independent — the only cross-player interaction is garbage, which already has a 600-frame (~10 second) delay buffer. A 50ms input lag on board state has no gameplay impact as long as the simulation is deterministic.
-
-No rewinding. No replaying. Just a window check.
+- **Input timing** — frame numbers on input events, within the lag window
+- **Optimistic local cancel** — cleared garbage is removed immediately client-side; server corrects if needed
+- **Rendering** — all visual state is derived from the local engine; corrections snap the engine, not the renderer directly
 
 ---
 
@@ -109,19 +158,10 @@ No rewinding. No replaying. Just a window check.
 
 | Exploit | Mitigation |
 |---|---|
-| Tab-out time freeze | Server force-ticks their game under gravity |
-| Lying about board state | Server's independent simulation is ground truth |
-| Sending inputs from a stale frame | Inputs outside `MAX_LAG_FRAMES` window are discarded |
-| Sending inputs out of order | `PlayerGame.handleInput` already sorts by frame |
-
----
-
-## Changes Required
-
-| File | Change |
-|---|---|
-| `round.ts` | Store `roundStartTime`, add tick interval that force-ticks stalled players |
-| `playerGame.ts` | Add `tickTo(frame: number)` — advances with zero inputs to target frame |
-| `protocol.ts` | Add `expectedFrame: number` to `game_start` message |
-| `round.ts` | Validate incoming `game_action` frame against wall clock before processing |
-| `frontend/NetworkGame.ts` | Initialize local frame counter from `expectedFrame` in `game_start` |
+| Tab-out time freeze | Watchdog ticks their sim under gravity after `MAX_LAG_FRAMES` |
+| Lying about board state | Server's independent sim is ground truth; corrected at heartbeat |
+| Lying about bag position | Heartbeat `bagPosition` check; shared seed makes forgery detectable |
+| Ghost garbage exploit | `garbage_queue_sync` on cancels — client cannot hold garbage the server removed |
+| Infinite garbage stalling | Garbage triggers by server frame, not client frame |
+| Sending inputs from a stale frame | Inputs outside lag window are discarded; snapshot sent instead |
+| Sending inputs out of order | `PlayerGame.handleInput` sorts by frame before replay |
