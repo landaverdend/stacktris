@@ -3,9 +3,8 @@ import {
   FRAME_DURATION_MS,
   GameEngine,
   GameFrame,
-  GameState,
   InputBuffer,
-  ServerMsg,
+  PendingGarbage,
 } from '@stacktris/shared';
 import { WSClient } from '../ws/WSClient';
 import { InputHandler } from './InputHandler';
@@ -44,8 +43,8 @@ export class NetworkGame {
       this.frameCount = msg.frame.frame;
     })
 
-    this.ws.on('game_garbage_incoming', (msg: { lines: number, triggerFrame: number, gap: number }) => {
-      this.gameEngine.addGarbage(msg.lines, msg.triggerFrame, msg.gap);
+    this.ws.on('garbage_queue_sync', (msg: { type: 'garbage_queue_sync', queue: PendingGarbage[] }) => {
+      this.gameEngine.syncGarbageQueue(msg.queue);
     })
 
     this.gameEngine.subscribe('gameOver', () => {

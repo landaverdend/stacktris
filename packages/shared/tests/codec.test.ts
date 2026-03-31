@@ -500,38 +500,38 @@ describe('bet_invoice_issued encode/decode', () => {
   });
 });
 
-describe('game_garbage_incoming encode/decode', () => {
-  it('first byte is the GAME_GARBAGE_INCOMING opcode', () => {
-    const buf = encodeMsg({ type: 'game_garbage_incoming', lines: 2, triggerFrame: 100, gap: 3 });
-    expect(buf[0]).toBe(MsgCode.GAME_GARBAGE_INCOMING);
+describe('garbage_queue_sync encode/decode', () => {
+  it('first byte is the GARBAGE_QUEUE_SYNC opcode', () => {
+    const buf = encodeMsg({ type: 'garbage_queue_sync', queue: [] });
+    expect(buf[0]).toBe(MsgCode.GARBAGE_QUEUE_SYNC);
   });
 
-  it('total length is 6 bytes', () => {
-    const buf = encodeMsg({ type: 'game_garbage_incoming', lines: 1, triggerFrame: 1, gap: 0 });
-    expect(buf.length).toBe(6);
+  it('encodes an empty queue as 2 bytes', () => {
+    const buf = encodeMsg({ type: 'garbage_queue_sync', queue: [] });
+    expect(buf.length).toBe(2); // opcode + count(0)
   });
 
-  it('round-trips lines, triggerFrame, and gap', () => {
-    const msg = { type: 'game_garbage_incoming' as const, lines: 4, triggerFrame: 3600, gap: 7 };
+  it('round-trips a single entry', () => {
+    const msg = { type: 'garbage_queue_sync' as const, queue: [{ lines: 4, triggerFrame: 3600, gap: 7 }] };
     const decoded = decodeMsg(encodeMsg(msg)) as typeof msg;
-    expect(decoded.type).toBe('game_garbage_incoming');
-    expect(decoded.lines).toBe(4);
-    expect(decoded.triggerFrame).toBe(3600);
-    expect(decoded.gap).toBe(7);
+    expect(decoded.type).toBe('garbage_queue_sync');
+    expect(decoded.queue).toHaveLength(1);
+    expect(decoded.queue[0]).toEqual({ lines: 4, triggerFrame: 3600, gap: 7 });
+  });
+
+  it('round-trips multiple entries', () => {
+    const queue = [
+      { lines: 2, triggerFrame: 1200, gap: 3 },
+      { lines: 4, triggerFrame: 3600, gap: 9 },
+    ];
+    const decoded = decodeMsg(encodeMsg({ type: 'garbage_queue_sync', queue })) as { type: 'garbage_queue_sync', queue: typeof queue };
+    expect(decoded.queue).toEqual(queue);
   });
 
   it('round-trips a large triggerFrame', () => {
-    const msg = { type: 'game_garbage_incoming' as const, lines: 2, triggerFrame: 16_000_000, gap: 0 };
+    const msg = { type: 'garbage_queue_sync' as const, queue: [{ lines: 2, triggerFrame: 16_000_000, gap: 0 }] };
     const decoded = decodeMsg(encodeMsg(msg)) as typeof msg;
-    expect(decoded.triggerFrame).toBe(16_000_000);
-  });
-
-  it('round-trips all line counts 1-4', () => {
-    for (const lines of [1, 2, 3, 4]) {
-      const msg = { type: 'game_garbage_incoming' as const, lines, triggerFrame: 0, gap: 0 };
-      const decoded = decodeMsg(encodeMsg(msg)) as typeof msg;
-      expect(decoded.lines).toBe(lines);
-    }
+    expect(decoded.queue[0].triggerFrame).toBe(16_000_000);
   });
 });
 

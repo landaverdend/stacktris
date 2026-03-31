@@ -32,7 +32,9 @@ class MockPlayerGame {
     this.handlers.get(event)?.forEach(fn => fn(val));
   }
 
-  addGarbage = vi.fn();
+  addGarbage = vi.fn((lines: number, frame: number) => {
+    this.emit('pendingGarbage', [{ lines, triggerFrame: frame + 240, gap: 0 }]);
+  });
   handleInput = vi.fn();
   tickTo = vi.fn();
   toGameFrame = vi.fn(() => ({
@@ -149,8 +151,8 @@ describe('Round — game over', () => {
 
     expect(pg3.addGarbage).toHaveBeenCalled();
     expect(pg2.addGarbage).not.toHaveBeenCalled();
-    expect(sentTypes(sends['p3'])).toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p3'])).toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p2'])).not.toContain('garbage_queue_sync');
   });
 });
 
@@ -169,7 +171,7 @@ describe('Round — garbage targeting', () => {
     const [pg1] = MockPlayerGame.instances;
     pg1.emit('attack', 2);
 
-    const receivers = ['p2', 'p3'].filter(id => sentTypes(sends[id]).includes('game_garbage_incoming'));
+    const receivers = ['p2', 'p3'].filter(id => sentTypes(sends[id]).includes('garbage_queue_sync'));
     expect(receivers).toHaveLength(1);
   });
 
@@ -180,12 +182,12 @@ describe('Round — garbage targeting', () => {
     const [pg1] = MockPlayerGame.instances;
 
     pg1.emit('attack', 2);
-    const first = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+    const first = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('garbage_queue_sync'))!;
 
     vi.clearAllMocks();
 
     pg1.emit('attack', 2);
-    const second = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+    const second = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('garbage_queue_sync'))!;
 
     expect(second).not.toBe(first);
   });
@@ -197,14 +199,14 @@ describe('Round — garbage targeting', () => {
     const [pg1] = MockPlayerGame.instances;
 
     pg1.emit('attack', 1);
-    const first = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+    const first = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('garbage_queue_sync'))!;
     vi.clearAllMocks();
 
     pg1.emit('attack', 1);
     vi.clearAllMocks();
 
     pg1.emit('attack', 1);
-    const third = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('game_garbage_incoming'))!;
+    const third = ['p2', 'p3'].find(id => sentTypes(sends[id]).includes('garbage_queue_sync'))!;
 
     expect(third).toBe(first);
   });
@@ -216,14 +218,14 @@ describe('Round — garbage targeting', () => {
     const [pg1] = MockPlayerGame.instances;
 
     pg1.emit('attack', 2);
-    expect(sentTypes(sends['p2'])).toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p1'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p2'])).toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p1'])).not.toContain('garbage_queue_sync');
 
     vi.clearAllMocks();
 
     pg1.emit('attack', 2);
-    expect(sentTypes(sends['p2'])).toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p1'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p2'])).toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p1'])).not.toContain('garbage_queue_sync');
   });
 
   it('sends no garbage when the attacker is the last alive player', () => {
@@ -235,8 +237,8 @@ describe('Round — garbage targeting', () => {
     vi.clearAllMocks();
 
     pg1.emit('attack', 4);
-    expect(sentTypes(sends['p1'])).not.toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p1'])).not.toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p2'])).not.toContain('garbage_queue_sync');
   });
 
   it('killPlayer cleans up the player so they no longer receive garbage', () => {
@@ -250,8 +252,8 @@ describe('Round — garbage targeting', () => {
 
     pg1.emit('attack', 2);
 
-    expect(sentTypes(sends['p3'])).toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p3'])).toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p2'])).not.toContain('garbage_queue_sync');
   });
 
   it('killPlayer triggers gameOver when only one player remains', () => {
@@ -281,9 +283,9 @@ describe('Round — garbage targeting', () => {
 
     pg1.emit('attack', 2);
 
-    expect(sentTypes(sends['p4'])).toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p2'])).not.toContain('game_garbage_incoming');
-    expect(sentTypes(sends['p3'])).not.toContain('game_garbage_incoming');
+    expect(sentTypes(sends['p4'])).toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p2'])).not.toContain('garbage_queue_sync');
+    expect(sentTypes(sends['p3'])).not.toContain('garbage_queue_sync');
   });
 
   it('pending garbage does not carry over to a new round', () => {

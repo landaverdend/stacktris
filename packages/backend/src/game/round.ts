@@ -152,6 +152,9 @@ export class Round {
       const pg = new PlayerGame(this.seed);
 
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
+      pg.subscribe('pendingGarbage', (queue) => {
+        this.players[playerId].sendFn({ type: 'garbage_queue_sync', queue });
+      });
       pg.subscribe('pieceLocked', ({ board }) => {
         this.broadcastBoardUpdate(playerId, board);
         this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: null }, playerId);
@@ -211,7 +214,6 @@ export class Round {
     const gap = this.playerGames[targetId].addGarbage(lines, triggerFrame);
     const targetQueue = this.playerGames[targetId].toGameFrame().pendingGarbage;
     console.log(`[garbage:route] ${this.players[attackerId].playerName} → ${this.players[targetId].playerName}: ${lines}L gap=${gap} sentFrame=${triggerFrame} triggerFrame=${triggerFrame + 240} | targetQueue depth=${targetQueue.length} totalLines=${targetQueue.reduce((s, g) => s + g.lines, 0)}`);
-    this.players[targetId].sendFn({ type: 'game_garbage_incoming', lines, triggerFrame, gap });
   }
 
   /** Returns the next alive target for the attacker and advances their index. */
@@ -232,10 +234,10 @@ export class Round {
 
 
   /**
-   * If player comes back from a disconnect, send them the current game state. 
-   * @param playerId - player id of who sent input 
-   * @param buffer - input buffer of actions. 
-   * @param frame - frame of the game 
+   * If player comes back from a disconnect, send them the current game state.
+   * @param playerId - player id of who sent input
+   * @param buffer - input buffer of actions.
+   * @param frame - frame of the game
    */
   private handlePlayerInput(playerId: string, buffer: InputBuffer, frame: number) {
     const pg = this.playerGames[playerId];

@@ -22,6 +22,7 @@ export class PlayerGame {
     this.subscribe = this.gameEngine.subscribe.bind(this.gameEngine);
   }
 
+
   addGarbage(lines: number, sentFrame: number): number {
     const gap = Math.floor(this.garbageRng() * COLS);
     this.gameEngine.addGarbage(lines, sentFrame, gap);

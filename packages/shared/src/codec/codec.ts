@@ -30,7 +30,7 @@ export const MsgCode = {
   BET_PAYMENT_CONFIRMED: 0x15,
   GAME_START: 0x16,
   GAME_STATE_UPDATE: 0x17,
-  GAME_GARBAGE_INCOMING: 0x18,
+  GARBAGE_QUEUE_SYNC: 0x18,
   OPPONENT_BOARD_UPDATE: 0x19,
   GAME_PLAYER_DIED: 0x1A,
   OPPONENT_PIECE_UPDATE: 0x1B,
@@ -138,12 +138,15 @@ export function encodeMsg(msg: Message): Uint8Array {
       stream.write(UTF8_ENCODER.encode(msg.bolt11));
       return stream.toBytes();
     }
-    case 'game_garbage_incoming': {
+    case 'garbage_queue_sync': {
       const stream = new ByteStream();
-      stream.writeInt(MsgCode.GAME_GARBAGE_INCOMING, 1);
-      stream.writeInt(msg.lines, 1);
-      stream.writeInt(msg.triggerFrame, 3);
-      stream.writeInt(msg.gap, 1);
+      stream.writeInt(MsgCode.GARBAGE_QUEUE_SYNC, 1);
+      stream.writeInt(msg.queue.length, 1);
+      for (const g of msg.queue) {
+        stream.writeInt(g.lines, 1);
+        stream.writeInt(g.triggerFrame, 3);
+        stream.writeInt(g.gap, 1);
+      }
       return stream.toBytes();
     }
     case 'opponent_piece_update': {
@@ -212,11 +215,16 @@ export function decodeMsg(data: Uint8Array) {
       const bolt11 = UTF8_DECODER.decode(stream.readToEnd());
       return { type: 'bet_invoice_issued', bolt11, expiresAt };
     }
-    case MsgCode.GAME_GARBAGE_INCOMING: {
-      const lines = stream.read(1)[0];
-      const triggerFrame = Number(bigEndianToInteger(stream.read(3)));
-      const gap = stream.read(1)[0];
-      return { type: 'game_garbage_incoming', lines, triggerFrame, gap };
+    case MsgCode.GARBAGE_QUEUE_SYNC: {
+      const count = stream.read(1)[0];
+      const queue = [];
+      for (let i = 0; i < count; i++) {
+        const lines = stream.read(1)[0];
+        const triggerFrame = Number(bigEndianToInteger(stream.read(3)));
+        const gap = stream.read(1)[0];
+        queue.push({ lines, triggerFrame, gap });
+      }
+      return { type: 'garbage_queue_sync', queue };
     }
     case MsgCode.OPPONENT_PIECE_UPDATE: {
       const slotIndex = stream.read(1)[0];

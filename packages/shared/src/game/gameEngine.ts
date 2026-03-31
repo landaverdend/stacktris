@@ -329,6 +329,10 @@ export class GameEngine {
     this.setPendingGarbage([...this.state.pendingGarbage, { lines: n, triggerFrame: triggerFrame + GARBAGE_DELAY_FRAMES, gap }]);
   }
 
+  syncGarbageQueue(queue: PendingGarbage[]): void {
+    this.setPendingGarbage(queue);
+  }
+
   clearPendingGarbage(n: number): number {
     // Only cancel garbage whose attack was sent before this clear frame.
     // Garbage sent at frame S is stored as triggerFrame = S + GARBAGE_DELAY_FRAMES,
