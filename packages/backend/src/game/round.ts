@@ -149,7 +149,7 @@ export class Round {
     }
 
     for (const playerId of Object.keys(this.players)) {
-      const pg = new PlayerGame(this.seed);
+      const pg = new PlayerGame(this.seed, this.players[playerId].playerName);
 
       pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
       pg.subscribe('pendingGarbage', (queue) => {

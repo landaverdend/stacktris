@@ -16,8 +16,8 @@ export class PlayerGame {
 
   subscribe: GameEngine['subscribe'];
 
-  constructor(seed: number) {
-    this.gameEngine = new GameEngine({ seed, gravityMode: 'multiplayer' });
+  constructor(seed: number, label?: string) {
+    this.gameEngine = new GameEngine({ seed, gravityMode: 'multiplayer', label });
     this.garbageRng = mulberry32(seed);
     this.subscribe = this.gameEngine.subscribe.bind(this.gameEngine);
   }

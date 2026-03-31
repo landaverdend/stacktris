@@ -34,6 +34,7 @@ export type EngineConfig = {
   startLevel?: number;
   gravityMode?: 'solo' | 'multiplayer';
   initialGameState?: GameState;
+  label?: string;
 }
 
 export type PieceLockedEvent = {
@@ -60,6 +61,7 @@ export class GameEngine {
   private startLevel: number;
   private state: GameState;
   private tickCount = 0;
+  private label: string;
   private emitter = new Emitter<EngineEventMap>();
 
   subscribe = this.emitter.subscribe.bind(this.emitter);
@@ -67,6 +69,7 @@ export class GameEngine {
   constructor(config?: EngineConfig) {
     this.seed = config?.seed ?? Math.floor(Math.random() * 2 ** 32);
     this.startLevel = config?.startLevel ?? 0;
+    this.label = config?.label ?? 'engine';
 
     if (!config) {
       this.state = createGameState(this.seed);
@@ -184,7 +187,7 @@ export class GameEngine {
     const ready = this.state.pendingGarbage.filter(g => this.tickCount >= g.triggerFrame);
     if (ready.length === 0) return;
     this.setPendingGarbage(this.state.pendingGarbage.filter(g => this.tickCount < g.triggerFrame));
-    console.log(`[garbage:apply] frame=${this.tickCount} applying ${ready.length} batch(es): ${ready.map(g => `${g.lines}L gap=${g.gap} (triggerFrame=${g.triggerFrame})`).join(', ')}`);
+    console.log(`[garbage:apply] [${this.label}] frame=${this.tickCount} applying ${ready.length} batch(es): ${ready.map(g => `${g.lines}L gap=${g.gap} (triggerFrame=${g.triggerFrame})`).join(', ')}`);
     for (const g of ready) {
       applyGarbageLines(this.state.board, g.lines, g.gap);
       while (!isValid(this.state.board, this.state.activePiece)) {
@@ -342,7 +345,7 @@ export class GameEngine {
     const untouched   = this.state.pendingGarbage.filter(g => g.triggerFrame - GARBAGE_DELAY_FRAMES > this.tickCount);
 
     if (untouched.length > 0) {
-      console.log(`[garbage:cancel] frame=${this.tickCount} skipping ${untouched.length} entr(ies) sent after clear (sentFrames: ${untouched.map(g => g.triggerFrame - GARBAGE_DELAY_FRAMES).join(', ')})`);
+      console.log(`[garbage:cancel] [${this.label}] frame=${this.tickCount} skipping ${untouched.length} entr(ies) sent after clear (sentFrames: ${untouched.map(g => g.triggerFrame - GARBAGE_DELAY_FRAMES).join(', ')})`);
     }
 
     const linesAvailable = cancellable.reduce((sum, g) => sum + g.lines, 0);
@@ -358,7 +361,7 @@ export class GameEngine {
     }
     const linesCancelled = linesAvailable - cancellable.reduce((sum, g) => sum + g.lines, 0);
     if (linesCancelled > 0) {
-      console.log(`[garbage:cancel] frame=${this.tickCount} cancelled=${linesCancelled} remaining queue: ${JSON.stringify([...cancellable, ...untouched])}`);
+      console.log(`[garbage:cancel] [${this.label}] frame=${this.tickCount} cancelled=${linesCancelled} remaining queue: ${JSON.stringify([...cancellable, ...untouched])}`);
     }
     this.setPendingGarbage([...cancellable, ...untouched]);
     return n; // leftover lines not cancelled = net attack
