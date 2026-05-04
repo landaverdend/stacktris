@@ -122,8 +122,8 @@ export class Round {
 
         if (correctionDiffs.length > 0) {
           const allDiffs = [...correctionDiffs, ...(infoDiffs.length > 0 ? [`[info] ${infoDiffs.join(' | ')}`] : [])];
-          console.warn(`[heartbeat] out of sync for ${this.players[playerId].playerName} at frame ${msg.state.frame}, sending correction\n  ${allDiffs.join('\n  ')}`);
-          this.players[playerId].sendFn({ type: 'game_state_update', frame: serverFrame });
+          console.warn(`[heartbeat] out of sync for ${this.players[playerId].playerName} at frame ${msg.state.frame} (correction disabled)\n  ${allDiffs.join('\n  ')}`);
+          // corrective state update disabled
         } else if (infoDiffs.length > 0) {
           console.log(`[heartbeat] in sync (info) for ${this.players[playerId].playerName} at frame ${msg.state.frame}: ${infoDiffs.join(' | ')}`);
         }
@@ -245,10 +245,10 @@ export class Round {
 
     const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
 
-    // Check if the player is too far behind- if so, send a corrective snapshot.
-    if (serverFrame - frame > MAX_LAG_FRAMES) {
-      this.players[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
-    }
+    // corrective snapshot on lag disabled
+    // if (serverFrame - frame > MAX_LAG_FRAMES) {
+    //   this.players[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
+    // }
   }
 
   /**
