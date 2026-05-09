@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 
 const AMBER_GLOW = '0 0 8px rgba(255,112,32,0.7), 0 0 24px rgba(255,80,0,0.3)';
 const MAGI_GLOW  = '0 0 8px rgba(0,255,136,0.6)';
-const TERM_GLOW  = '0 0 6px rgba(0,255,65,0.6)';
 
 const DIV = 'border-[rgba(247,147,26,0.18)]';
 
@@ -58,15 +57,6 @@ export function RoomStagingOverlay() {
     });
   };
 
-
-  function statusLine() {
-    if (!bolt11 && buyIn > 0)  return '> GENERATING_INVOICE...';
-    if (!bolt11 && buyIn === 0) return '> FREE_ENTRY — INITIATE_READY';
-    if (needsPayment)           return '> AWAITING_PAYMENT';
-    if (isReady)                return '> OPERATOR_READY — STANDBY';
-    if (invoicePaid)            return '> PAYMENT_CONFIRMED — INITIATE_READY';
-    return '> FREE_ENTRY — INITIATE_READY';
-  }
 
   return (
     <div className="absolute inset-0 flex flex-col bg-black">
@@ -170,45 +160,50 @@ export function RoomStagingOverlay() {
                 </svg>
               </button>
             </div>
+
+            {/* Awaiting payment — disabled ready button */}
+            <button
+              disabled
+              className="w-full py-4 flex items-center justify-center font-display font-bold text-2xl tracking-[0.2em] border-2 border-amber/8 text-amber/15 cursor-not-allowed mt-auto">
+              {t('staging.awaiting_payment')}
+            </button>
           </div>
         )}
 
-        {/* Payment confirmed */}
+        {/* Payment confirmed — ready button in center */}
         {invoicePaid && (
-          <div className="flex-1 flex items-center justify-center px-3">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
             <span className="font-display font-bold text-xl tracking-[0.1em] text-magi" style={{ textShadow: MAGI_GLOW }}>
               {t('staging.payment_confirmed')}
             </span>
+            <button
+              onClick={handleReady}
+              style={{ textShadow: isReady ? MAGI_GLOW : AMBER_GLOW, boxShadow: isReady ? '0 0 18px rgba(0,255,136,0.15) inset' : '0 0 18px rgba(255,112,32,0.12) inset' }}
+              className={cn(
+                'w-full py-5 flex items-center justify-center font-display font-bold text-2xl tracking-[0.2em] border-2 transition-all cursor-pointer',
+                isReady ? 'text-magi border-magi/50' : 'text-amber border-amber/50',
+              )}>
+              {isReady ? t('staging.cancel_ready') : t('staging.initiate_ready')}
+            </button>
           </div>
         )}
 
-        {/* Free entry */}
+        {/* Free entry — ready button in center */}
         {buyIn === 0 && (
-          <div className="flex-1 flex items-center justify-center px-3">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4">
             <span className="font-mono text-[10px] tracking-[0.2em] text-amber/30">{t('staging.free_entry')}</span>
+            <button
+              onClick={handleReady}
+              style={{ textShadow: isReady ? MAGI_GLOW : AMBER_GLOW, boxShadow: isReady ? '0 0 18px rgba(0,255,136,0.15) inset' : '0 0 18px rgba(255,112,32,0.12) inset' }}
+              className={cn(
+                'w-full py-5 flex items-center justify-center font-display font-bold text-2xl tracking-[0.2em] border-2 transition-all cursor-pointer',
+                isReady ? 'text-magi border-magi/50' : 'text-amber border-amber/50',
+              )}>
+              {isReady ? t('staging.cancel_ready') : t('staging.initiate_ready')}
+            </button>
           </div>
         )}
       </div>
-
-      {/* ── Terminal status — mirrors clock footer ── */}
-      <div className={`flex items-center justify-between px-2 py-1.5 border-t ${DIV}`}>
-        <span className="font-mono text-[10px] tracking-widest text-terminal" style={{ textShadow: TERM_GLOW }}>
-          {statusLine()}<span className="terminal-blink">▌</span>
-        </span>
-      </div>
-
-      {/* ── Ready button ── */}
-      <button
-        onClick={handleReady}
-        disabled={!canReady}
-        className={cn(
-          'w-full py-2 font-display font-bold text-lg tracking-[0.15em] border-t-2 transition-all cursor-pointer disabled:cursor-not-allowed',
-          !canReady  ? 'text-amber/15 border-amber/8'
-          : isReady  ? 'text-magi border-magi/50'
-                     : 'text-amber border-amber/50',
-        )}>
-        {!canReady ? t('staging.awaiting_payment') : isReady ? t('staging.cancel_ready') : t('staging.initiate_ready')}
-      </button>
 
       {/* ── QR fullscreen ── */}
       {qrExpanded && bolt11 && (
