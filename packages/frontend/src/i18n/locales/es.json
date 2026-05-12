@@ -5,7 +5,8 @@
     "create": "CREAR PARTIDA",
     "join": "UNIRSE A SALA",
     "controls": "CONTROLES",
-    "options": "OPCIONES"
+    "options": "OPCIONES",
+    "split": "PANTALLA DIVIDIDA"
   },
   "modal": {
     "open_sessions": "SESIONES ABIERTAS",

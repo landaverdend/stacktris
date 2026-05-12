@@ -5,7 +5,8 @@
     "create": "CREATE MATCH",
     "join": "JOIN ROOM",
     "controls": "CONTROLS",
-    "options": "OPTIONS"
+    "options": "OPTIONS",
+    "split": "SPLIT SCREEN"
   },
   "modal": {
     "open_sessions": "OPEN SESSIONS",

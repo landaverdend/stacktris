@@ -5,6 +5,7 @@ import { NavBar } from './components/NavBar';
 import { TitleScreen } from './screens/TitleScreen';
 import { MultiplayerScreen } from './screens/multiplayerScreen/MultiplayerScreen';
 import { SoloScreen } from './screens/SoloScreen';
+import { SplitScreen } from './screens/SplitScreen';
 import { TetrominoBackground } from './components/TetrominoBackground';
 import { NameEntryScreen } from './screens/NameEntryScreen';
 import { useConnection } from './ws/WSContext';
@@ -22,6 +23,7 @@ function AppInner() {
         <Routes>
           <Route path="/" element={<TitleScreen />} />
           <Route path="/solo" element={<SoloScreen />} />
+          <Route path="/split" element={<SplitScreen />} />
           <Route path="/room/:roomId" element={<MultiplayerScreen />} />
         </Routes>
       </div>

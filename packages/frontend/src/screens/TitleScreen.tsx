@@ -18,6 +18,7 @@ const API_BASE = `${window.location.protocol}//${window.location.host}`;
 
 const MENU = [
   { id: 'solo', key: 'menu.solo', jp: 'ソロプレイ' },
+  { id: 'split', key: 'menu.split', jp: '分割画面' },
   { id: 'battle', key: 'menu.multiplayer', jp: 'バトル' },
   { id: 'create', key: 'menu.create', jp: '作成' },
   { id: 'join', key: 'menu.join', jp: '参加' },
@@ -71,6 +72,7 @@ export function TitleScreen() {
 
   function handleItem(id: (typeof MENU)[number]['id']) {
     if (id === 'solo') { navigate('/solo'); return; }
+    if (id === 'split') { navigate('/split'); return; }
     setModal(id as typeof modal);
   }
 
