@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { WSClient, ConnectionStatus } from './WSClient';
+import { storage } from '../lib/storage';
 
 const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
 
@@ -17,22 +18,22 @@ const WSContext = createContext<WSContextValue | null>(null);
 export function WSProvider({ children }: { children: ReactNode }) {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [playerName, setPlayerNameState] = useState<string | null>(
-    () => localStorage.getItem('playerName')
+    () => storage.get('playerName') || null
   );
 
   useEffect(() => {
     client.connect();
     client.on('welcome', (msg) => {
       setPlayerId(msg.player_id);
-      const savedName = localStorage.getItem('playerName');
-      const savedAddress = localStorage.getItem('lightningAddress') ?? undefined;
+      const savedName = storage.get('playerName') || null;
+      const savedAddress = storage.get('lightningAddress') || undefined;
       if (savedName) client.send({ type: 'set_player_name', name: savedName, lightning_address: savedAddress });
     });
   }, []);
 
   const setPlayerInfo = (name: string, lightningAddress: string) => {
-    localStorage.setItem('playerName', name);
-    localStorage.setItem('lightningAddress', lightningAddress);
+    storage.set('playerName', name);
+    storage.set('lightningAddress', lightningAddress);
     client.send({ type: 'set_player_name', name, lightning_address: lightningAddress });
     setPlayerNameState(name);
   };

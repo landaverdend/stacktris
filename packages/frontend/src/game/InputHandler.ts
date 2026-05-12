@@ -1,4 +1,5 @@
 import { InputAction } from '@stacktris/shared';
+import { storage } from '../lib/storage';
 
 const DEFAULT_DAS_MS = 150; // Tetris guideline standard (10 frames @ 60fps)
 const DEFAULT_ARR_MS = 16;  // 2 frames @ 60fps — smooth but not jarring
@@ -34,10 +35,8 @@ export class InputHandler {
 
   constructor(onAction: (action: InputAction) => void) {
     this.onAction = onAction;
-    const das = Number(localStorage.getItem('das_ms'));
-    const arr = Number(localStorage.getItem('arr_ms'));
-    this.dasMs = Number.isFinite(das) && das > 0 ? das : DEFAULT_DAS_MS;
-    this.arrMs = Number.isFinite(arr) && arr >= 0 ? arr : DEFAULT_ARR_MS;
+    this.dasMs = storage.get('das_ms') || DEFAULT_DAS_MS;
+    this.arrMs = storage.get('arr_ms');
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
   }
