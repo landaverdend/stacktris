@@ -7,22 +7,36 @@ type MsgType = ServerMsg['type'];
 type MsgOf<T extends MsgType> = Extract<ServerMsg, { type: T }>;
 type Handler<T extends MsgType> = (msg: MsgOf<T>) => void;
 
+const RECONNECT_DELAY_MS = 2000;
+
 export class WSClient {
   private socket: WebSocket | null = null;
   private status: ConnectionStatus = 'disconnected';
   private handlers = new Map<string, Set<Handler<any>>>();
   private statusHandlers = new Set<(s: ConnectionStatus) => void>();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private stopped = false;
 
   constructor(private readonly url: string) { }
 
   connect(): void {
+    this.stopped = false;
+    this.openSocket();
+  }
+
+  private openSocket(): void {
     if (this.socket) return;
     this.setStatus('connecting');
     this.socket = new WebSocket(this.url);
     this.socket.binaryType = 'arraybuffer';
     this.socket.onopen = () => this.setStatus('connected');
-    this.socket.onclose = () => { this.socket = null; this.setStatus('disconnected'); };
-    this.socket.onerror = () => this.setStatus('error');
+    this.socket.onclose = () => {
+      this.socket = null;
+      if (this.stopped) { this.setStatus('disconnected'); return; }
+      this.setStatus('error');
+      this.reconnectTimer = setTimeout(() => this.openSocket(), RECONNECT_DELAY_MS);
+    };
+    this.socket.onerror = () => {};
     this.socket.onmessage = (e: MessageEvent) => {
       try {
         const msg = decodeMsg(new Uint8Array(e.data as ArrayBuffer)) as ServerMsg;
@@ -31,6 +45,12 @@ export class WSClient {
         console.error('[WSClient] failed to parse message:', e.data);
       }
     };
+  }
+
+  disconnect(): void {
+    this.stopped = true;
+    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+    this.socket?.close();
   }
 
   send(msg: ClientMsg): void {

@@ -9,8 +9,10 @@
     "dev": "concurrently -n backend,frontend -c cyan,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm run dev --workspace=packages/backend",
     "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "dev:electron": "concurrently -k -n backend,frontend,electron -c cyan,magenta,blue \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run build --workspace=packages/electron && electron packages/electron\"",
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend && npm run build --workspace=packages/backend",
     "build:shared": "npm run build --workspace=packages/shared",
+    "build:electron": "npm run build --workspace=packages/electron",
     "test:shared": "npm run test --workspace=packages/shared",
     "test": "npm run test --workspace=packages/shared && npm run test --workspace=packages/backend && npm run test --workspace=packages/frontend"
   },

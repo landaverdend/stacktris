@@ -1,0 +1,17 @@
+{
+  "name": "@stacktris/electron",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "electron": "^33.0.0"
+  }
+}
