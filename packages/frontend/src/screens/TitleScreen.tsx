@@ -68,12 +68,11 @@ export function TitleScreen() {
   const { setPlayerInfo } = useConnection();
   const { t } = useTranslation();
 
-  const [modal, setModal] = useState<'battle' | 'create' | 'join' | 'controls' | 'options' | null>(null);
+  const [modal, setModal] = useState<'split' | 'battle' | 'create' | 'join' | 'controls' | 'options' | null>(null);
   const close = () => setModal(null);
 
   function handleItem(id: (typeof MENU)[number]['id']) {
     if (id === 'solo') { navigate('/solo'); return; }
-    if (id === 'split') { navigate('/split'); return; }
     setModal(id as typeof modal);
   }
 
@@ -116,6 +115,7 @@ export function TitleScreen() {
 
       <p className="text-teal text-[20px] font-bold tracking-[0.03em] font-jp relative z-3">ライトニングネットワーク搭載</p>
 
+      <SplitSetupModal open={modal === 'split'} onClose={close} onStart={(buyIn) => { close(); navigate('/split', { state: { buyIn } }); }} />
       <MultiplayerModal open={modal === 'battle'} onClose={close} onCreateInstead={() => setModal('create')} onJoin={handleJoinRoom} />
       <CreateMatchModal open={modal === 'create'} onClose={close} onCreate={createRoom} />
       <JoinRoomModal open={modal === 'join'} onClose={close} onJoin={handleJoinRoom} />
@@ -126,6 +126,38 @@ export function TitleScreen() {
 }
 
 // ── Sub-modals ────────────────────────────────────────────────────────────────
+
+function SplitSetupModal({ open, onClose, onStart }: {
+  open: boolean; onClose: () => void;
+  onStart: (buyIn: number) => void;
+}) {
+  const [buyIn, setBuyIn] = useState(0);
+
+  return (
+    <NervModal open={open} title="SPLIT SCREEN" titleJp="分割画面" onClose={onClose}>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between py-2.5 border-b border-[rgba(0,255,180,0.08)]">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">BUY IN</span>
+            <span className="font-jp text-[15px] text-[rgba(0,255,180,0.3)]">掛け金</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              className="w-32 bg-transparent border-b border-[rgba(255,150,0,0.5)] text-bitcoin font-display font-bold text-3xl tracking-[0.02em] text-right outline-none pb-0.5"
+              value={buyIn} min={0}
+              onChange={(e) => setBuyIn(Math.max(0, Number(e.target.value)))}
+            />
+            <span className="font-jp text-[15px] text-[rgba(255,150,0,0.4)]">sats</span>
+          </div>
+        </div>
+        <div className="pt-5">
+          <NervButton onClick={() => onStart(buyIn)}>START SESSION</NervButton>
+        </div>
+      </div>
+    </NervModal>
+  );
+}
 
 function MultiplayerModal({ open, onClose, onCreateInstead, onJoin }: {
   open: boolean; onClose: () => void;
