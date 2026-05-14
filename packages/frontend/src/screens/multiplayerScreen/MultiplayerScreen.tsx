@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { applyDangerBorder } from '../../game/DangerSignal';
 import { StaticVignetteOverlay } from '../../components/StaticVignetteOverlay';
+import { BoardCountdown } from '../../components/BoardCountdown';
 import { useRoom } from '../../context/SessionContext';
 import { COUNTDOWN_SECONDS } from '@stacktris/shared';
 import { useTranslation } from 'react-i18next';
@@ -96,7 +97,7 @@ export function MultiplayerScreen() {
               <div ref={boardWrapperRef} className="relative">
                 <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
                 <StaticVignetteOverlay dangerSignal={dangerSignal} />
-                {status === 'countdown' && <CountdownOverlay />}
+                {status === 'countdown' && <BoardCountdown countdown={COUNTDOWN_SECONDS} />}
                 <BoardOverlay
                   status={status}
                   playerId={playerId ?? ''}
@@ -137,25 +138,5 @@ export function MultiplayerScreen() {
   );
 }
 
-function CountdownOverlay() {
-  const [countdownDisplay, setCountdownDisplay] = useState<number | 'GO!'>(COUNTDOWN_SECONDS);
-  const { t } = useTranslation();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdownDisplay((prev) => (typeof prev === 'number' && prev > 1 ? prev - 1 : 'GO!'));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60">
-      <p className="text-phosphor font-display font-bold leading-none" style={{ fontSize: '7rem' }}>
-        {countdownDisplay}
-      </p>
-      <p className="text-nerv-dim text-[15px] font-jp tracking-widest">{t('multiplayer.round_start')}</p>
-    </div>
-  );
-}
 
 

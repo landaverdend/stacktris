@@ -1,6 +1,7 @@
-import { EngineEventMap, FRAME_DURATION_MS, GameEngine, GameState } from '@stacktris/shared';
+import { COLS, EngineEventMap, FRAME_DURATION_MS, GameEngine, GameState, mulberry32 } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render';
 import { InputHandler } from './InputHandler';
+import { IInputHandler, InputHandlerFactory } from './IInputHandler';
 import { BoardShaker } from './BoardShaker';
 import { DangerSignal } from './DangerSignal';
 
@@ -10,35 +11,47 @@ export interface GameStats {
   level: number;
 }
 
-
-/**
- * This should really just be a wrapper around the game engine for calling the tick() method.
- * Game engine is responsible for all logic/state management.
- * This class sends input to the game engine and renders the game state
- */
 export class LocalGame {
   private gameEngine: GameEngine;
-
-  private inputHandler: InputHandler;
+  private garbageRng: () => number;
+  private inputHandler: IInputHandler;
   private shaker: BoardShaker | null = null;
   private rafId = 0;
+  private _paused = false;
 
   readonly danger = new DangerSignal();
 
-  private frameCount = 0;
+  private _frameCount = 0;
+  get frameCount() { return this._frameCount; }
+
   private lastFrameTime = 0;
   private simTime = 0;
 
-  constructor() {
-    this.gameEngine = new GameEngine({ startLevel: 0 });
-
-    this.inputHandler = new InputHandler(action => {
-      this.gameEngine.handleInput(action);
+  constructor(seed?: number, inputFactory?: InputHandlerFactory) {
+    const effectiveSeed = seed ?? Math.floor(Math.random() * 2 ** 32);
+    this.gameEngine = new GameEngine({
+      startLevel: 0,
+      seed: effectiveSeed,
+      gravityMode: seed !== undefined ? 'multiplayer' : 'solo',
     });
+    this.garbageRng = mulberry32(effectiveSeed);
+    const onAction = (action: Parameters<typeof this.gameEngine.handleInput>[0]) => {
+      if (!this._paused) this.gameEngine.handleInput(action);
+    };
+    this.inputHandler = inputFactory
+      ? inputFactory(onAction)
+      : new InputHandler(onAction);
   }
 
   get state(): GameState {
     return this.gameEngine.getState();
+  }
+
+  /** Route incoming garbage lines into this game. Returns the gap column chosen. */
+  addGarbage(lines: number, frame: number): number {
+    const gap = Math.floor(this.garbageRng() * COLS);
+    this.gameEngine.addGarbage(lines, frame, gap);
+    return gap;
   }
 
   start(canvases: Canvases, boardWrapper: HTMLElement): void {
@@ -54,12 +67,12 @@ export class LocalGame {
     this.inputHandler.attach();
 
     const loop = (now: number) => {
-      if (this.lastFrameTime > 0) {
+      if (!this._paused && this.lastFrameTime > 0) {
         const delta = Math.min(now - this.lastFrameTime, 100);
         this.simTime += delta;
 
         while (this.simTime >= FRAME_DURATION_MS) {
-          this.frameCount++;
+          this._frameCount++;
           this.inputHandler.tick(now);
           this.gameEngine.tick();
           this.simTime -= FRAME_DURATION_MS;
@@ -77,8 +90,14 @@ export class LocalGame {
     this.rafId = requestAnimationFrame(loop);
   }
 
-  reset(): void {
-    this.gameEngine = new GameEngine();
+  pause(): void {
+    this._paused = true;
+    this.lastFrameTime = 0; // reset so no accumulated delta on resume
+    this.simTime = 0;
+  }
+
+  resume(): void {
+    this._paused = false;
   }
 
   stop(): void {

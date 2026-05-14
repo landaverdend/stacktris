@@ -8,6 +8,7 @@ import { SoloScreen } from './screens/SoloScreen';
 import { SplitScreen } from './screens/SplitScreen';
 import { TetrominoBackground } from './components/TetrominoBackground';
 import { NameEntryScreen } from './screens/NameEntryScreen';
+import { GamepadToast } from './components/GamepadToast';
 import { useConnection } from './ws/WSContext';
 
 function AppInner() {
@@ -36,6 +37,7 @@ export default function App() {
     <WSProvider>
       <RoomProvider>
         <AppInner />
+        <GamepadToast />
       </RoomProvider>
     </WSProvider>
   );

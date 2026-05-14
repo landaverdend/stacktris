@@ -1,25 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
+import { PendingGarbage, PlayerInfo, WINS_TO_MATCH } from '@stacktris/shared';
 import { LocalGame } from '../game/LocalGame';
 import { DangerSignal, applyDangerBorder } from '../game/DangerSignal';
 import { StaticVignetteOverlay } from './StaticVignetteOverlay';
 import { ScrollFlareOverlay } from './ScrollFlareOverlay';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../render/board';
+import { GarbageMeter } from './GarbageMeter';
+import { SessionWinnerOverlay } from '../screens/multiplayerScreen/SessionWinnerOverlay';
+import { BoardCountdown } from './BoardCountdown';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, CELL_SIZE } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
 
-// Natural pixel dimensions of one arena (hold + gap + board + gap + queue)
-export const ARENA_WIDTH = HOLD_WIDTH + 8 + CANVAS_WIDTH + 8 + QUEUE_WIDTH;
+// Natural pixel dimensions of one arena (hold + gap + garbage + gap + board + gap + queue)
+export const ARENA_WIDTH = HOLD_WIDTH + 8 + CELL_SIZE + 4 + CANVAS_WIDTH + 8 + QUEUE_WIDTH;
 export const ARENA_HEIGHT = CANVAS_HEIGHT;
 
 interface Props {
+  game: LocalGame;
   playerLabel: string;
   scale?: number;
+  wins?: number;
+  winsTarget?: number;
+  showWinAnimation?: boolean;
+  potSats?: number;
+  showCountdown?: boolean;
+  countdown?: number;
+  paused?: boolean;
 }
 
-export function LocalArena({ playerLabel, scale = 1 }: Props) {
+export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WINS_TO_MATCH, showWinAnimation = false, potSats = 0, showCountdown = false, countdown = 0, paused = false }: Props) {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
   const boardWrapperRef = useRef<HTMLDivElement>(null);
+  const garbageRef = useRef<PendingGarbage[]>([]);
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [dangerSignal, setDangerSignal] = useState<DangerSignal | null>(null);
@@ -27,13 +40,18 @@ export function LocalArena({ playerLabel, scale = 1 }: Props) {
   const [level, setLevel] = useState(0);
 
   useEffect(() => {
-    const game = new LocalGame();
+    if (paused) game.pause(); else game.resume();
+  }, [game, paused]);
+
+  useEffect(() => {
     game.start({ board: boardRef.current!, queue: queueRef.current!, hold: holdRef.current! }, boardWrapperRef.current!);
 
     game.subscribe('pieceLocked', () => {
       setLines(game.state.lines);
       setLevel(game.state.level);
     });
+
+    game.subscribe('pendingGarbage', (queue) => { garbageRef.current = queue; });
 
     game.subscribe('gameOver', () => setIsGameOver(true));
 
@@ -46,36 +64,60 @@ export function LocalArena({ playerLabel, scale = 1 }: Props) {
       game.stop();
       unsubDanger();
     };
-  }, []);
+  }, [game]);
+
+  const winnerInfo: PlayerInfo = {
+    playerId: playerLabel.toLowerCase().replace(' ', ''),
+    slotIndex: parseInt(playerLabel.replace(/\D/g, '')) - 1,
+    playerName: playerLabel,
+    ready: true,
+    paid: true,
+    wins: wins ?? 0,
+  };
 
   const scaledW = ARENA_WIDTH * scale;
-  const scaledH = (ARENA_HEIGHT + 28) * scale; // +28 for label row
+  const scaledH = (ARENA_HEIGHT + 40) * scale; // +40 for label + pips row
 
   return (
     // Outer box reserves exactly the scaled space so siblings lay out correctly
-    <div style={{ width: scaledW, height: scaledH, flexShrink: 0 }}>
+    <div style={{ width: scaledW, height: scaledH, flexShrink: 0, position: 'relative' }}>
       <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: ARENA_WIDTH }}>
         <div className="flex flex-col items-center gap-2">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{playerLabel}</span>
-            <span className="font-mono text-[11px] text-[rgba(0,255,180,0.4)] tracking-widest">
-              LV {level} — {lines}L
-            </span>
+          <div className="flex flex-col items-center gap-1">
+            {wins !== undefined && (
+              <div className="flex gap-1">
+                {Array.from({ length: winsTarget }, (_, i) => (
+                  <span key={i} className={`text-sm ${i < wins ? 'text-teal' : 'text-phosphor/20'}`}>●</span>
+                ))}
+              </div>
+            )}
+            <div className="flex items-baseline gap-2">
+              <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{playerLabel}</span>
+              <span className="font-mono text-[11px] text-[rgba(0,255,180,0.4)] tracking-widest">
+                LV {level} — {lines}L
+              </span>
+            </div>
           </div>
 
           <div className="flex items-start gap-2">
             <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
 
-            <div ref={boardWrapperRef} className="relative">
-              {isGameOver && <ScrollFlareOverlay />}
-              <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
-              <StaticVignetteOverlay dangerSignal={dangerSignal} />
+            <div className="flex items-end gap-1">
+              <GarbageMeter garbageStackRef={garbageRef} getCurrentTick={() => game.frameCount} />
+              <div ref={boardWrapperRef} className="relative">
+                {isGameOver && <ScrollFlareOverlay />}
+                <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
+                <StaticVignetteOverlay dangerSignal={dangerSignal} />
+                {showCountdown && <BoardCountdown countdown={countdown} />}
+                {showWinAnimation && <SessionWinnerOverlay winner={winnerInfo} potSats={potSats} />}
+              </div>
             </div>
 
             <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
           </div>
         </div>
       </div>
+
     </div>
   );
 }

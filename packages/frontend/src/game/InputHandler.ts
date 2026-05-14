@@ -1,5 +1,6 @@
 import { InputAction } from '@stacktris/shared';
 import { storage } from '../lib/storage';
+import { IInputHandler } from './IInputHandler';
 
 const DEFAULT_DAS_MS = 150; // Tetris guideline standard (10 frames @ 60fps)
 const DEFAULT_ARR_MS = 16;  // 2 frames @ 60fps — smooth but not jarring
@@ -26,7 +27,7 @@ interface HeldKey {
   lastRepeat: number | null;
 }
 
-export class InputHandler {
+export class InputHandler implements IInputHandler {
   private onAction: (action: InputAction) => void;
   private held = new Map<string, HeldKey>();
   private bound = false;

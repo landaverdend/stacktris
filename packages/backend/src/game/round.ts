@@ -1,15 +1,9 @@
-import { Board, ClientMsg, Emitter, FRAME_DURATION_MS, GameFrame, InputBuffer, ServerMsg } from '@stacktris/shared';
+import { Board, ClientMsg, FRAME_DURATION_MS, GameFrame, InputBuffer, RoundBase, ServerMsg } from '@stacktris/shared';
 import { PlayerSlot } from '../types.js';
 import { PlayerGame } from './playerGame.js';
 
-type RoundEventMap = {
-  gameOver: string | null; // winnerId, or null for a draw
-};
-
 interface FrameDiff {
-  // Fields that trigger a correction.
   correctionDiffs: string[];
-  // Fields logged for diagnosis but excluded from the sync check.
   infoDiffs: string[];
 }
 
@@ -19,13 +13,10 @@ function diffGameFrames(client: GameFrame, server: GameFrame): FrameDiff {
 
   if (client.isGameOver !== server.isGameOver)
     correctionDiffs.push(`isGameOver: client=${client.isGameOver} server=${server.isGameOver}`);
-
   if (client.holdPiece !== server.holdPiece)
     correctionDiffs.push(`holdPiece: client=${client.holdPiece} server=${server.holdPiece}`);
-
   if (client.holdUsed !== server.holdUsed)
     correctionDiffs.push(`holdUsed: client=${client.holdUsed} server=${server.holdUsed}`);
-
   if (client.bagPosition !== server.bagPosition)
     correctionDiffs.push(`bagPosition: client=${client.bagPosition} server=${server.bagPosition}`);
 
@@ -44,12 +35,9 @@ function diffGameFrames(client: GameFrame, server: GameFrame): FrameDiff {
   if (boardDiffs.length > 0)
     correctionDiffs.push(`board (${boardDiffs.length} cell(s) differ): ${boardDiffs.slice(0, 10).join(', ')}${boardDiffs.length > 10 ? ` ... +${boardDiffs.length - 10} more` : ''}`);
 
-  // gravityLevel: excluded from corrections (float32 precision loss in heartbeat codec
-  // causes false positives), but logged to correlate corrections with gravity changes.
   if (client.gravityLevel !== server.gravityLevel)
     infoDiffs.push(`gravityLevel: client=${client.gravityLevel} server=${server.gravityLevel}`);
 
-  // activePiece: not part of sync check but useful for diagnosing mid-flight drift.
   const cp = client.activePiece;
   const sp = server.activePiece;
   if (cp && sp) {
@@ -58,8 +46,7 @@ function diffGameFrames(client: GameFrame, server: GameFrame): FrameDiff {
     if (cp.row !== sp.row) apDiffs.push(`row: client=${cp.row} server=${sp.row}`);
     if (cp.col !== sp.col) apDiffs.push(`col: client=${cp.col} server=${sp.col}`);
     if (cp.rotation !== sp.rotation) apDiffs.push(`rotation: client=${cp.rotation} server=${sp.rotation}`);
-    if (apDiffs.length > 0)
-      infoDiffs.push(`activePiece: ${apDiffs.join(', ')}`);
+    if (apDiffs.length > 0) infoDiffs.push(`activePiece: ${apDiffs.join(', ')}`);
   } else if (!!cp !== !!sp) {
     infoDiffs.push(`activePiece: client=${cp ? 'present' : 'null'} server=${sp ? 'present' : 'null'}`);
   }
@@ -67,65 +54,88 @@ function diffGameFrames(client: GameFrame, server: GameFrame): FrameDiff {
   return { correctionDiffs, infoDiffs };
 }
 
-const MAX_LAG_FRAMES = 120; // 2 seconds @ 60fps
+const MAX_LAG_FRAMES = 120;
 const WATCHDOG_INTERVAL_MS = 100;
-export class Round {
 
-  private players: Record<string, PlayerSlot> = {}
-  private playerGames: Record<string, PlayerGame> = {};
-
-  private alivePlayers: Set<string> = new Set();
-
-  private gameEnded = false;
-
-  private roundStartTime: number;
+export class Round extends RoundBase<PlayerGame> {
+  private readonly slots: Record<string, PlayerSlot>;
+  private readonly roundStartTime: number;
   private watchdogInterval: ReturnType<typeof setInterval> | null = null;
 
-  // PPT-style targeting: stable player order + per-attacker index into that order
-  private playerOrder: string[] = [];
-  private targetIndices: Record<string, number> = {};
+  constructor(playerSlots: PlayerSlot[]) {
+    const seed = Math.floor(Math.random() * 2 ** 32);
+    const games: Record<string, PlayerGame> = {};
+    const slots: Record<string, PlayerSlot> = {};
 
-  private emitter = new Emitter<RoundEventMap>();
-  subscribe = this.emitter.subscribe.bind(this.emitter);
-
-  private seed: number = Math.floor(Math.random() * 2 ** 32);
-
-  constructor(players: PlayerSlot[]) {
-    for (const p of players) {
-      this.players[p.playerId] = p;
+    for (const slot of playerSlots) {
+      games[slot.playerId] = new PlayerGame(seed, slot.playerName);
+      slots[slot.playerId] = slot;
     }
 
+    super(games, seed);
+    this.slots = slots;
     this.roundStartTime = Date.now();
-    this.watchdogInterval = setInterval(() => { this.checkPlayersForStall() }, WATCHDOG_INTERVAL_MS);
 
-    this.startRound();
+    // Transport-specific player subscriptions (base handles 'attack' and 'gameOver')
+    for (const [playerId, pg] of Object.entries(this.players)) {
+      pg.subscribe('pendingGarbage', (queue) => {
+        slots[playerId].sendFn({ type: 'garbage_queue_sync', queue });
+      });
+      pg.subscribe('pieceLocked', ({ board }) => {
+        this.broadcastBoardUpdate(playerId, board);
+        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: slots[playerId].slotIndex, activePiece: null }, playerId);
+      });
+    }
+
+    this.watchdogInterval = setInterval(() => this.checkPlayersForStall(), WATCHDOG_INTERVAL_MS);
+
+    this.broadcastToAll({ type: 'game_start', seed: this.seed, roundStartTime: this.roundStartTime });
+    for (const [playerId, pg] of Object.entries(this.players)) {
+      slots[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
+      this.broadcastBoardUpdate(playerId, pg.toGameFrame().board);
+    }
   }
 
+  // ── Template method overrides ───────────────────────────────────────────────
+
+  protected onKillPlayer(playerId: string): void {
+    console.log(`[player] ${this.slots[playerId].playerName} eliminated (frame=${this.players[playerId]?.frameCount ?? 'n/a'} aliveRemaining=${this.alivePlayers.size})`);
+    this.broadcastPlayerDeath(playerId);
+  }
+
+  protected onGameOver(winnerId: string | null): void {
+    console.log(`[game] over — winner: ${winnerId ? this.slots[winnerId]?.playerName : 'draw'}`);
+    this.destroy();
+  }
+
+  protected onRouteGarbage(attackerId: string, targetId: string, lines: number, frame: number, gap: number): void {
+    const targetQueue = this.players[targetId].toGameFrame().pendingGarbage;
+    console.log(`[garbage:route] ${this.slots[attackerId].playerName} → ${this.slots[targetId].playerName}: ${lines}L gap=${gap} sentFrame=${frame} | targetQueue depth=${targetQueue.length} totalLines=${targetQueue.reduce((s, g) => s + g.lines, 0)}`);
+  }
+
+  // ── WS message handling ─────────────────────────────────────────────────────
+
   public onMessage(playerId: string, msg: ClientMsg): void {
-
     switch (msg.type) {
-      case 'game_action':
-        this.handlePlayerInput(playerId, msg.buffer, msg.frame);
-        const ps = this.playerGames[playerId];
-        ps?.handleInput(msg.buffer, msg.frame);
-        if (ps) this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: ps.toGameFrame().activePiece }, playerId);
+      case 'game_action': {
+        const pg = this.players[playerId];
+        if (!pg) break;
+        pg.handleInput(msg.buffer, msg.frame);
+        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.slots[playerId].slotIndex, activePiece: pg.toGameFrame().activePiece }, playerId);
         break;
-
+      }
       case 'game_state_heartbeat': {
-        const pg = this.playerGames[playerId];
+        const pg = this.players[playerId];
         if (!pg) break;
         const serverFrame = pg.toGameFrame();
         const frameDelta = serverFrame.frame - msg.state.frame;
-        console.log(`[heartbeat] ${this.players[playerId].playerName} clientFrame=${msg.state.frame} serverFrame=${serverFrame.frame} delta=${frameDelta} isGameOver=${msg.state.isGameOver}`);
-
+        console.log(`[heartbeat] ${this.slots[playerId].playerName} clientFrame=${msg.state.frame} serverFrame=${serverFrame.frame} delta=${frameDelta} isGameOver=${msg.state.isGameOver}`);
         const { correctionDiffs, infoDiffs } = diffGameFrames(msg.state, serverFrame);
-
         if (correctionDiffs.length > 0) {
           const allDiffs = [...correctionDiffs, ...(infoDiffs.length > 0 ? [`[info] ${infoDiffs.join(' | ')}`] : [])];
-          console.warn(`[heartbeat] out of sync for ${this.players[playerId].playerName} at frame ${msg.state.frame} (correction disabled)\n  ${allDiffs.join('\n  ')}`);
-          // corrective state update disabled
+          console.warn(`[heartbeat] out of sync for ${this.slots[playerId].playerName} at frame ${msg.state.frame} (correction disabled)\n  ${allDiffs.join('\n  ')}`);
         } else if (infoDiffs.length > 0) {
-          console.log(`[heartbeat] in sync (info) for ${this.players[playerId].playerName} at frame ${msg.state.frame}: ${infoDiffs.join(' | ')}`);
+          console.log(`[heartbeat] in sync (info) for ${this.slots[playerId].playerName} at frame ${msg.state.frame}: ${infoDiffs.join(' | ')}`);
         }
         break;
       }
@@ -136,158 +146,50 @@ export class Round {
     }
   }
 
-  public startRound(): void {
-    this.seed = Math.floor(Math.random() * 2 ** 32);
-
-    // Create PlayerGames AFTER seed is finalized so server and client share the same seed
-    this.playerOrder = Object.keys(this.players);
-    this.alivePlayers = new Set(this.playerOrder);
-
-    // Each player starts targeting the next player in order
-    for (let i = 0; i < this.playerOrder.length; i++) {
-      this.targetIndices[this.playerOrder[i]] = (i + 1) % this.playerOrder.length;
-    }
-
-    for (const playerId of Object.keys(this.players)) {
-      const pg = new PlayerGame(this.seed, this.players[playerId].playerName);
-
-      pg.subscribe('attack', (lines) => this.routeGarbage(playerId, lines, pg.frameCount));
-      pg.subscribe('pendingGarbage', (queue) => {
-        this.players[playerId].sendFn({ type: 'garbage_queue_sync', queue });
-      });
-      pg.subscribe('pieceLocked', ({ board }) => {
-        this.broadcastBoardUpdate(playerId, board);
-        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: null }, playerId);
-      });
-      pg.subscribe('gameOver', () => {
-        this.broadcastPlayerDeath(playerId);
-        this.killPlayer(playerId);
-      });
-
-      this.playerGames[playerId] = pg;
-    }
-
-    this.broadcastToAll({ type: 'game_start', seed: this.seed, roundStartTime: this.roundStartTime });
-
-    // send initial state snapshots to all players
-    for (const [playerId, pg] of Object.entries(this.playerGames)) {
-      this.players[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
-      this.broadcastBoardUpdate(playerId, pg.toGameFrame().board);
-    }
-
-  }
-
   public destroy(): void {
-
     if (this.watchdogInterval !== null) {
       clearInterval(this.watchdogInterval);
       this.watchdogInterval = null;
     }
   }
 
-  /** Remove a player from the session — used for both engine game-over and disconnects. */
-  public killPlayer(playerId: string): void {
-    if (this.gameEnded) return;
-    if (!this.alivePlayers.has(playerId)) return;
+  // ── Watchdog ────────────────────────────────────────────────────────────────
 
-    // Remove from gameplay structures; playerOrder kept as tombstone (advanceTarget skips non-alive)
-    // players is intentionally kept so the removed player still receives the final game_over broadcast
-    console.log(`[player] ${this.players[playerId].playerName} eliminated (frame=${this.playerGames[playerId]?.frameCount ?? 'n/a'} aliveRemaining=${this.alivePlayers.size - 1})`);
-    delete this.playerGames[playerId];
-    delete this.targetIndices[playerId];
-    this.alivePlayers.delete(playerId);
-
-    if (this.alivePlayers.size <= 1) {
-      this.gameEnded = true;
-      const winnerId = [...this.alivePlayers][0] ?? null;
-      this.emitter.emit('gameOver', winnerId);
-
-      console.log(`[game] over — winner: ${winnerId ? this.players[winnerId]?.playerName : 'draw'}`);
-
-      this.destroy();
-    }
-  }
-
-  private routeGarbage(attackerId: string, lines: number, triggerFrame: number): void {
-    const targetId = this.advanceTarget(attackerId);
-    if (!targetId) return;
-    const gap = this.playerGames[targetId].addGarbage(lines, triggerFrame);
-    const targetQueue = this.playerGames[targetId].toGameFrame().pendingGarbage;
-    console.log(`[garbage:route] ${this.players[attackerId].playerName} → ${this.players[targetId].playerName}: ${lines}L gap=${gap} sentFrame=${triggerFrame} triggerFrame=${triggerFrame + 240} | targetQueue depth=${targetQueue.length} totalLines=${targetQueue.reduce((s, g) => s + g.lines, 0)}`);
-  }
-
-  /** Returns the next alive target for the attacker and advances their index. */
-  private advanceTarget(attackerId: string): string | null {
-    const n = this.playerOrder.length;
-    let idx = this.targetIndices[attackerId];
-
-    for (let i = 0; i < n; i++) {
-      const candidate = this.playerOrder[idx];
-      idx = (idx + 1) % n;
-      if (candidate !== attackerId && this.alivePlayers.has(candidate)) {
-        this.targetIndices[attackerId] = idx;
-        return candidate;
-      }
-    }
-    return null;
-  }
-
-
-  /**
-   * If player comes back from a disconnect, send them the current game state.
-   * @param playerId - player id of who sent input
-   * @param buffer - input buffer of actions.
-   * @param frame - frame of the game
-   */
-  private handlePlayerInput(playerId: string, buffer: InputBuffer, frame: number) {
-    const pg = this.playerGames[playerId];
-    if (!pg) return;
-
+  private checkPlayersForStall(): void {
     const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
-
-    // corrective snapshot on lag disabled
-    // if (serverFrame - frame > MAX_LAG_FRAMES) {
-    //   this.players[playerId].sendFn({ type: 'game_state_update', frame: pg.toGameFrame() });
-    // }
-  }
-
-  /**
-   * Check if any players are stalled and tick them to the server frame if they are. (If they DC)
-   */
-  private checkPlayersForStall() {
-    const serverFrame = Math.floor((Date.now() - this.roundStartTime) / FRAME_DURATION_MS);
-    for (const [playerId, pg] of Object.entries(this.playerGames)) {
+    for (const [playerId, pg] of Object.entries(this.players)) {
+      if (!this.alivePlayers.has(playerId)) continue;
       const delta = serverFrame - pg.frameCount;
       if (delta > MAX_LAG_FRAMES) {
-
         console.log(`[WATCHDOG] Player ${playerId} is at frame ${pg.frameCount}, server is at frame ${serverFrame}`);
-        pg.tickTo(serverFrame) // advance gravity with no inputs
-        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.players[playerId].slotIndex, activePiece: pg.toGameFrame().activePiece }, playerId);
+        pg.tickTo(serverFrame);
+        this.broadcastToAll({ type: 'opponent_piece_update', slotIndex: this.slots[playerId].slotIndex, activePiece: pg.toGameFrame().activePiece }, playerId);
       }
     }
   }
 
+  // ── Broadcast helpers ───────────────────────────────────────────────────────
+
   private broadcastBoardUpdate(senderId: string, board: Board): void {
-    const slotIndex = this.players[senderId].slotIndex;
-    for (const id of Object.keys(this.players)) {
+    const slotIndex = this.slots[senderId].slotIndex;
+    for (const id of Object.keys(this.slots)) {
       if (id === senderId) continue;
-      this.players[id].sendFn({ type: 'opponent_board_update', slotIndex, board });
+      this.slots[id].sendFn({ type: 'opponent_board_update', slotIndex, board });
     }
   }
 
-  private broadcastPlayerDeath(playerId: string) {
-    const slotIndex = this.players[playerId].slotIndex;
-    for (const id of Object.keys(this.players)) {
+  private broadcastPlayerDeath(playerId: string): void {
+    const slotIndex = this.slots[playerId].slotIndex;
+    for (const id of Object.keys(this.slots)) {
       if (id === playerId) continue;
-      this.players[id].sendFn({ type: 'game_player_died', slotIndex });
+      this.slots[id].sendFn({ type: 'game_player_died', slotIndex });
     }
   }
 
   private broadcastToAll(msg: ServerMsg, exceptId?: string): void {
-    for (const player of Object.values(this.players)) {
-      if (player.playerId === exceptId) continue;
-      player.sendFn(msg);
+    for (const slot of Object.values(this.slots)) {
+      if (slot.playerId === exceptId) continue;
+      slot.sendFn(msg);
     }
   }
-
 }
