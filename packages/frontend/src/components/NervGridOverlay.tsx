@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { DangerSignal } from '../game/DangerSignal';
+import type { IDangerSignal } from '../game/DangerSignal';
 
 // Keep in sync with DangerSignal.ts COLOR constants
 const BITCOIN = { r: 247, g: 147, b: 26 };
@@ -16,7 +16,7 @@ function lerpCol(t: number) {
 }
 
 interface Props {
-  dangerSignal: DangerSignal | null;
+  dangerSignal: IDangerSignal | null;
 }
 
 export function NervGridOverlay({ dangerSignal }: Props) {

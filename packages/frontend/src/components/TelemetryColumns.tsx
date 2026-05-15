@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { DangerSignal } from '../game/DangerSignal';
+import type { IDangerSignal } from '../game/DangerSignal';
 
 const TERMINAL = { r: 0, g: 255, b: 65 }; // --color-terminal
 const ALERT = { r: 204, g: 34, b: 0 }; // --color-alert
@@ -34,7 +34,7 @@ interface TLine { text: string; y: number; alpha: number; }
 const LINE_H = 13;
 const COL_PAD = 10;
 
-interface Props { dangerSignal: DangerSignal | null; }
+interface Props { dangerSignal: IDangerSignal | null; }
 
 export function TelemetryColumns({ dangerSignal }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

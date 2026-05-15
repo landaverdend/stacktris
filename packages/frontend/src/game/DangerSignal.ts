@@ -113,12 +113,17 @@ export function applyDangerBorderSimple(el: HTMLElement | null, danger: number):
 
 type Listener = (value: number) => void;
 
+export interface IDangerSignal {
+  readonly value: number;
+  subscribe(fn: (v: number) => void): () => void;
+}
+
 /**
  * A minimal observable that holds the current danger level and notifies
  * subscribers when it changes meaningfully. Lives on the game instance so
  * any number of consumers can subscribe without the game knowing about them.
  */
-export class DangerSignal {
+export class DangerSignal implements IDangerSignal {
   private _value = 0;
   private listeners = new Set<Listener>();
 
