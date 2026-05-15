@@ -93,8 +93,11 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
           </div>
 
           <div className="flex items-start gap-2">
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="font-display font-bold text-[11px] tracking-widest text-phosphor/40">HOLD</span>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">HOLD</span>
+                <span className="font-jp text-[12px] text-nerv-dim">ホールド</span>
+              </div>
               <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
             </div>
 
@@ -114,8 +117,11 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="font-display font-bold text-[11px] tracking-widest text-phosphor/40">NEXT</span>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">NEXT</span>
+                <span className="font-jp text-[15px] text-nerv-dim">次</span>
+              </div>
               <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
             </div>
           </div>

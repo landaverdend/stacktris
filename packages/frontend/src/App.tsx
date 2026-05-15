@@ -5,7 +5,7 @@ import { NavBar } from './components/NavBar';
 import { TitleScreen } from './screens/TitleScreen';
 import { MultiplayerScreen } from './screens/multiplayerScreen/MultiplayerScreen';
 import { SoloScreen } from './screens/SoloScreen';
-import { SplitScreen } from './screens/SplitScreen';
+import { SplitScreen } from './screens/splitScreen/SplitScreen';
 import { TetrominoBackground } from './components/TetrominoBackground';
 import { NameEntryScreen } from './screens/NameEntryScreen';
 import { GamepadToast } from './components/GamepadToast';
