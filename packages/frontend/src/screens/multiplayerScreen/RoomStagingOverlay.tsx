@@ -29,7 +29,7 @@ function InvoiceSkeleton() {
 }
 
 export function RoomStagingOverlay() {
-  const { roomState, readyUpdate } = useRoom();
+  const { roomState, serverError, readyUpdate } = useRoom();
   const [isReady, setIsReady] = useState(false);
   const [copied, setCopied] = useState(false);
   const [qrExpanded, setQrExpanded] = useState(false);
@@ -100,8 +100,16 @@ export function RoomStagingOverlay() {
           </div>
         )}
 
-        {/* Invoice skeleton */}
-        {needsPayment && !bolt11 && <InvoiceSkeleton />}
+        {/* Invoice skeleton / error */}
+        {needsPayment && !bolt11 && !serverError && <InvoiceSkeleton />}
+        {needsPayment && !bolt11 && serverError && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+            <span className="font-display font-bold text-sm tracking-[0.2em] text-alert">{t('staging.invoice_error_title')}</span>
+            <p className="font-mono text-[11px] text-alert/60 leading-relaxed tracking-wide text-center">
+              {t('staging.invoice_error_body')}
+            </p>
+          </div>
+        )}
 
         {/* Invoice content */}
         {needsPayment && bolt11 && (

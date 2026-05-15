@@ -45,7 +45,7 @@ export function PlayerCard({ index, playerName, playerId, wins, ready, showReady
           </div>
 
           {showReadyStatus && (
-            <span className={cn('font-display font-bold tracking-[0.05em] shrink-0', compact ? 'text-sm' : 'text-base', ready ? 'text-magi' : 'text-phosphor/25')}>
+            <span className={cn('font-display font-bold tracking-[0.05em] shrink-0 text-right', compact ? 'text-sm min-w-[4rem]' : 'text-base min-w-[5.5rem]', ready ? 'text-magi' : 'text-phosphor/25')}>
               {ready ? t('players.ready') : t('players.waiting')}
             </span>
           )}

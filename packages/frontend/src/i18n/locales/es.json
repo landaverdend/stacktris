@@ -86,7 +86,9 @@
     "awaiting_payment": "ESPERANDO PAGO",
     "cancel_ready": "■ CANCELAR LISTO",
     "initiate_ready": "◌ READY UP",
-    "tap_to_close": "TOCA PARA CERRAR"
+    "tap_to_close": "TOCA PARA CERRAR",
+    "invoice_error_title": "! FACTURA FALLIDA",
+    "invoice_error_body": "Tu billetera no soporta facturas retenidas. Prueba una billetera con soporte NIP-47 hold invoice (ej. Alby, Core Lightning)."
   },
   "winner": {
     "session_victor": "VICTORIOSO:",

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { WINS_TO_MATCH } from '@stacktris/shared';
+import { useNavigate } from 'react-router-dom';
+import { WINS_TO_MATCH, PendingGarbage } from '@stacktris/shared';
 import { LocalArena, ARENA_WIDTH, ARENA_HEIGHT } from '../components/LocalArena';
+import { GarbageMeter } from '../components/GarbageMeter';
 import { LocalSession, LocalMatchSnapshot } from '../game/LocalSession';
 import { LocalPaymentService } from '../game/LocalPaymentService';
 import { NervButton } from '../components/NervButton';
@@ -11,10 +12,6 @@ import { storage } from '../lib/storage';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, CELL_SIZE } from '../render/board';
 import { HOLD_WIDTH, HOLD_HEIGHT, QUEUE_WIDTH, QUEUE_HEIGHT } from '../render/queue';
 import { QRCodeSVG } from 'qrcode.react';
-
-interface SplitSessionState {
-  buyIn: number;
-}
 
 const MAX_PLAYERS = 8;
 const GAP = 24;
@@ -41,7 +38,9 @@ function WinPips({ wins, target }: { wins: number; target: number }) {
   return (
     <div className="flex gap-1">
       {Array.from({ length: target }, (_, i) => (
-        <span key={i} className={`text-sm ${i < wins ? 'text-teal' : 'text-phosphor/20'}`}>●</span>
+        <span key={i} className={`text-sm ${i < wins ? 'text-teal' : 'text-phosphor/20'}`}>
+          ●
+        </span>
       ))}
     </div>
   );
@@ -63,6 +62,8 @@ function ScoreTable({ wins, playerCount }: { wins: Record<string, number>; playe
     </div>
   );
 }
+
+type VerifyStatus = 'idle' | 'checking' | 'ok' | 'invalid' | 'cors';
 
 function LobbyArena({
   index,
@@ -93,8 +94,36 @@ function LobbyArena({
   onToggleReady: () => void;
   scale: number;
 }) {
+  const emptyGarbageRef = useRef<PendingGarbage[]>([]);
+  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle');
+  useEffect(() => {
+    setVerifyStatus('idle');
+  }, [lightningAddress]);
+
+  const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lightningAddress);
+
+  async function handleVerify() {
+    if (!isValidFormat) {
+      setVerifyStatus('invalid');
+      return;
+    }
+    setVerifyStatus('checking');
+    const [user, domain] = lightningAddress.split('@');
+    try {
+      const res = await fetch(`https://${domain}/.well-known/lnurlp/${user}`);
+      if (!res.ok) {
+        setVerifyStatus('invalid');
+        return;
+      }
+      const json = await res.json();
+      setVerifyStatus(json?.tag === 'payRequest' ? 'ok' : 'invalid');
+    } catch {
+      setVerifyStatus('cors');
+    }
+  }
+
   const scaledW = ARENA_WIDTH * scale;
-  const scaledH = (ARENA_HEIGHT + LABEL_H + CARD_H + 8) * scale;
+  const arenaScaledH = CANVAS_HEIGHT * scale;
 
   const boardGrid = `
     repeating-linear-gradient(to right, transparent, transparent ${CELL_SIZE - 1}px, rgba(255,255,255,0.03) ${CELL_SIZE - 1}px, rgba(255,255,255,0.03) ${CELL_SIZE}px),
@@ -105,21 +134,20 @@ function LobbyArena({
   const showPaymentFlow = buyIn > 0;
 
   return (
-    <div style={{ width: scaledW, height: scaledH, flexShrink: 0 }}>
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: ARENA_WIDTH }}>
-        <div className="flex items-start gap-2">
-          <div className="nerv-border" style={{ width: HOLD_WIDTH, height: HOLD_HEIGHT, background: '#050505' }} />
+    <div style={{ width: scaledW, flexShrink: 0 }}>
+      {/* Scaled section — only the arena canvases */}
+      <div style={{ height: arenaScaledH, overflow: 'hidden' }}>
+        <div style={{ transform: `scale(${scale}) translateZ(0)`, transformOrigin: 'top left', width: ARENA_WIDTH, willChange: 'transform' }}>
+          <div className="flex items-start gap-2">
+            <div className="nerv-border" style={{ width: HOLD_WIDTH, height: HOLD_HEIGHT, background: '#050505' }} />
 
-          <div className="flex items-start gap-1">
-            <div className="border rounded-md border-bitcoin/20" style={{ width: CELL_SIZE, height: CANVAS_HEIGHT, background: '#050505' }} />
+            <div className="flex items-start gap-1">
+              <GarbageMeter garbageStackRef={emptyGarbageRef} getCurrentTick={() => 0} />
 
-            <div className="flex flex-col gap-1" style={{ width: CANVAS_WIDTH }}>
               <div
                 className="relative nerv-border overflow-hidden"
                 style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, background: boardGrid }}>
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 px-3">
-
-                  {/* ── No-payment lobby ── */}
                   {!showPaymentFlow && (
                     <button
                       onClick={onToggleReady}
@@ -133,7 +161,6 @@ function LobbyArena({
                     </button>
                   )}
 
-                  {/* ── Payment lobby ── */}
                   {showPaymentFlow && (
                     <>
                       <div className="flex flex-col items-center gap-0">
@@ -142,42 +169,31 @@ function LobbyArena({
                         <span className="font-mono text-[9px] tracking-widest text-bitcoin/40">SATS</span>
                       </div>
 
-                      {/* NWC not configured */}
                       {nwcMissing && (
                         <p className="font-mono text-[9px] text-alert/70 tracking-wider text-center leading-relaxed">
                           NWC not configured.{'\n'}Set it in Options.
                         </p>
                       )}
 
-                      {/* Invoice error */}
                       {!nwcMissing && invoiceError && (
                         <p className="font-mono text-[9px] text-alert/70 tracking-wider text-center leading-relaxed">
                           Invoice error.{'\n'}Check NWC connection.
                         </p>
                       )}
 
-                      {/* Generating invoice */}
                       {!nwcMissing && !invoiceError && !bolt11 && !paid && (
-                        <span className="font-mono text-[9px] text-phosphor/40 tracking-widest animate-pulse">
-                          GENERATING...
-                        </span>
+                        <span className="font-mono text-[9px] text-phosphor/40 tracking-widest animate-pulse">GENERATING...</span>
                       )}
 
-                      {/* QR code — unpaid */}
                       {bolt11 && !paid && (
                         <div className="flex flex-col items-center gap-2">
                           <div className="p-1.5 bg-white rounded">
-                            <QRCodeSVG
-                              value={`lightning:${bolt11}`}
-                              size={CANVAS_WIDTH - 48}
-                              level="M"
-                            />
+                            <QRCodeSVG value={`lightning:${bolt11}`} size={CANVAS_WIDTH - 48} level="M" />
                           </div>
                           <span className="font-mono text-[8px] text-phosphor/30 tracking-widest">SCAN TO PAY</span>
                         </div>
                       )}
 
-                      {/* Paid — show READY UP */}
                       {paid && (
                         <>
                           <span className="font-mono text-xs text-teal tracking-widest">✓ PAID</span>
@@ -197,36 +213,57 @@ function LobbyArena({
                   )}
                 </div>
               </div>
-
-              {/* Lightning address input (only when buy-in is active) */}
-              {showPaymentFlow && (
-                <input
-                  type="text"
-                  value={lightningAddress}
-                  onChange={e => onLightningAddressChange(e.target.value)}
-                  placeholder="you@wallet.domain"
-                  className="w-full bg-transparent border-b border-[rgba(0,255,180,0.2)] text-teal font-mono text-[11px] text-center outline-none py-1 placeholder:text-phosphor/20 focus:border-teal/50 transition-colors"
-                />
-              )}
-
-              <PlayerCard index={index} playerName={playerName} playerId={`p${index + 1}`} wins={wins} ready={ready} compact />
             </div>
-          </div>
 
-          <div className="nerv-border" style={{ width: QUEUE_WIDTH, height: QUEUE_HEIGHT, background: '#050505' }} />
+            <div className="nerv-border" style={{ width: QUEUE_WIDTH, height: QUEUE_HEIGHT, background: '#050505' }} />
+          </div>
         </div>
+      </div>
+
+      {/* Native-scale content — no transform blurriness */}
+      {showPaymentFlow && (
+        <div
+          style={{ width: Math.round(CANVAS_WIDTH * scale), marginLeft: 'auto', marginRight: 'auto' }}
+          className="flex items-baseline gap-3 pt-2 border-t border-[rgba(255,112,32,0.12)]"
+        >
+          <span className="font-display font-bold text-sm tracking-[0.15em] text-phosphor/50 shrink-0">PAYOUT</span>
+          <input
+            type="text"
+            value={lightningAddress}
+            onChange={(e) => onLightningAddressChange(e.target.value)}
+            placeholder="you@wallet.domain"
+            className="flex-1 bg-transparent border-b border-[rgba(255,112,32,0.35)] text-bitcoin font-display text-base outline-none pb-px placeholder:text-phosphor/20 focus:border-bitcoin/70 transition-colors min-w-0"
+          />
+          <button
+            onClick={handleVerify}
+            disabled={!lightningAddress.trim() || verifyStatus === 'checking'}
+            className={cn(
+              'font-display font-bold text-sm tracking-[0.15em] shrink-0 cursor-pointer disabled:opacity-30',
+              verifyStatus === 'ok' ? 'text-teal' :
+              verifyStatus === 'invalid' ? 'text-alert' :
+              verifyStatus === 'cors' ? 'text-bitcoin' :
+              'text-phosphor/40 hover:text-phosphor/70',
+            )}>
+            {verifyStatus === 'checking' ? '···' : verifyStatus === 'ok' ? '✓ OK' : verifyStatus === 'invalid' ? '✗ BAD' : 'PING'}
+          </button>
+        </div>
+      )}
+
+      <div className="w-fit mx-auto mt-1">
+        <PlayerCard index={index} playerName={playerName} playerId={`p${index + 1}`} wins={wins} ready={ready} />
       </div>
     </div>
   );
 }
 
 export function SplitScreen() {
-  const { state } = useLocation();
   const navigate = useNavigate();
-  const { buyIn } = (state as SplitSessionState) ?? { buyIn: 0 };
 
+  const [buyIn, setBuyIn] = useState(0);
+  const [inputBuyIn, setInputBuyIn] = useState(0); // immediate display value
+  const buyInTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [playerCount, setPlayerCount] = useState(2);
-  const [session, setSession] = useState(() => new LocalSession(2, buyIn));
+  const [session, setSession] = useState(() => new LocalSession(2, 0));
   const [snapshot, setSnapshot] = useState<LocalMatchSnapshot>(() => session.snapshot);
 
   // Payment state
@@ -267,18 +304,21 @@ export function SplitScreen() {
     paymentServiceRef.current = svc;
 
     const configs = session.snapshot.playerConfigs;
-    setInvoices(Object.fromEntries(configs.map(c => [c.playerId, null])));
+    setInvoices(Object.fromEntries(configs.map((c) => [c.playerId, null])));
     setInvoiceErrors({});
 
     for (const config of configs) {
       const address = config.playerId === 'p1' ? storedAddress : '';
-      svc.generateInvoice(config.playerId, address, () => {
-        session.setPlayerPaid(config.playerId);
-      }).then(bolt11 => {
-        setInvoices(prev => ({ ...prev, [config.playerId]: bolt11 }));
-      }).catch(err => {
-        setInvoiceErrors(prev => ({ ...prev, [config.playerId]: String(err) }));
-      });
+      svc
+        .generateInvoice(config.playerId, address, () => {
+          session.setPlayerPaid(config.playerId);
+        })
+        .then((bolt11) => {
+          setInvoices((prev) => ({ ...prev, [config.playerId]: bolt11 }));
+        })
+        .catch((err) => {
+          setInvoiceErrors((prev) => ({ ...prev, [config.playerId]: String(err) }));
+        });
     }
 
     return () => {
@@ -295,16 +335,34 @@ export function SplitScreen() {
     }
   }, [snapshot.status, snapshot.matchWinnerId]);
 
-  const newSession = useCallback((count: number) => {
-    setPlayerCount(count);
-    setSession(new LocalSession(count, buyIn));
-  }, [buyIn]);
+  const newSession = useCallback(
+    (count: number, bi = buyIn) => {
+      setPlayerCount(count);
+      setSession(new LocalSession(count, bi));
+    },
+    [buyIn],
+  );
 
-  const handleAddressChange = useCallback((playerId: string, addr: string) => {
-    setLightningAddresses(prev => ({ ...prev, [playerId]: addr }));
-    paymentServiceRef.current?.setLightningAddress(playerId, addr);
-    session.setPlayerConfig(playerId, { lightningAddress: addr });
-  }, [session]);
+  const handleBuyInInput = useCallback(
+    (val: number) => {
+      setInputBuyIn(val);
+      if (buyInTimerRef.current) clearTimeout(buyInTimerRef.current);
+      buyInTimerRef.current = setTimeout(() => {
+        setBuyIn(val);
+        newSession(playerCount, val);
+      }, 400);
+    },
+    [playerCount, newSession],
+  );
+
+  const handleAddressChange = useCallback(
+    (playerId: string, addr: string) => {
+      setLightningAddresses((prev) => ({ ...prev, [playerId]: addr }));
+      paymentServiceRef.current?.setLightningAddress(playerId, addr);
+      session.setPlayerConfig(playerId, { lightningAddress: addr });
+    },
+    [session],
+  );
 
   const { status, games, roundId, wins, readyState, roundWinnerId, matchWinnerId, countdown, playerConfigs } = snapshot;
   const aliveCount = games.filter((_, i) => !games[i].state.isGameOver).length;
@@ -323,21 +381,36 @@ export function SplitScreen() {
     <div className="flex flex-col items-center min-h-screen gap-6 px-8 pt-20">
       {/* Header */}
       <div className="flex items-center gap-6">
-        {buyIn > 0 && <span className="font-mono text-sm text-bitcoin tracking-widest">BUY IN: {buyIn} SATS</span>}
+        {status === 'lobby' && (
+          <div className="flex items-baseline gap-3">
+            <span className="font-display font-bold text-2xl tracking-[0.15em] text-phosphor/60">BUY IN</span>
+            <input
+              type="number"
+              min={0}
+              value={inputBuyIn}
+              onChange={(e) => handleBuyInInput(Math.max(0, Number(e.target.value)))}
+              className="w-28 bg-transparent border-b-2 border-[rgba(255,150,0,0.6)] text-bitcoin font-display font-bold text-3xl tracking-[0.02em] text-right outline-none pb-0.5"
+            />
+            <span className="font-jp text-xl text-[rgba(255,150,0,0.45)]">sats</span>
+          </div>
+        )}
+        {buyIn > 0 && status !== 'lobby' && (
+          <span className="font-display font-bold text-2xl tracking-[0.1em] text-bitcoin">BUY IN: {buyIn} SATS</span>
+        )}
         {status === 'playing' && (
-          <span className="font-mono text-[11px] text-[rgba(0,255,180,0.4)] tracking-widest">{aliveCount} ALIVE</span>
+          <span className="font-mono text-sm text-[rgba(0,255,180,0.5)] tracking-widest">{aliveCount} ALIVE</span>
         )}
         {status === 'lobby' && playerCount < MAX_PLAYERS && (
           <button
             onClick={() => newSession(playerCount + 1)}
-            className="font-display font-bold text-xl tracking-[0.02em] text-phosphor/40 hover:text-teal transition-colors cursor-pointer border border-[rgba(0,255,180,0.2)] hover:border-teal px-4 py-1">
+            className="font-display font-bold text-2xl tracking-[0.05em] text-phosphor/50 hover:text-teal transition-colors cursor-pointer nerv-border nerv-border-teal px-5 py-1.5">
             + ADD PLAYER
           </button>
         )}
         {status !== 'finished' && (
           <button
             onClick={() => navigate('/')}
-            className="font-display font-bold text-xl tracking-[0.02em] text-phosphor/30 hover:text-alert transition-colors cursor-pointer">
+            className="font-display font-bold text-2xl tracking-[0.05em] text-phosphor/30 hover:text-alert transition-colors cursor-pointer nerv-border nerv-border-alert px-5 py-1.5">
             ABORT
           </button>
         )}
@@ -359,7 +432,7 @@ export function SplitScreen() {
               invoiceError={invoiceErrors[config.playerId] ?? null}
               nwcMissing={nwcMissing}
               lightningAddress={lightningAddresses[config.playerId] ?? ''}
-              onLightningAddressChange={addr => handleAddressChange(config.playerId, addr)}
+              onLightningAddressChange={(addr) => handleAddressChange(config.playerId, addr)}
               onToggleReady={() => session.readyUp(config.playerId, !(readyState[config.playerId] ?? false))}
               scale={scale}
             />
@@ -425,9 +498,7 @@ export function SplitScreen() {
                 </span>
                 <span className="font-mono text-[11px] tracking-widest text-teal">WINS THE MATCH</span>
                 {buyIn > 0 && (
-                  <span className="font-mono text-[11px] tracking-widest text-bitcoin mt-1">
-                    PAYING OUT {potSats} SATS...
-                  </span>
+                  <span className="font-mono text-[11px] tracking-widest text-bitcoin mt-1">PAYING OUT {potSats} SATS...</span>
                 )}
               </div>
             )}

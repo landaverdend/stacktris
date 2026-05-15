@@ -20,7 +20,7 @@ function AppInner() {
       {showNameEntry && <NameEntryScreen />}
       <TetrominoBackground />
       <div className="relative" style={{ zIndex: 1 }}>
-        <NavBar />
+        {/* <NavBar /> */}
         <Routes>
           <Route path="/" element={<TitleScreen />} />
           <Route path="/solo" element={<SoloScreen />} />

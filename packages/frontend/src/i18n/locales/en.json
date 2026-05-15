@@ -86,7 +86,9 @@
     "awaiting_payment": "AWAITING PAYMENT",
     "cancel_ready": "■ CANCEL READY",
     "initiate_ready": "◌ READY UP",
-    "tap_to_close": "TAP TO CLOSE"
+    "tap_to_close": "TAP TO CLOSE",
+    "invoice_error_title": "! INVOICE FAILED",
+    "invoice_error_body": "Your wallet does not support hold invoices. Try a wallet with NIP-47 hold invoice support (e.g. Alby, Core Lightning)."
   },
   "winner": {
     "session_victor": "SESSION VICTOR:",

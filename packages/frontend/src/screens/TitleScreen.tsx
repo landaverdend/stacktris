@@ -68,11 +68,12 @@ export function TitleScreen() {
   const { setPlayerInfo } = useConnection();
   const { t } = useTranslation();
 
-  const [modal, setModal] = useState<'split' | 'battle' | 'create' | 'join' | 'controls' | 'options' | null>(null);
+  const [modal, setModal] = useState<'battle' | 'create' | 'join' | 'controls' | 'options' | null>(null);
   const close = () => setModal(null);
 
   function handleItem(id: (typeof MENU)[number]['id']) {
     if (id === 'solo') { navigate('/solo'); return; }
+    if (id === 'split') { navigate('/split'); return; }
     setModal(id as typeof modal);
   }
 
@@ -115,7 +116,6 @@ export function TitleScreen() {
 
       <p className="text-teal text-[20px] font-bold tracking-[0.03em] font-jp relative z-3">ライトニングネットワーク搭載</p>
 
-      <SplitSetupModal open={modal === 'split'} onClose={close} onStart={(buyIn) => { close(); navigate('/split', { state: { buyIn } }); }} />
       <MultiplayerModal open={modal === 'battle'} onClose={close} onCreateInstead={() => setModal('create')} onJoin={handleJoinRoom} />
       <CreateMatchModal open={modal === 'create'} onClose={close} onCreate={createRoom} />
       <JoinRoomModal open={modal === 'join'} onClose={close} onJoin={handleJoinRoom} />

@@ -74,7 +74,7 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
   return (
     // Outer box reserves exactly the scaled space so siblings lay out correctly
     <div style={{ width: scaledW, height: scaledH, flexShrink: 0, position: 'relative' }}>
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: ARENA_WIDTH }}>
+      <div style={{ transform: `scale(${scale}) translateZ(0)`, transformOrigin: 'top left', width: ARENA_WIDTH, willChange: 'transform' }}>
         <div className="flex flex-col items-center gap-2">
           <div className="flex flex-col items-center gap-1">
             {wins !== undefined && (
@@ -93,7 +93,10 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
           </div>
 
           <div className="flex items-start gap-2">
-            <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="font-display font-bold text-[11px] tracking-widest text-phosphor/40">HOLD</span>
+              <canvas ref={holdRef} width={HOLD_WIDTH} height={HOLD_HEIGHT} className="block nerv-border" />
+            </div>
 
             <div className="flex items-end gap-1">
               <GarbageMeter garbageStackRef={garbageRef} getCurrentTick={() => game.frameCount} />
@@ -111,7 +114,10 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
               </div>
             </div>
 
-            <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="font-display font-bold text-[11px] tracking-widest text-phosphor/40">NEXT</span>
+              <canvas ref={queueRef} width={QUEUE_WIDTH} height={QUEUE_HEIGHT} className="block nerv-border" />
+            </div>
           </div>
         </div>
       </div>

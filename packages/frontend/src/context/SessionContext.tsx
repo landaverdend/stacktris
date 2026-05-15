@@ -8,6 +8,7 @@ type RoomStateWithPayment = SessionState & { bolt11?: string; expiresAt?: number
 interface RoomContextValue {
   connectionStatus: ConnectionStatus;
   roomState: RoomStateWithPayment;
+  serverError: string | null;
 
   leaveRoom: () => void;
   createRoom: (amountBet: number) => void;
@@ -27,13 +28,16 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const { status: connectionStatus } = useConnection();
 
   const [roomState, setRoomState] = useState<RoomStateWithPayment>(initialRoomState);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
     const onRoomCreated = (msg: { type: 'session_created'; room_id: string }) => {
+      setServerError(null);
       navigate(`/room/${msg.room_id}`)
     };
 
     const onRoomJoined = (msg: { type: 'session_joined'; room_id: string }) => {
+      setServerError(null);
       navigate(`/room/${msg.room_id}`)
     };
 
@@ -56,12 +60,18 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       setRoomState(prev => ({ ...prev, payoutPending: { amountSats: msg.amountSats, lightningAddress: msg.lightningAddress } }));
     };
 
+    const onError = (msg: { type: 'error'; message: string }) => {
+      console.error('[RoomContext] server error:', msg.message);
+      setServerError(msg.message);
+    };
+
     ws.on('session_created', onRoomCreated);
     ws.on('session_joined', onRoomJoined);
     ws.on('session_state_update', onRoomStateUpdate);
     ws.on('bet_invoice_issued', onBetInvoiceIssued);
     ws.on('bet_payment_confirmed', onBetPaymentConfirmed);
     ws.on('payout_pending', onPayoutPending);
+    ws.on('error', onError);
 
     return () => {
       ws.off('session_created', onRoomCreated);
@@ -69,6 +79,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       ws.off('session_state_update', onRoomStateUpdate);
       ws.off('bet_invoice_issued', onBetInvoiceIssued);
       ws.off('payout_pending', onPayoutPending);
+      ws.off('error', onError);
     };
   }, [ws]);
 
@@ -80,7 +91,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
 
   const readyUpdate = useCallback((readyState: boolean) => { ws.send({ type: 'ready_update', ready: readyState }) }, [ws])
 
-  return <RoomContext.Provider value={{ connectionStatus, roomState, leaveRoom, createRoom, joinRoom, readyUpdate }}>{children}</RoomContext.Provider>;
+  return <RoomContext.Provider value={{ connectionStatus, roomState, serverError, leaveRoom, createRoom, joinRoom, readyUpdate }}>{children}</RoomContext.Provider>;
 }
 
 export function useRoom(): RoomContextValue {
