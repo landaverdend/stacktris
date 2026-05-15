@@ -33,11 +33,10 @@ export function BoardOverlay({
   }
 
 
-  if (status === 'intermission') {
+  if (status === 'roundWinner' || status === 'intermission') {
     const isRoundWinner = playerId === roundWinnerId;
     return (
       <>
-
         {!isClientAlive && <ScrollFlareOverlay />}
         {isRoundWinner && <ScrollFlareOverlay word="CLEARED" color="#00ff88" fontSize={45} />}
         <IntermissionOverlay roundWinnerId={roundWinnerId} players={players} />

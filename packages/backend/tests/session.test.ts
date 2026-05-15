@@ -507,11 +507,11 @@ describe('Room', () => {
     beforeEach(() => { vi.useFakeTimers(); });
     afterEach(() => { vi.useRealTimers(); });
 
-    it('does not crash when a player leaves during intermission causing the session to finish', () => {
-      // Regression: the intermission setTimeout was not stored, so it could not be
-      // cancelled when the session transitioned to finished. If a player left mid-
-      // intermission (reducing playerCount to 1), the session moved to finished, but
-      // the pending timer still fired and tried finished → countdown → throw.
+    it('does not crash when a player leaves during roundWinner causing the session to finish', () => {
+      // Regression: pending timers must be cancelled when the session transitions to
+      // finished. If a player leaves mid-roundWinner (1 player left), the session moves
+      // to finished — the roundWinner timer must be cleared so it doesn't fire and try
+      // finished → intermission → throw.
       const room = makeRoom();
       room.addPlayer('p1', '', '', makeSend());
       room.addPlayer('p2', '', '', makeSend());
@@ -521,14 +521,35 @@ describe('Room', () => {
       vi.advanceTimersByTime(3500); // countdown → playing
       expect(room.status).toBe('playing');
 
-      fireGameOver('p2'); // round ends, not enough wins for match → intermission
+      fireGameOver('p2'); // round ends, not enough wins → roundWinner
+      expect(room.status).toBe('roundWinner');
+
+      // Player leaves mid-roundWinner: only 1 player remains → session goes to finished
+      room.removePlayer('p1');
+      expect(room.status).toBe('finished');
+
+      // The roundWinner and intermission timers must not fire and throw
+      expect(() => vi.runAllTimers()).not.toThrow();
+      expect(room.status).toBe('finished');
+    });
+
+    it('does not crash when a player leaves during intermission causing the session to finish', () => {
+      const room = makeRoom();
+      room.addPlayer('p1', '', '', makeSend());
+      room.addPlayer('p2', '', '', makeSend());
+      room.onMessage('p1', { type: 'ready_update', ready: true });
+      room.onMessage('p2', { type: 'ready_update', ready: true });
+
+      vi.advanceTimersByTime(3500); // countdown → playing
+      fireGameOver('p2'); // round ends → roundWinner
+      vi.advanceTimersByTime(3000); // roundWinner → intermission
       expect(room.status).toBe('intermission');
 
       // Player leaves mid-intermission: only 1 player remains → session goes to finished
       room.removePlayer('p1');
       expect(room.status).toBe('finished');
 
-      // The intermission timer fires — must not throw
+      // The intermission timer must not fire and throw
       expect(() => vi.runAllTimers()).not.toThrow();
       expect(room.status).toBe('finished');
     });

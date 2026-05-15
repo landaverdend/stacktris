@@ -7,7 +7,8 @@ import { PaymentService } from "../lightning/paymentService.js";
 const VALID_TRANSITIONS: Record<SessionStatus, SessionStatus[]> = {
   waiting: ['countdown'],
   countdown: ['waiting', 'playing', 'finished'],
-  playing: ['finished', 'intermission'],
+  playing: ['roundWinner', 'finished'],
+  roundWinner: ['intermission', 'finished'],
   intermission: ['countdown', 'finished'],
   finished: [],
 };
@@ -37,6 +38,7 @@ class RoomStateMachine {
 
 export const MAX_PLAYERS = 8;
 export const INTERMISSION_DURATION = 5000;
+const ROUND_WINNER_DURATION = 3000;
 
 export class Session {
   private id: string;
@@ -55,6 +57,7 @@ export class Session {
   private fsm = new RoomStateMachine();
 
   private countdownTimer: NodeJS.Timeout | null = null;
+  private roundWinnerTimer: NodeJS.Timeout | null = null;
   private intermissionTimer: NodeJS.Timeout | null = null;
   private readonly COUNTDOWN_DURATION = COUNTDOWN_SECONDS * 1000;
   private round: Round | null = null;
@@ -87,32 +90,38 @@ export class Session {
 
       this.round = new Round(Array.from(this.players.values()));
       this.round.subscribe('gameOver', (winnerId) => {
-
         this.roundWinnerId = winnerId;
 
-        let isSessionOver = false;
-
-        // If a winner was determined, update win counts and check if the session is complete
         if (winnerId) {
           const w = (this.wins.get(winnerId) ?? 0) + 1;
           this.wins.set(winnerId, w);
           if (w >= WINS_TO_MATCH) {
             this.matchWinnerId = winnerId;
             this.fsm.transition('finished');
-            isSessionOver = true;
+            return;
           }
         }
 
-        if (!isSessionOver) this.fsm.transition('intermission');
+        this.fsm.transition('roundWinner');
       });
 
       this.broadcastRoomStateUpdate();
     })
 
-    this.fsm.on('intermission', () => {
-      console.log('[Session] intermission...');
+    this.fsm.on('roundWinner', () => {
       this.round?.destroy();
       this.round = null;
+
+      this.broadcastRoomStateUpdate();
+
+      this.roundWinnerTimer = setTimeout(() => {
+        this.roundWinnerTimer = null;
+        this.fsm.transition('intermission');
+      }, ROUND_WINNER_DURATION);
+    })
+
+    this.fsm.on('intermission', () => {
+      console.log('[Session] intermission...');
 
       this.intermissionTimer = setTimeout(() => {
         this.intermissionTimer = null;
@@ -124,6 +133,7 @@ export class Session {
 
     // SESSION COMPLETED - somebody won 3 rounds or everyone left
     this.fsm.on('finished', () => {
+      if (this.roundWinnerTimer) { clearTimeout(this.roundWinnerTimer); this.roundWinnerTimer = null; }
       if (this.intermissionTimer) { clearTimeout(this.intermissionTimer); this.intermissionTimer = null; }
       if (this.countdownTimer) { clearTimeout(this.countdownTimer); this.countdownTimer = null; }
       this.round?.destroy();

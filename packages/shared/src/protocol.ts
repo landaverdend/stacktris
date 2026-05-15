@@ -70,7 +70,7 @@ export interface PlayerInfo {
 
 export const WINS_TO_MATCH = 3;
 
-export type SessionStatus = 'waiting' | 'countdown' | 'intermission' | 'playing' | 'finished';
+export type SessionStatus = 'waiting' | 'countdown' | 'playing' | 'roundWinner' | 'intermission' | 'finished';
 
 export interface SessionState {
   roomId: string;

@@ -285,9 +285,9 @@ function decodeGameFrame(stream: ByteStream): GameFrame {
 }
 
 // ── SessionState helpers ──────────────────────────────────────────────────────
-// status byte: 0=waiting 1=countdown 2=playing 3=intermission 4=finished
-const SESSION_STATUS_INDEX: Record<SessionStatus, number> = { waiting: 0, countdown: 1, playing: 2, intermission: 3, finished: 4 };
-const SESSION_STATUSES: SessionStatus[] = ['waiting', 'countdown', 'playing', 'intermission', 'finished'];
+// status byte: 0=waiting 1=countdown 2=playing 3=roundWinner 4=intermission 5=finished
+const SESSION_STATUS_INDEX: Record<SessionStatus, number> = { waiting: 0, countdown: 1, playing: 2, roundWinner: 3, intermission: 4, finished: 5 };
+const SESSION_STATUSES: SessionStatus[] = ['waiting', 'countdown', 'playing', 'roundWinner', 'intermission', 'finished'];
 const UUID_BYTES = 36;
 
 function encodeSessionState(s: SessionState, stream: ByteStream): void {

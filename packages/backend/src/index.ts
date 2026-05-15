@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT ?? 8080;
 const STATIC_DIR = process.env.STATIC_DIR ?? path.join(__dirname, '../../frontend/dist');
 
-const paymentClient = new PaymentClient();
+const paymentClient = new PaymentClient(process.env.NWC_STRING);
 try {
   await paymentClient.init();
 } catch (err) {

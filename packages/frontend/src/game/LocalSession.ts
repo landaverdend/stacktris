@@ -1,8 +1,8 @@
 import { COUNTDOWN_SECONDS, WINS_TO_MATCH } from '@stacktris/shared';
 import { LocalGame } from './LocalGame';
 import { LocalRound } from './LocalRound';
-import { InputHandlerFactory } from './IInputHandler';
 import { GamepadInputHandler } from './GamepadInputHandler';
+import { LocalPlayerConfig, defaultLocalPlayerConfig } from './LocalPlayerConfig';
 
 const INTERMISSION_SECONDS = 5;
 const ROUND_WINNER_DISPLAY_SECONDS = 3;
@@ -19,11 +19,14 @@ export interface LocalMatchSnapshot {
   matchWinnerId: string | null;
   countdown: number;
   playerCount: number;
+  playerConfigs: readonly LocalPlayerConfig[];
 }
 
 export class LocalSession {
   readonly playerCount: number;
+  private readonly buyIn: number;
 
+  private _configs: LocalPlayerConfig[];
   private _games: readonly LocalGame[] = [];
   private _roundId = 0;
   private _status: LocalMatchStatus = 'lobby';
@@ -40,17 +43,48 @@ export class LocalSession {
 
   private listeners = new Set<() => void>();
 
-  constructor(playerCount: number) {
+  constructor(playerCount: number, buyIn = 0) {
     this.playerCount = playerCount;
-    this._wins = Object.fromEntries(Array.from({ length: playerCount }, (_, i) => [`p${i + 1}`, 0]));
-    this._readyState = Object.fromEntries(Array.from({ length: playerCount }, (_, i) => [`p${i + 1}`, false]));
+    this.buyIn = buyIn;
+
+    this._configs = Array.from({ length: playerCount }, (_, i) => {
+      const config = defaultLocalPlayerConfig(i, buyIn);
+      // Default: player 1 = keyboard, subsequent players = gamepad
+      if (i > 0) config.inputFactory = (onAction) => new GamepadInputHandler(onAction);
+      return config;
+    });
+
+    this._wins = Object.fromEntries(this._configs.map(c => [c.playerId, 0]));
+    this._readyState = Object.fromEntries(this._configs.map(c => [c.playerId, false]));
+  }
+
+  /** Update any fields on a player's config (lightning address, input factory, etc.). */
+  setPlayerConfig(playerId: string, updates: Partial<Omit<LocalPlayerConfig, 'playerId'>>): void {
+    const idx = this._configs.findIndex(c => c.playerId === playerId);
+    if (idx === -1) return;
+    this._configs[idx] = { ...this._configs[idx], ...updates };
+    this.notify();
+  }
+
+  /** Mark a player as having paid their buy-in. */
+  setPlayerPaid(playerId: string): void {
+    this.setPlayerConfig(playerId, { paid: true });
+    // Re-check ready state in case all were already ready and waiting on payment.
+    const allReady = Object.values(this._readyState).every(Boolean);
+    const allPaid = this._configs.every(c => c.paid);
+    if (allReady && allPaid) this.startCountdown();
   }
 
   readyUp(playerId: string, ready: boolean): void {
+    const config = this._configs.find(c => c.playerId === playerId);
+    if (!config?.paid) return;
+
     this._readyState[playerId] = ready;
     this.notify();
+
     const allReady = Object.values(this._readyState).every(Boolean);
-    if (allReady) this.startCountdown();
+    const allPaid = this._configs.every(c => c.paid);
+    if (allReady && allPaid) this.startCountdown();
   }
 
   get snapshot(): LocalMatchSnapshot {
@@ -64,6 +98,7 @@ export class LocalSession {
       matchWinnerId: this._matchWinnerId,
       countdown: this._countdown,
       playerCount: this.playerCount,
+      playerConfigs: [...this._configs],
     };
   }
 
@@ -88,10 +123,9 @@ export class LocalSession {
     const gameMap: Record<string, LocalGame> = {};
     const gameList: LocalGame[] = [];
 
-    for (let i = 0; i < this.playerCount; i++) {
-      const factory: InputHandlerFactory | undefined = i === 0 ? undefined : (onAction) => new GamepadInputHandler(onAction);
-      const game = new LocalGame(seed, factory);
-      gameMap[`p${i + 1}`] = game;
+    for (const config of this._configs) {
+      const game = new LocalGame(seed, config.inputFactory);
+      gameMap[config.playerId] = game;
       gameList.push(game);
     }
 
@@ -150,6 +184,8 @@ export class LocalSession {
 
     this.intermissionTimer = setTimeout(() => {
       this.clearIntermissionTimers();
+      // Reset ready state for next round
+      this._readyState = Object.fromEntries(this._configs.map(c => [c.playerId, false]));
       this.startCountdown();
     }, INTERMISSION_SECONDS * 1000);
   }
