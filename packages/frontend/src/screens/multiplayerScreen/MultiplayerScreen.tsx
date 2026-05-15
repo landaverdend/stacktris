@@ -40,6 +40,16 @@ export function MultiplayerScreen() {
     }
   }, [status]);
 
+  const [countdownDisplay, setCountdownDisplay] = useState(COUNTDOWN_SECONDS);
+  useEffect(() => {
+    if (status !== 'countdown') return;
+    setCountdownDisplay(COUNTDOWN_SECONDS);
+    const interval = setInterval(() => {
+      setCountdownDisplay(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status]);
+
   // Leave room  if you navigate away from the page
   useEffect(
     () => {
@@ -97,7 +107,7 @@ export function MultiplayerScreen() {
               <div ref={boardWrapperRef} className="relative">
                 <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
                 <StaticVignetteOverlay dangerSignal={dangerSignal} />
-                {status === 'countdown' && <BoardCountdown countdown={COUNTDOWN_SECONDS} />}
+                {status === 'countdown' && <BoardCountdown countdown={countdownDisplay} />}
                 <BoardOverlay
                   status={status}
                   playerId={playerId ?? ''}

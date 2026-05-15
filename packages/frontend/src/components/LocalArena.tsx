@@ -5,7 +5,7 @@ import { DangerSignal, applyDangerBorder } from '../game/DangerSignal';
 import { StaticVignetteOverlay } from './StaticVignetteOverlay';
 import { ScrollFlareOverlay } from './ScrollFlareOverlay';
 import { GarbageMeter } from './GarbageMeter';
-import { SessionWinnerOverlay } from '../screens/multiplayerScreen/SessionWinnerOverlay';
+import { IntermissionOverlay } from './IntermissionOverlay';
 import { BoardCountdown } from './BoardCountdown';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, CELL_SIZE } from '../render/board';
 import { QUEUE_WIDTH, QUEUE_HEIGHT, HOLD_WIDTH, HOLD_HEIGHT } from '../render/queue';
@@ -20,14 +20,16 @@ interface Props {
   scale?: number;
   wins?: number;
   winsTarget?: number;
-  showWinAnimation?: boolean;
-  potSats?: number;
+  showIntermission?: boolean;
+  isRoundWinner?: boolean;
+  roundWinnerId?: string | null;
+  intermissionPlayers?: PlayerInfo[];
   showCountdown?: boolean;
   countdown?: number;
   paused?: boolean;
 }
 
-export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WINS_TO_MATCH, showWinAnimation = false, potSats = 0, showCountdown = false, countdown = 0, paused = false }: Props) {
+export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WINS_TO_MATCH, showIntermission = false, isRoundWinner = false, roundWinnerId = null, intermissionPlayers = [], showCountdown = false, countdown = 0, paused = false }: Props) {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const queueRef = useRef<HTMLCanvasElement>(null);
   const holdRef = useRef<HTMLCanvasElement>(null);
@@ -66,15 +68,6 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
     };
   }, [game]);
 
-  const winnerInfo: PlayerInfo = {
-    playerId: playerLabel.toLowerCase().replace(' ', ''),
-    slotIndex: parseInt(playerLabel.replace(/\D/g, '')) - 1,
-    playerName: playerLabel,
-    ready: true,
-    paid: true,
-    wins: wins ?? 0,
-  };
-
   const scaledW = ARENA_WIDTH * scale;
   const scaledH = (ARENA_HEIGHT + 40) * scale; // +40 for label + pips row
 
@@ -105,11 +98,16 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
             <div className="flex items-end gap-1">
               <GarbageMeter garbageStackRef={garbageRef} getCurrentTick={() => game.frameCount} />
               <div ref={boardWrapperRef} className="relative">
-                {isGameOver && <ScrollFlareOverlay />}
+                {isGameOver && !showIntermission && <ScrollFlareOverlay />}
                 <canvas ref={boardRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block nerv-border bg-pit" />
                 <StaticVignetteOverlay dangerSignal={dangerSignal} />
                 {showCountdown && <BoardCountdown countdown={countdown} />}
-                {showWinAnimation && <SessionWinnerOverlay winner={winnerInfo} potSats={potSats} />}
+                {showIntermission && (
+                  <>
+                    {isRoundWinner && <ScrollFlareOverlay word="CLEARED" color="#00ff88" fontSize={45} />}
+                    <IntermissionOverlay roundWinnerId={roundWinnerId} players={intermissionPlayers} />
+                  </>
+                )}
               </div>
             </div>
 

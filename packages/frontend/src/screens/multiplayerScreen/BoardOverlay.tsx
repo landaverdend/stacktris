@@ -1,8 +1,8 @@
 import { PlayerInfo, SessionStatus } from '@stacktris/shared';
 import { ScrollFlareOverlay } from '../../components/ScrollFlareOverlay';
 import { RoomStagingOverlay } from './RoomStagingOverlay';
-import { SessionWinnerOverlay } from './SessionWinnerOverlay';
-import { IntermissionOverlay } from './IntermissionOverlay';
+import { SessionWinnerOverlay } from '../../components/SessionWinnerOverlay';
+import { IntermissionOverlay } from '../../components/IntermissionOverlay';
 
 interface Props {
   status: SessionStatus;

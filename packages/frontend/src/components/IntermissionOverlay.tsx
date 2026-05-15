@@ -1,5 +1,5 @@
 import { PlayerInfo } from '@stacktris/shared';
-import { truncateName } from '../../lib/utils';
+import { truncateName } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 
 interface Props {

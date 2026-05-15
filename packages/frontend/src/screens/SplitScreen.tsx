@@ -309,6 +309,15 @@ export function SplitScreen() {
   const { status, games, roundId, wins, readyState, roundWinnerId, matchWinnerId, countdown, playerConfigs } = snapshot;
   const aliveCount = games.filter((_, i) => !games[i].state.isGameOver).length;
   const potSats = buyIn * snapshot.playerCount;
+  const showIntermission = status === 'roundWinner' || status === 'intermission';
+  const intermissionPlayers = playerConfigs.map((c, i) => ({
+    playerId: c.playerId,
+    slotIndex: i,
+    playerName: c.displayName,
+    ready: true,
+    paid: c.paid,
+    wins: wins[c.playerId] ?? 0,
+  }));
 
   return (
     <div className="flex flex-col items-center min-h-screen gap-6 px-8 pt-20">
@@ -374,8 +383,10 @@ export function SplitScreen() {
                 paused={status === 'countdown'}
                 showCountdown={status === 'countdown'}
                 countdown={countdown}
-                showWinAnimation={status === 'roundWinner' && roundWinnerId === pid}
-                potSats={potSats}
+                showIntermission={showIntermission}
+                isRoundWinner={showIntermission && roundWinnerId === pid}
+                roundWinnerId={roundWinnerId}
+                intermissionPlayers={intermissionPlayers}
               />
             );
           })}

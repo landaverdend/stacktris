@@ -1,7 +1,7 @@
 import { useAnimate } from 'motion/react';
 import { useEffect } from 'react';
 import { PlayerInfo } from '@stacktris/shared';
-import { truncateName } from '../../lib/utils';
+import { truncateName } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 
 const GREEN = '#00ff88';
