@@ -95,9 +95,6 @@ export function LocalArena({ game, playerLabel, scale = 1, wins, winsTarget = WI
             )}
             <div className="flex items-baseline gap-2">
               <span className="font-display font-bold text-xl tracking-[0.02em] text-phosphor">{playerLabel}</span>
-              <span className="font-mono text-[11px] text-[rgba(0,255,180,0.4)] tracking-widest">
-                LV {level} — {lines}L
-              </span>
             </div>
           </div>
 
