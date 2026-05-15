@@ -380,7 +380,7 @@ export function SplitScreen() {
                 scale={scale}
                 wins={wins[pid] ?? 0}
                 winsTarget={WINS_TO_MATCH}
-                paused={status === 'countdown'}
+                paused={status !== 'playing'}
                 showCountdown={status === 'countdown'}
                 countdown={countdown}
                 showIntermission={showIntermission}

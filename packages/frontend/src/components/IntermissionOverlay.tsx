@@ -12,7 +12,7 @@ export function IntermissionOverlay({ roundWinnerId, players }: Props) {
   const { t } = useTranslation();
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/92">
       <p className="text-nerv-dim text-xs font-mono tracking-[0.4em] uppercase">// SEQUENCE INTERMISSION</p>
       {winner && (
         <>

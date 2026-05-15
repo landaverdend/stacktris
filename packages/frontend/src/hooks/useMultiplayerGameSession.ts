@@ -77,7 +77,7 @@ export function useMultiplayerGameSession(refs: CanvasRefs) {
     };
 
     const handleGameOver = (msg: { type: 'session_state_update'; roomState: SessionState }) => {
-      if (msg.roomState.status === 'intermission') {
+      if (msg.roomState.status === 'roundWinner' || msg.roomState.status === 'intermission') {
         gameSession.current?.stop();
         setRoundWinnerId(msg.roomState.roundWinnerId);
       } else if (msg.roomState.status === 'finished') {

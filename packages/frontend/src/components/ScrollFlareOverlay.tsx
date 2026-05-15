@@ -46,7 +46,7 @@ export function ScrollFlareOverlay({
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[3px]">
-      <div className="absolute inset-0 bg-black/70" />
+      <div className="absolute inset-0 bg-black/85" />
       <div ref={scope} className="absolute top-0 left-0 w-full flex flex-col">
         {Array.from({ length: rows * 2 }).map((_, r) => (
           <div key={r} className="flex justify-around w-full leading-[1.05]">
