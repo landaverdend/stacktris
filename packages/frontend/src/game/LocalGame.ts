@@ -1,6 +1,6 @@
 import { COLS, EngineEventMap, FRAME_DURATION_MS, GameEngine, GameState, mulberry32 } from '@stacktris/shared';
 import { Canvases, renderGameState } from '../render';
-import { InputHandler } from './InputHandler';
+import { InputHandler, InputHandlerOptions } from './InputHandler';
 import { IInputHandler, InputHandlerFactory } from './IInputHandler';
 import { BoardShaker } from './BoardShaker';
 import { DangerSignal } from './DangerSignal';
@@ -27,7 +27,7 @@ export class LocalGame {
   private lastFrameTime = 0;
   private simTime = 0;
 
-  constructor(seed?: number, inputFactory?: InputHandlerFactory) {
+  constructor(seed?: number, inputFactory?: InputHandlerFactory, inputOptions?: InputHandlerOptions) {
     const effectiveSeed = seed ?? Math.floor(Math.random() * 2 ** 32);
     this.gameEngine = new GameEngine({
       startLevel: 0,
@@ -40,7 +40,7 @@ export class LocalGame {
     };
     this.inputHandler = inputFactory
       ? inputFactory(onAction)
-      : new InputHandler(onAction);
+      : new InputHandler(onAction, inputOptions);
   }
 
   get state(): GameState {

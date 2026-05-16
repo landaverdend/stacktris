@@ -31,6 +31,7 @@ export type SplitSessionState = {
   // Handlers
   handleBuyInInput: (val: number) => void;
   handleAddressChange: (playerId: string, addr: string) => void;
+  handlePlayerSettings: (playerId: string, dasMs: number, arrMs: number) => void;
   toggleReady: (playerId: string, ready: boolean) => void;
   addPlayer: () => void;
   removePlayer: () => void;
@@ -135,6 +136,13 @@ export function useSplitSession(): SplitSessionState {
     [session],
   );
 
+  const handlePlayerSettings = useCallback(
+    (playerId: string, dasMs: number, arrMs: number) => {
+      session.setPlayerConfig(playerId, { dasMs, arrMs });
+    },
+    [session],
+  );
+
   const toggleReady = useCallback(
     (playerId: string, ready: boolean) => {
       session.readyUp(playerId, ready);
@@ -188,6 +196,7 @@ export function useSplitSession(): SplitSessionState {
     intermissionPlayers,
     handleBuyInInput,
     handleAddressChange,
+    handlePlayerSettings,
     toggleReady,
     addPlayer,
     removePlayer,

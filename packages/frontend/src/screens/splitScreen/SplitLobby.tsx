@@ -16,6 +16,7 @@ export function SplitLobby({ session, scale }: Props) {
     nwcMissing,
     snapshot,
     handleAddressChange,
+    handlePlayerSettings,
     toggleReady,
   } = session;
   const { playerConfigs, readyState, wins } = snapshot;
@@ -37,6 +38,9 @@ export function SplitLobby({ session, scale }: Props) {
           lightningAddress={lightningAddresses[config.playerId] ?? ''}
           onLightningAddressChange={(addr) => handleAddressChange(config.playerId, addr)}
           onToggleReady={() => toggleReady(config.playerId, !(readyState[config.playerId] ?? false))}
+          onSettingsChange={(das, arr) => handlePlayerSettings(config.playerId, das, arr)}
+          dasMs={config.dasMs ?? 150}
+          arrMs={config.arrMs ?? 16}
           scale={scale}
         />
       ))}

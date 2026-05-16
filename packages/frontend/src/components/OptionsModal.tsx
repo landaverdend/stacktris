@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { storage } from '../lib/storage';
 import { NervModal } from './NervModal';
 import { NervButton } from './NervButton';
+import { InfoPopover } from './InfoPopover';
 
 interface Props {
   open: boolean;
@@ -243,7 +244,6 @@ function SliderRow({ label, jp, unit, value, min, max, step, description, onChan
   description: string;
   onChange: (v: number) => void;
 }) {
-  const [tip, setTip] = useState(false);
   const pct = ((value - min) / (max - min)) * 100;
 
   return (
@@ -254,20 +254,7 @@ function SliderRow({ label, jp, unit, value, min, max, step, description, onChan
             <span className="font-display text-4xl font-bold tracking-[0.02em] text-phosphor">{label}</span>
             <span className="font-jp text-lg text-[rgba(0,255,180,0.3)]">{jp}</span>
           </div>
-          <div className="relative">
-            <button
-              onMouseEnter={() => setTip(true)}
-              onMouseLeave={() => setTip(false)}
-              className="w-[18px] h-[18px] rounded-full border border-[rgba(0,255,180,0.25)] text-[rgba(0,255,180,0.35)] font-mono text-[10px] flex items-center justify-center hover:border-teal hover:text-teal transition-colors cursor-default select-none">
-              ?
-            </button>
-            {tip && (
-              <div className="absolute left-6 bottom-0 z-50 w-56 bg-black border border-[rgba(0,255,180,0.2)] px-3 py-2 pointer-events-none">
-                <div className="absolute -left-1.5 top-2 w-2.5 h-px bg-[rgba(0,255,180,0.2)]" />
-                <p className="font-mono text-[10px] text-[rgba(0,255,180,0.55)] leading-relaxed">{description}</p>
-              </div>
-            )}
-          </div>
+          <InfoPopover description={description} />
         </div>
         <span className="font-display font-bold text-xl tracking-[0.02em] text-magi tabular-nums">
           {value}<span className="text-[rgba(0,255,180,0.35)] text-sm ml-0.5">{unit}</span>

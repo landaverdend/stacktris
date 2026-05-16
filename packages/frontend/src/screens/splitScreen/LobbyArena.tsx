@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { PlayerSettingsModal } from './PlayerSettingsModal';
 import { PendingGarbage } from '@stacktris/shared';
 import { GarbageMeter } from '../../components/GarbageMeter';
 import { PlayerCard } from '../../components/PlayerCard';
@@ -23,6 +24,9 @@ type Props = {
   lightningAddress: string;
   onLightningAddressChange: (addr: string) => void;
   onToggleReady: () => void;
+  onSettingsChange: (das: number, arr: number) => void;
+  dasMs: number;
+  arrMs: number;
   scale: number;
 };
 
@@ -39,10 +43,14 @@ export function LobbyArena({
   lightningAddress,
   onLightningAddressChange,
   onToggleReady,
+  onSettingsChange,
+  dasMs,
+  arrMs,
   scale,
 }: Props) {
   const emptyGarbageRef = useRef<PendingGarbage[]>([]);
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle');
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     setVerifyStatus('idle');
@@ -74,6 +82,22 @@ export function LobbyArena({
   const arenaScaledH = CANVAS_HEIGHT * scale;
   const showPaymentFlow = buyIn > 0;
 
+  const PING_LABEL: Record<VerifyStatus, string> = {
+    idle: 'PING', checking: '···', ok: '✓ OK', invalid: '✗ BAD', cors: '? CORS',
+  };
+  const PING_COLOR: Record<VerifyStatus, string> = {
+    idle: 'text-phosphor/40 hover:text-phosphor/70',
+    checking: 'text-phosphor/40',
+    ok: 'text-teal',
+    invalid: 'text-alert',
+    cors: 'text-bitcoin',
+  };
+
+  const readyCls = cn(
+    'px-6 py-3 font-display font-bold text-xl tracking-[0.15em] border-2 transition-all cursor-pointer',
+    ready ? 'border-teal text-teal' : 'border-phosphor/30 text-phosphor/50 hover:border-phosphor/60 hover:text-phosphor/80',
+  );
+
   const boardGrid = `
     repeating-linear-gradient(to right, transparent, transparent ${CELL_SIZE - 1}px, rgba(255,255,255,0.03) ${CELL_SIZE - 1}px, rgba(255,255,255,0.03) ${CELL_SIZE}px),
     repeating-linear-gradient(to bottom, transparent, transparent ${CELL_SIZE - 1}px, rgba(255,255,255,0.03) ${CELL_SIZE - 1}px, rgba(255,255,255,0.03) ${CELL_SIZE}px),
@@ -102,14 +126,7 @@ export function LobbyArena({
                 style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, background: boardGrid }}>
                 <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 px-3">
                   {!showPaymentFlow && (
-                    <button
-                      onClick={onToggleReady}
-                      className={cn(
-                        'px-6 py-3 font-display font-bold text-xl tracking-[0.15em] border-2 transition-all cursor-pointer',
-                        ready
-                          ? 'border-teal text-teal'
-                          : 'border-phosphor/30 text-phosphor/50 hover:border-phosphor/60 hover:text-phosphor/80',
-                      )}>
+                    <button onClick={onToggleReady} className={readyCls}>
                       {ready ? '✓ READY' : 'READY UP'}
                     </button>
                   )}
@@ -152,14 +169,7 @@ export function LobbyArena({
                       {paid && (
                         <>
                           <span className="font-display font-bold text-sm tracking-[0.02em] text-teal">✓ PAID</span>
-                          <button
-                            onClick={onToggleReady}
-                            className={cn(
-                              'px-6 py-3 font-display font-bold text-xl tracking-[0.15em] border-2 transition-all cursor-pointer',
-                              ready
-                                ? 'border-teal text-teal'
-                                : 'border-phosphor/30 text-phosphor/50 hover:border-phosphor/60 hover:text-phosphor/80',
-                            )}>
+                          <button onClick={onToggleReady} className={readyCls}>
                             {ready ? '✓ READY' : 'READY UP'}
                           </button>
                         </>
@@ -191,23 +201,8 @@ export function LobbyArena({
           <button
             onClick={handleVerify}
             disabled={!lightningAddress.trim() || verifyStatus === 'checking'}
-            className={cn(
-              'font-display font-bold text-sm tracking-[0.15em] shrink-0 cursor-pointer disabled:opacity-30',
-              verifyStatus === 'ok'
-                ? 'text-teal'
-                : verifyStatus === 'invalid'
-                  ? 'text-alert'
-                  : verifyStatus === 'cors'
-                    ? 'text-bitcoin'
-                    : 'text-phosphor/40 hover:text-phosphor/70',
-            )}>
-            {verifyStatus === 'checking'
-              ? '···'
-              : verifyStatus === 'ok'
-                ? '✓ OK'
-                : verifyStatus === 'invalid'
-                  ? '✗ BAD'
-                  : 'PING'}
+            className={cn('font-display font-bold text-sm tracking-[0.15em] shrink-0 cursor-pointer disabled:opacity-30', PING_COLOR[verifyStatus])}>
+            {PING_LABEL[verifyStatus]}
           </button>
         </div>
       )}
@@ -215,6 +210,22 @@ export function LobbyArena({
       <div className="w-fit mx-auto mt-1">
         <PlayerCard index={index} playerName={playerName} playerId={`p${index + 1}`} wins={wins} ready={ready} />
       </div>
+
+      <button
+        onClick={() => setShowSettings(true)}
+        className="block mx-auto mt-2 px-4 py-1 font-display font-bold text-xl tracking-[0.15em] text-phosphor/60 border border-phosphor/40 hover:text-phosphor/70 hover:border-phosphor/40 transition-colors cursor-pointer"
+      >
+        ⚙ SETTINGS
+      </button>
+
+      <PlayerSettingsModal
+        open={showSettings}
+        playerLabel={`P${index + 1}`}
+        dasMs={dasMs}
+        arrMs={arrMs}
+        onSave={onSettingsChange}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   );
 }

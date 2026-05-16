@@ -124,7 +124,10 @@ export class LocalSession {
     const gameList: LocalGame[] = [];
 
     for (const config of this._configs) {
-      const game = new LocalGame(seed, config.inputFactory);
+      const inputOptions = config.inputFactory
+        ? undefined
+        : { dasMs: config.dasMs, arrMs: config.arrMs };
+      const game = new LocalGame(seed, config.inputFactory, inputOptions);
       gameMap[config.playerId] = game;
       gameList.push(game);
     }

@@ -27,6 +27,11 @@ interface HeldKey {
   lastRepeat: number | null;
 }
 
+export interface InputHandlerOptions {
+  dasMs?: number;
+  arrMs?: number;
+}
+
 export class InputHandler implements IInputHandler {
   private onAction: (action: InputAction) => void;
   private held = new Map<string, HeldKey>();
@@ -34,10 +39,10 @@ export class InputHandler implements IInputHandler {
   private dasMs: number;
   private arrMs: number;
 
-  constructor(onAction: (action: InputAction) => void) {
+  constructor(onAction: (action: InputAction) => void, options?: InputHandlerOptions) {
     this.onAction = onAction;
-    this.dasMs = storage.get('das_ms') || DEFAULT_DAS_MS;
-    this.arrMs = storage.get('arr_ms');
+    this.dasMs = options?.dasMs ?? storage.get('das_ms') ?? DEFAULT_DAS_MS;
+    this.arrMs = options?.arrMs ?? storage.get('arr_ms') ?? DEFAULT_ARR_MS;
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
   }
