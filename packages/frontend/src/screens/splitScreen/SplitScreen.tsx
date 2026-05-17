@@ -48,17 +48,13 @@ export function SplitScreen() {
   }, [status, snapshot.roundId]);
 
   return (
-    <div className="flex flex-col items-center min-h-screen gap-6 px-8 pt-20">
+    <div className="flex flex-col items-center min-h-screen gap-6 px-8 pt-10">
       <NervGridOverlay dangerSignal={timeDangerRef.current} />
       <TelemetryColumns dangerSignal={timeDangerRef.current} />
       <SplitControlBar session={session} onAbort={() => navigate('/')} />
       {status === 'lobby' && <SplitLobby session={session} scale={scale} />}
       {games.length > 0 && <SplitBoards session={session} scale={scale} />}
-      <SplitOverlay
-        session={session}
-        onPlayAgain={resetSession}
-        onMainMenu={() => navigate('/')}
-      />
+      <SplitOverlay session={session} onPlayAgain={resetSession} onMainMenu={() => navigate('/')} />
     </div>
   );
 }

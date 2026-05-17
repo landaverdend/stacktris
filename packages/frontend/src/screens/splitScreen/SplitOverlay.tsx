@@ -22,9 +22,9 @@ function ScoreTable({ wins, playerCount }: { wins: Record<string, number>; playe
         const w = wins[pid] ?? 0;
         return (
           <div key={pid} className="flex items-center gap-4">
-            <span className="font-display font-bold text-xl tracking-[0.08em] text-phosphor/50 w-8">P{i + 1}</span>
+            <span className="font-display font-bold text-3xl tracking-[0.02em] text-phosphor/50 w-12">P{i + 1}</span>
             <WinPips wins={w} target={WINS_TO_MATCH} />
-            <span className="font-mono text-[10px] text-[rgba(0,255,180,0.35)] tracking-widest ml-auto">{w}W</span>
+            <span className="font-display font-bold text-2xl tracking-[0.02em] text-[rgba(0,255,180,0.45)] ml-auto">{w}W</span>
           </div>
         );
       })}
@@ -95,40 +95,40 @@ export function SplitOverlay({ session, onPlayAgain, onMainMenu }: Props) {
             <div className="w-full flex flex-col items-center gap-1 px-10 pt-8 pb-5">
               <div className="flex items-center gap-2">
                 <span className="nerv-modal-indicator" />
-                <span className="font-mono text-[10px] tracking-[0.35em] text-[rgba(0,255,180,0.5)] uppercase">
-                  {isFinished ? 'Match Complete' : `Round ${roundId} Complete`}
+                <span className="font-display font-bold text-3xl tracking-[0.02em] text-[rgba(0,255,180,0.6)] uppercase">
+                  {isFinished ? 'MATCH COMPLETE' : `ROUND ${roundId} COMPLETE`}
                 </span>
               </div>
             </div>
 
-            <Divider color="teal" height={1} className="w-full opacity-20" />
+            <Divider color="teal" height={2} className="w-full opacity-20" />
 
             {/* ── Winner announcement ── */}
             <div className="w-full flex flex-col items-center gap-1 px-10 py-7">
               {isIntermission && (
                 roundWinnerId === null ? (
                   <>
-                    <span className="font-display font-bold tracking-[0.06em] text-phosphor" style={{ fontSize: '3.2rem', lineHeight: 1 }}>
+                    <span className="font-display font-bold tracking-[0.02em] text-phosphor" style={{ fontSize: '5rem', lineHeight: 1 }}>
                       DRAW
                     </span>
-                    <span className="font-jp text-[14px] text-[rgba(0,255,180,0.35)] mt-1">引き分け</span>
+                    <span className="font-jp text-xl text-[rgba(0,255,180,0.35)] mt-1">引き分け</span>
                   </>
                 ) : (
                   <>
                     <span
-                      className="font-display font-bold tracking-[0.06em] text-phosphor"
+                      className="font-display font-bold tracking-[0.02em] text-phosphor"
                       style={{
-                        fontSize: '4rem',
+                        fontSize: '6rem',
                         lineHeight: 1,
                         textShadow: '0 0 6px rgba(200,168,130,0.6), 0 0 24px rgba(200,168,130,0.25)',
                       }}
                     >
                       {roundWinnerId.replace('p', 'P')}
                     </span>
-                    <span className="font-display font-bold text-xl tracking-[0.14em] text-bitcoin/80 mt-1">
+                    <span className="font-display font-bold text-4xl tracking-[0.02em] text-bitcoin/80 mt-1">
                       WINS ROUND
                     </span>
-                    <span className="font-jp text-[13px] text-[rgba(0,255,180,0.35)] mt-0.5">勝利</span>
+                    <span className="font-jp text-xl text-[rgba(0,255,180,0.35)] mt-0.5">勝利</span>
                   </>
                 )
               )}
@@ -136,27 +136,27 @@ export function SplitOverlay({ session, onPlayAgain, onMainMenu }: Props) {
               {isFinished && (
                 matchWinnerId === null ? (
                   <>
-                    <span className="font-display font-bold tracking-[0.06em] text-phosphor" style={{ fontSize: '3.2rem', lineHeight: 1 }}>
+                    <span className="font-display font-bold tracking-[0.02em] text-phosphor" style={{ fontSize: '5rem', lineHeight: 1 }}>
                       DRAW
                     </span>
-                    <span className="font-jp text-[14px] text-[rgba(0,255,180,0.35)] mt-1">引き分け</span>
+                    <span className="font-jp text-xl text-[rgba(0,255,180,0.35)] mt-1">引き分け</span>
                   </>
                 ) : (
                   <>
                     <span
-                      className="font-display font-bold tracking-[0.08em] text-phosphor"
+                      className="font-display font-bold tracking-[0.02em] text-phosphor"
                       style={{
-                        fontSize: '5rem',
+                        fontSize: '7rem',
                         lineHeight: 1,
                         textShadow: '0 0 8px rgba(200,168,130,0.7), 0 0 32px rgba(200,168,130,0.3)',
                       }}
                     >
                       {matchWinnerId.replace('p', 'P')}
                     </span>
-                    <span className="font-mono text-[10px] tracking-[0.3em] text-teal mt-2 uppercase">Wins the Match</span>
-                    <span className="font-jp text-[13px] text-[rgba(0,255,180,0.35)] mt-0.5">勝者</span>
+                    <span className="font-display font-bold text-4xl tracking-[0.02em] text-teal mt-2">WINS THE MATCH</span>
+                    <span className="font-jp text-xl text-[rgba(0,255,180,0.35)] mt-0.5">勝者</span>
                     {buyIn > 0 && (
-                      <span className="font-mono text-[10px] tracking-[0.2em] text-bitcoin/70 mt-3 nerv-modal-blink">
+                      <span className="font-display font-bold text-2xl tracking-[0.02em] text-bitcoin/70 mt-3 nerv-modal-blink">
                         ↳ PAYING OUT {potSats} SATS
                       </span>
                     )}
@@ -165,22 +165,22 @@ export function SplitOverlay({ session, onPlayAgain, onMainMenu }: Props) {
               )}
             </div>
 
-            <Divider color="teal" height={1} className="w-full opacity-10" />
+            <Divider color="teal" height={2} className="w-full opacity-10" />
 
             {/* ── Score table ── */}
             <div className="w-full px-10 py-5">
               <ScoreTable wins={wins} playerCount={playerCount} />
             </div>
 
-            <Divider color="teal" height={1} className="w-full opacity-10" />
+            <Divider color="teal" height={2} className="w-full opacity-10" />
 
             {/* ── Footer ── */}
             <div className="w-full px-10 py-5 flex flex-col items-center gap-4">
               {isIntermission && (
                 <div className="flex items-center gap-2">
                   <span className="nerv-modal-indicator" style={{ width: 5, height: 5 }} />
-                  <span className="font-mono text-[10px] tracking-[0.3em] text-[rgba(0,255,180,0.45)] uppercase">
-                    Next Round In {countdown}
+                  <span className="font-display font-bold text-3xl tracking-[0.02em] text-[rgba(0,255,180,0.6)]">
+                    NEXT ROUND IN {countdown}
                   </span>
                 </div>
               )}
